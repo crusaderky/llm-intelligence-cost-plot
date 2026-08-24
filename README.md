@@ -6,7 +6,8 @@
 
 I think that [ArtificialAnalysis's intelligence/cost plot](https://artificialanalysis.ai/#intelligence-comparison-tabs) is seriously misleading, so I decided to make my own. Note that unlike AA, this page is not going to be updated frequently.
 
-All points are at max thinking. All intelligence index scores are from AA. All cost scores are from AA too except where noted below.
+All points are at max thinking where not explicitly stated. All intelligence index
+scores are from AA. All cost scores are from AA too except where noted below.
 
 ## Why AA's plot is misleading
 
