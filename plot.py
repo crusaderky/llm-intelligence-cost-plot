@@ -360,6 +360,18 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
         zorder=3,
     )
 
+    # Faint dotted Pareto frontier: max intelligence for each cost
+    pts = sorted(zip(xs, ys), key=lambda p: (p[0], -p[1]))
+    frontier_x, frontier_y = [], []
+    best_int = -float("inf")
+    for x, y in pts:
+        if y > best_int:
+            best_int = y
+            frontier_x.append(x)
+            frontier_y.append(y)
+    if len(frontier_x) > 1:
+        ax.plot(frontier_x, frontier_y, linestyle=":", color="#7a7f8a", linewidth=1.2, alpha=0.9, zorder=2)
+
     # axes (set limits before placing labels -- placement uses pixel positions)
     ax.set_xlim(0, max(xs) * 1.03)
     # y_lim: floor/ceil of the points with 0.2 of slack, except on the band
