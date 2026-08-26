@@ -18,6 +18,12 @@ style="background-color:#E4F8EC;color:#1f2328">highlighted in green</span>.
 
 ![Intelligence vs. Cost per Task (Low Cost)](intelligence_vs_cost_cheap.png)
 
+The two above plots merged together, to better visualize the diminishing returns in
+performance/cost. Again the area that's common to all plots is <span
+style="background-color:#E4F8EC;color:#1f2328">highlighted in green</span>.
+
+![Intelligence vs. Cost per Task (All Models)](intelligence_vs_cost_all.png)
+
 ## Why AA's plot is misleading
 
 - It uses the official pricing from the model developers' own API offering which, for

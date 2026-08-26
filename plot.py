@@ -110,7 +110,8 @@ MODELS = [
     Model("OpenAI", "GPT-5.6 Sol (max)", 61.0, 0.96),
     Model("Anthropic", "Claude Opus 4.7", 55.0, 2.23),
     Model("Anthropic", "Claude Opus 4.8", 57.5, 2.03),
-    Model("Anthropic", "Claude Sonnet 5 (max)", 55.2, 1.72),
+    Model("Anthropic", "Claude Sonnet 5", 55.2, 1.72),
+    Model("Anthropic", "Claude Opus 5 (low)", 52.5, 0.43),
     Model("Anthropic", "Claude Opus 5 (medium)", 59, 0.72),
     Model("Anthropic", "Claude Opus 5 (high)", 61.5, 1.23),
     Model("Anthropic", "Claude Opus 5 (xhigh)", 62.5, 1.80),
@@ -140,6 +141,14 @@ PLOTS = [
         "$%.3f",
         "top",
         "intelligence_vs_cost_cheap",
+    ),
+    (
+        "Intelligence vs. Cost per Task (All Models)",
+        lambda m: True,
+        0.10,
+        "$%.2f",
+        None,
+        "intelligence_vs_cost_all",
     ),
 ]
 
