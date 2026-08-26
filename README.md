@@ -16,7 +16,7 @@ electricity cost to run a local model, which is proportional to the time per tas
 the same hardware (details below). The area displayed by both plots is <span
 style="background-color:#E4F8EC;color:#1f2328">highlighted in green</span>.
 
-![Intelligence vs. Cost per Task (Low Cost)](intelligence_vs_cost_local.png)
+![Intelligence vs. Cost per Task (Low Cost)](intelligence_vs_cost_cheap.png)
 
 ## Why AA's plot is misleading
 
@@ -31,11 +31,12 @@ style="background-color:#E4F8EC;color:#1f2328">highlighted in green</span>.
 ## What changes between AA's plot and mine
 
 - Changed X scale from logarithmic to linear, because people's money is not logarithmic
-- Added DeepSeek V4 Flash 0731 as it is priced today by third party providers on
-  OpenRouter (note: you don't get this with OpenCode Go/Zen).
-- Added GLM-5.3 as it will be priced by third party providers on OpenRouter in September
-  2026, assuming no license changes from 5.2 (you don't get this either on OpenCode
-  Go/Zen).
+- Changed DeepSeek V4 Flash 0731 and GLM-5.3-Flash to the price you can get them for
+  today on OpenRouter (excessively slow or unreliable providers and those without Zero
+  Data Retention policies are excluded). Note that you don't get these prices with
+  OpenCode Go/Zen.
+- Added GLM-5.3 as it is expected to be priced by third party providers on OpenRouter in
+  September 2026, assuming no license changes from 5.2.
 - Changed cost of sub-35 billion parameters models from datacenter pricing (which nobody
   realistically will ever use) to cost to run locally.
 

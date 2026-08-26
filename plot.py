@@ -66,6 +66,12 @@ def local_cost_per_task(
     return cost_per_task * 1.2
 
 
+def openrouter_cost_per_task(
+    aa_cost_per_task: float, aa_price: float, openrouter_price: float
+) -> float:
+    return aa_cost_per_task * openrouter_price / aa_price
+
+
 MODELS = [
     ("InclusionAI", "Ling-3.0-Tiny (⚡)", local_cost_per_task(50676, 200), 25),
     ("Alibaba", "Qwen3.6-35B-A3B (⚡)", local_cost_per_task(30591, 150), 32),
@@ -79,18 +85,27 @@ MODELS = [
     ("Alibaba", "Qwen3.8-27B (low ⚡)", local_cost_per_task(26040, 67), 42.9),
     ("Alibaba", "Qwen3.8-27B (medium ⚡)", local_cost_per_task(31215, 67), 44.5),
     ("Alibaba", "Qwen3.8-27B (xhigh ⚡)", local_cost_per_task(47166, 67), 52.0),
-    ("DeepSeek", "DeepSeek V4 Flash 0731", 0.11, 51.7),
-    ("DeepSeek", "DeepSeek V4 Flash 0731 (OpenRouter)", 0.11 * 0.18 / 0.66, 51.7),
+    # ("Alibaba", "Qwen3.8 Flash", 0.47 / 2.55 * 0.37, 54.0),  # not on AA yet
+    (
+        "DeepSeek",
+        "DeepSeek V4 Flash 0731",
+        openrouter_cost_per_task(0.11, 0.66, 0.12),
+        51.7,
+    ),
     ("DeepSeek", "DeepSeek V4 Flash Vision", 0.11, 51.5),
     ("DeepSeek", "DeepSeek V4 Pro 0813", 0.25, 53.2),
     ("Tencent", "Hy3", 0.0358, 42.2),
+    ("Google", "Gemma 4 26B A4B (⚡)", local_cost_per_task(21337, 156), 26.0),
     ("Google", "Gemini 3.7 Flash", 0.40, 56.0),
     ("Meta", "Muse Spark 1.2", 0.40, 56.8),
-    ("Z AI", "GLM-5.3-Flash", 0.087, 57.4),
-    # ("Z AI", "GLM-5.2", 0.445, 52.3),
-    # ("Z AI", "GLM-5.2 (OpenRouter)", 0.445 * 2.20 / 4.40, 52.3),
+    ("Z AI", "GLM-5.3-Flash", openrouter_cost_per_task(0.087, 0.50, 0.25), 57.4),
     ("Z AI", "GLM-5.3", 0.68, 59.8),
-    ("Z AI", "GLM-5.3 (OpenRouter Sep'26)", 0.68 * 2.20 / 4.40, 59.8),
+    (
+        "Z AI",
+        "GLM-5.3 (Sep '26)",
+        openrouter_cost_per_task(0.68, 4.40, 2.20),
+        59.8,
+    ),
     ("Alibaba", "Qwen3.8 Max", 1.09, 58.0),
     ("Kimi", "Kimi K3", 0.84, 60.2),
     ("SpaceXAI", "Grok 4.6 (low)", 0.22, 52.0),
@@ -117,7 +132,7 @@ MODELS = [
 ]
 
 HIGH_INTELLIGENCE_THRESHOLD = 50
-LOW_COST_THRESHOLD = 0.1
+LOW_COST_THRESHOLD = 0.05
 
 # The two plots to generate:
 # (title, filter, x tick step, x tick format, band side, file stem)
@@ -137,7 +152,7 @@ PLOTS = [
         0.005,
         "$%.3f",
         "top",
-        "intelligence_vs_cost_local",
+        "intelligence_vs_cost_cheap",
     ),
 ]
 
@@ -452,7 +467,7 @@ def main():
     # Identical on both plots.
     band = (
         math.floor(min(m[3] for m in models_by_stem["intelligence_vs_cost"])),
-        math.ceil(max(m[3] for m in models_by_stem["intelligence_vs_cost_local"])),
+        math.ceil(max(m[3] for m in models_by_stem["intelligence_vs_cost_cheap"])),
     )
     for title, filt, step, fmt, band_side, stem in PLOTS:
         models = models_by_stem[stem]
