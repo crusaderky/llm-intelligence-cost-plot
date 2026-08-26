@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost plots
 
-**Last updated:** 2026-08-25
+**Last updated:** 2026-08-26
 
 I think that [ArtificialAnalysis's intelligence/cost
 plot](https://artificialanalysis.ai/#intelligence-comparison-tabs) is seriously
@@ -36,7 +36,7 @@ style="background-color:#E4F8EC;color:#1f2328">highlighted in green</span>.
 - Added GLM-5.3 as it will be priced by third party providers on OpenRouter in September
   2026, assuming no license changes from 5.2 (you don't get this either on OpenCode
   Go/Zen).
-- Changed cost of <=35 billion parameters models from datacenter pricing (which nobody
+- Changed cost of sub-35 billion parameters models from datacenter pricing (which nobody
   realistically will ever use) to cost to run locally.
 
 ## Cost calculation for local models
@@ -52,13 +52,20 @@ Cost per task for models marked with ⚡ was crudely calculated as follows:
 - Hardware is priced at 0, on the basis that both a RTX 3090 PC and a 64GB Strix Halo
   are desirable gaming/work machines anyways.
 
-Not including the cost of hardware stops being defensible once you upgrade to a ~$3,600
-128GB Strix Halo (almost nobody needs that much RAM if not for AI). This is why I did
-not add self-hosted DeepSeek IQ2_XXS to the chart; it would likely also sit lower on the
-intelligence axis than the MXFP4 native that is available as a datacenter model. Same
-argument for a ~$16k cobbled-together rig which is the bare minimum to run GLM-5.3 IQ4
-locally. I'm not saying they're not worth the expense (privacy is priceless), but
-pegging them on the plot is a much more nuanced exercise.
+## Larger local models
+
+Not including the cost of hardware stops being defensible once you upgrade beyond 64 GB
+RAM, as almost nobody needs that much RAM if not for AI. This is why the following
+models, which _could_ be ran locally, only have a dot on the chart as API price. Adding
+the cost of hardware to the price per task would require calculating how many tokens
+that hardware will serve over its lifetime, and the answer to that is going to be wildly
+different between single users and teams of people.
+
+| Memory | Hardware | Models |
+| --- | --- | --- |
+| 128 GB unified RAM | Strix Halo ($3,600)<br>DGX Spark ($4k) | Qwen3.8-Flash Q4_K_M (not on the plot yet)<br>GLM-5.3-Flash IQ2_XXS (very tightly)<br>DeepSeek-V4-Flash IQ2_XXS |
+| 256 GB unified RAM | 2x DGX Spark ($8k)<br>Mac Studio M5 Ultra ($11k) | GLM-5.3-Flash Q4_K_M<br>DeepSeek-V4-Flash native MXFP4 |
+| 512 GB unified RAM | 4x DGX Spark ($16k)<br>2x Mac Studio M5 Ultra ($22k) | GLM-5.3 IQ4_XS |
 
 ## To regenerate the plots
 

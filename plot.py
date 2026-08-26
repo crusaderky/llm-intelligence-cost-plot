@@ -86,7 +86,10 @@ MODELS = [
     ("Tencent", "Hy3", 0.0358, 42.2),
     ("Google", "Gemini 3.7 Flash", 0.40, 56.0),
     ("Meta", "Muse Spark 1.2", 0.40, 56.8),
-    ("Z AI", "GLM-5.3", 0.68, 60.0),
+    ("Z AI", "GLM-5.3-Flash", 0.087, 57.4),
+    # ("Z AI", "GLM-5.2", 0.445, 52.3),
+    # ("Z AI", "GLM-5.2 (OpenRouter)", 0.445 * 2.20 / 4.40, 52.3),
+    ("Z AI", "GLM-5.3", 0.68, 59.8),
     ("Z AI", "GLM-5.3 (OpenRouter Sep'26)", 0.68 * 2.20 / 4.40, 59.8),
     ("Alibaba", "Qwen3.8 Max", 1.09, 58.0),
     ("Kimi", "Kimi K3", 0.84, 60.2),
@@ -113,13 +116,16 @@ MODELS = [
     ("Anthropic", "Claude Fable 5", 3.14, 62.0),
 ]
 
+HIGH_INTELLIGENCE_THRESHOLD = 50
+LOW_COST_THRESHOLD = 0.1
+
 # The two plots to generate:
 # (title, filter, x tick step, x tick format, band side, file stem)
 # "band side" is the plot edge that coincides with the green band's edge.
 PLOTS = [
     (
         "Intelligence vs. Cost per Task (High Intelligence)",
-        lambda m: m[3] >= 51,
+        lambda m: m[3] >= HIGH_INTELLIGENCE_THRESHOLD,
         0.10,
         "$%.2f",
         "bottom",
@@ -127,7 +133,7 @@ PLOTS = [
     ),
     (
         "Intelligence vs. Cost per Task (Low Cost)",
-        lambda m: m[2] <= 0.05,
+        lambda m: m[2] <= LOW_COST_THRESHOLD,
         0.005,
         "$%.3f",
         "top",
@@ -357,7 +363,7 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
             ax.add_patch(
                 Rectangle(
                     (0, b_lo),
-                    0.05,
+                    LOW_COST_THRESHOLD,
                     b_hi - b_lo,
                     facecolor="#22c55e",
                     edgecolor="none",
@@ -440,10 +446,10 @@ def main():
             raise SystemExit(f"no models match the filter for {stem}")
         models_by_stem[stem] = models
 
-    # Green band (x $0-$0.05): the points that appear on both plots (cheap
-    # AND smart). Its edges coincide with the band-side axis edge of each
-    # plot: the floor of the high-int plot's points and the ceil of the
-    # low-cost plot's points. Identical on both plots.
+    # Green band (x $0-$LOW_COST_THRESHOLD): the points that appear on both plots (cheap
+    # AND smart). Its edges coincide with the band-side axis edge of each plot: the
+    # floor of the high-int plot's points and the ceil of the low-cost plot's points.
+    # Identical on both plots.
     band = (
         math.floor(min(m[3] for m in models_by_stem["intelligence_vs_cost"])),
         math.ceil(max(m[3] for m in models_by_stem["intelligence_vs_cost_local"])),

@@ -7,9 +7,9 @@ version = "0.1.0"
 
 [tasks]
 plot = "python plot.py"
-lint = "ruff check --fix && ruff format"
+lint = "ruff check --fix && ruff format && mdformat ."
 
 [dependencies]
+mdformat = "*"
 matplotlib = "*"
 ruff = "*"
-
