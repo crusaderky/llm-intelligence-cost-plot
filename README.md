@@ -31,9 +31,9 @@ style="background-color:#E4F8EC;color:#1f2328">highlighted in green</span>.
 ## What changes between AA's plot and mine
 
 - Changed X scale from logarithmic to linear, because people's money is not logarithmic
-- Changed DeepSeek V4 Flash 0731 and GLM-5.3-Flash to the price you can get them for
-  today on OpenRouter (excessively slow or unreliable providers and those without Zero
-  Data Retention policies are excluded). Note that you don't get these prices with
+- Changed DeepSeek V4 Flash 0731, GLM-5.3-Flash, and Hy3 to the price you can get them
+  for on OpenRouter (excessively slow or unreliable providers and those without
+  Zero Data Retention policies are excluded). Note that you don't get these prices with
   OpenCode Go/Zen.
 - Added GLM-5.3 as it is expected to be priced by third party providers on OpenRouter in
   September 2026, assuming no license changes from 5.2.
@@ -47,7 +47,7 @@ Cost per task for models marked with ⚡ was crudely calculated as follows:
 - Take Output tok/task [from
   artificialanalysis.ai](https://artificialanalysis.ai/#intelligence-comparison-tabs)
 - Crudely observe decode speed (tok/s) on a RTX 3090
-- Assume 350W energy draw, which is typical for a RTX 3090 at 100% usage
+- Assume 350W peak/44W idle energy draw, as observed on a RTX 3090
 - Use US residential electricity price, weighted average by population, as of May 2026
 - Add 15% (finger-in-the-air) for uncached input tokens and waiting for tools
 - Hardware is priced at 0, on the basis that both a RTX 3090 PC and a 64GB Strix Halo
