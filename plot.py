@@ -414,7 +414,7 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
     ]
     legend = ax.legend(
         handles=handles,
-        loc="upper left",
+        loc="lower right",
         fontsize=LABEL_SIZE,
         framealpha=0.9,
         edgecolor="#d0d4da",
