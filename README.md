@@ -66,7 +66,7 @@ different between single users and teams of people.
 | --- | --- | --- |
 | 128 GB unified RAM | Strix Halo ($3,600)<br>DGX Spark ($4k) | Qwen3.8-Flash Q4_K_M (not on the plot yet)<br>GLM-5.3-Flash IQ2_XXS (very tightly)<br>DeepSeek-V4-Flash IQ2_XXS |
 | 256 GB unified RAM | 2x DGX Spark ($8k)<br>Mac Studio M5 Ultra ($11k) | GLM-5.3-Flash Q4_K_M<br>DeepSeek-V4-Flash native MXFP4 |
-| 512 GB unified RAM | 4x DGX Spark ($16k)<br>2x Mac Studio M5 Ultra ($22k) | GLM-5.3 IQ4_XS |
+| 512 GB unified RAM | 4x DGX Spark ($16k)<br>2x Mac Studio M5 Ultra ($22k) | GLM-5.3 Q4_K_M |
 
 ## To regenerate the plots
 
