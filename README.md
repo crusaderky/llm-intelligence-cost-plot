@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost plots
 
-**Last updated:** 2026-08-26
+**Last updated:** 2026-08-27
 
 I think that [ArtificialAnalysis's intelligence/cost
 plot](https://artificialanalysis.ai/#intelligence-comparison-tabs) is seriously
@@ -52,30 +52,32 @@ Cost per task for models marked with ⚡ was crudely calculated as follows:
 
 - Take Output tok/task [from
   artificialanalysis.ai](https://artificialanalysis.ai/#intelligence-comparison-tabs)
-- Crudely observe decode speed (tok/s) on a RTX 3090
-- Assume 350W peak/44W idle energy draw, as observed on a RTX 3090
+- Crudely observe decode speed (tok/s) on the hardware most suited to run it
+- Measure delta between peak and idle energy draw
 - Use US residential electricity price, weighted average by population, as of May 2026
 - Add 15% (finger-in-the-air) for uncached input tokens and waiting for tools
 - Hardware is priced at 0, on the basis that both a RTX 3090 PC and a 64GB Strix Halo
   are desirable gaming/work machines anyways.
 
+Note that there isn't a material difference in electricity costs between different
+hardware platforms: a Strix Halo draws less power than a RTX3090, but it's slower so it
+needs to run longer to complete the same tasks.
+
 ## Larger local models
 
 Not including the cost of hardware stops being defensible once you upgrade beyond 64 GB
-RAM, as almost nobody needs that much RAM if not for AI. This is why the following
-models, which _could_ be ran locally, only have a dot on the chart as API price. Adding
-the cost of hardware to the price per task would require calculating how many tokens
-that hardware will serve over its lifetime, and the answer to that is going to be wildly
-different between single users and teams of people.
+RAM, as almost nobody needs that much RAM if not for AI.
+
+Qwen3.8-Flash needs, as a minimum, a 128GB Strix Halo; it's on the plot as electricity
+only, but it already hides a substantial hardware cost: a 64 GB Strix Halo, which is a
+very desirable general purpose mini PC, costs $2,000; a 128 GB one costs $3,600 and
+doesn't enable anything other than LLM models in the 120B parameters class.
+
+The following models _can_ be ran locally, but carry a very steep up-front hardware
+cost:
 
 | Memory | Hardware | Models |
 | --- | --- | --- |
-| 128 GB unified RAM | Strix Halo ($3,600)<br>DGX Spark ($4k) | Qwen3.8-Flash Q4_K_M (not on the plot yet)<br>GLM-5.3-Flash IQ2_XXS (very tightly)<br>DeepSeek-V4-Flash IQ2_XXS |
+| 128 GB unified RAM | Strix Halo ($3,600)<br>DGX Spark ($4k) | Qwen3.8-Flash Q4_K_M<br>GLM-5.3-Flash IQ2_XXS (very tightly)<br>DeepSeek-V4-Flash IQ2_XXS |
 | 256 GB unified RAM | 2x DGX Spark ($8k)<br>Mac Studio M5 Ultra ($11k) | GLM-5.3-Flash Q4_K_M<br>DeepSeek-V4-Flash native MXFP4 |
 | 512 GB unified RAM | 4x DGX Spark ($16k)<br>2x Mac Studio M5 Ultra ($22k) | GLM-5.3 Q4_K_M |
-
-## To regenerate the plots
-
-```bash
-pixi run plot
-```

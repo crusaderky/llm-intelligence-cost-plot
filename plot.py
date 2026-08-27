@@ -44,6 +44,15 @@ PUBLISHERS = {
     "Z AI": "#1c7ff8",
 }
 
+class LocalHardware(NamedTuple):
+    name: str
+    peak_power_draw: int  # Watts under max load
+    idle_power_draw: int  # Watts when idling
+
+
+RTX3090 = LocalHardware("RTX 3090", 350, 43)
+STRIX_HALO = LocalHardware("Strix Halo 128GB", 170, 11)
+
 
 class Model(NamedTuple):
     publisher: str
@@ -52,20 +61,19 @@ class Model(NamedTuple):
     cost_per_task: float
 
     @classmethod
-    def local(cls, publisher, name, intelligence, tok_per_task, tok_per_sec):
+    def local(cls, publisher, name, intelligence, tok_per_task, tok_per_sec, hardware=RTX3090):
         # Weighted by population, May 2026 (USD/KWh)
         # https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a
         US_ELECTRICITY_PRICE = 0.2049
-        LOCAL_POWER_DRAW = 350 - 43  # Peak - idle watts
-
         sec_per_task = tok_per_task / tok_per_sec
-        joules_per_task = LOCAL_POWER_DRAW * sec_per_task
+        power_draw = hardware.peak_power_draw - hardware.idle_power_draw
+        joules_per_task = power_draw * sec_per_task
         kwh_per_task = joules_per_task / 3_600_000
         cost_per_task = kwh_per_task * US_ELECTRICITY_PRICE
         # Finger-in-the-air overhead to account for prefill
         cost_per_task *= 1.2
 
-        return cls(publisher, f"{name} (⚡)", intelligence, cost_per_task)
+        return cls(publisher, f"{name} ({hardware.name} ⚡)", intelligence, cost_per_task)
 
     @classmethod
     def openrouter(
@@ -83,6 +91,8 @@ MODELS = [
     Model.local("Alibaba", "Qwen3.8-27B (low)", 42.9, 26040, 67),
     Model.local("Alibaba", "Qwen3.8-27B (medium)", 44.5, 31215, 67),
     Model.local("Alibaba", "Qwen3.8-27B (xhigh)", 52.0, 47166, 67),
+    Model.local("Alibaba", "Qwen3.8-Flash-Next", 55.7, 61494, 25, hardware=STRIX_HALO),
+    Model("Alibaba", "Qwen3.8-Flash-Next", 55.7, 61494 / 47166 * 0.47 / 3),
     Model.openrouter("DeepSeek", "DeepSeek V4 Flash 0731", 51.7, 0.11, 0.66, 0.12),
     Model("DeepSeek", "DeepSeek V4 Flash Vision", 51.5, 0.11),
     Model("DeepSeek", "DeepSeek V4 Pro 0813", 53.2, 0.25),
