@@ -38,6 +38,7 @@ PUBLISHERS = {
     "Kimi": "#047AFE",
     "Meta": "#0089f4",
     "OpenAI": "#1f1f1f",
+    "Ornith AI": "#dddddd",
     "SpaceXAI": "#736cd3",
     "Tencent": "#66b7fb",
     "Xiaomi": "#fb6d25",
@@ -86,6 +87,7 @@ class Model(NamedTuple):
 MODELS = [
     Model.local("InclusionAI", "Ling-3.0-Tiny", 25, 50676, 200),
     Model.local("Alibaba", "Qwen3.6-35B-A3B", 32, 30591, 150),
+    # Model.local("Ornith AI", "Ornith-1.5-35B", 32 * 1.15, 30591, 110),
     Model.local("Meta", "Muse Glimmer", 35, 11993, 124),
     Model.local("Alibaba", "Qwen3.8-27B (non-reasoning)", 34.8, 17589, 67),
     Model.local("Alibaba", "Qwen3.8-27B (low)", 42.9, 26040, 67),
