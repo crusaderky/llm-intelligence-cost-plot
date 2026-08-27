@@ -97,7 +97,6 @@ MODELS = [
     Model("DeepSeek", "DeepSeek V4 Flash Vision", 51.5, 0.11),
     Model("DeepSeek", "DeepSeek V4 Pro 0813", 53.2, 0.25),
     Model.openrouter("Tencent", "Hy3", 42.2, 0.0358, 0.554, 0.33),
-    Model.local("Google", "Gemma 4 26B A4B", 26.0, 21337, 156),
     Model("Google", "Gemini 3.7 Flash", 56.0, 0.40),
     Model("Meta", "Muse Spark 1.2", 56.8, 0.40),
     Model.openrouter("Z AI", "GLM-5.3-Flash", 57.4, 0.087, 0.50, 0.25),
