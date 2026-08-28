@@ -45,6 +45,7 @@ PUBLISHERS = {
     "Z AI": "#1c7ff8",
 }
 
+
 class LocalHardware(NamedTuple):
     name: str
     peak_power_draw: int  # Watts under max load
@@ -62,7 +63,9 @@ class Model(NamedTuple):
     cost_per_task: float
 
     @classmethod
-    def local(cls, publisher, name, intelligence, tok_per_task, tok_per_sec, hardware=RTX3090):
+    def local(
+        cls, publisher, name, intelligence, tok_per_task, tok_per_sec, hardware=RTX3090
+    ):
         # Weighted by population, May 2026 (USD/KWh)
         # https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a
         US_ELECTRICITY_PRICE = 0.2049
@@ -74,20 +77,19 @@ class Model(NamedTuple):
         # Finger-in-the-air overhead to account for prefill
         cost_per_task *= 1.2
 
-        return cls(publisher, f"{name} ({hardware.name} ⚡)", intelligence, cost_per_task)
+        return cls(
+            publisher, f"{name} ({hardware.name} ⚡)", intelligence, cost_per_task
+        )
 
     @classmethod
-    def openrouter(
-        cls, publisher, name, intelligence, aa_cost_per_task, aa_price, openrouter_price
-    ):
-        cost_per_task = aa_cost_per_task * openrouter_price / aa_price
-        return cls(publisher, name, intelligence, cost_per_task)
+    def scaled(cls, publisher, name, intelligence, aa_cost_per_task, scale):
+        return cls(publisher, name, intelligence, aa_cost_per_task * scale)
 
 
 MODELS = [
     Model.local("InclusionAI", "Ling-3.0-Tiny", 25, 50676, 200),
     Model.local("Alibaba", "Qwen3.6-35B-A3B", 32, 30591, 150),
-    # Model.local("Ornith AI", "Ornith-1.5-35B", 32 * 1.15, 30591, 110),
+    Model.local("Ornith AI", "Ornith-1.5-35B", 32 * 1.15, 30591, 110),
     Model.local("Meta", "Muse Glimmer", 35, 11993, 124),
     Model.local("Alibaba", "Qwen3.8-27B (non-reasoning)", 34.8, 17589, 67),
     Model.local("Alibaba", "Qwen3.8-27B (low)", 42.9, 26040, 67),
@@ -95,15 +97,22 @@ MODELS = [
     Model.local("Alibaba", "Qwen3.8-27B (xhigh)", 52.0, 47166, 67),
     Model.local("Alibaba", "Qwen3.8-Flash-Next", 55.7, 61494, 25, hardware=STRIX_HALO),
     Model("Alibaba", "Qwen3.8-Flash-Next", 55.7, 61494 / 47166 * 0.47 / 3),
-    Model.openrouter("DeepSeek", "DeepSeek V4 Flash 0731", 51.7, 0.11, 0.66, 0.12),
+    Model.scaled("DeepSeek", "DeepSeek V4 Flash 0731", 51.7, 0.11, 0.12 / 0.66),
     Model("DeepSeek", "DeepSeek V4 Flash Vision", 51.5, 0.11),
     Model("DeepSeek", "DeepSeek V4 Pro 0813", 53.2, 0.25),
-    Model.openrouter("Tencent", "Hy3", 42.2, 0.0358, 0.554, 0.33),
+    Model.scaled("Tencent", "Hy3", 42.2, 0.0358, 0.33 / 0.554),
     Model("Google", "Gemini 3.7 Flash", 56.0, 0.40),
     Model("Meta", "Muse Spark 1.2", 56.8, 0.40),
-    Model.openrouter("Z AI", "GLM-5.3-Flash", 57.4, 0.087, 0.50, 0.25),
+    Model.scaled(
+        "Z AI",
+        "GLM-5.3-Flash (high)",
+        57.4 * 28.01 / 28.99,
+        0.087,
+        0.25 / 0.50 * 70610 / 138690,
+    ),
+    Model.scaled("Z AI", "GLM-5.3-Flash (max)", 57.4, 0.087, 0.25 / 0.50),
     Model("Z AI", "GLM-5.3", 59.8, 0.68),
-    Model.openrouter("Z AI", "GLM-5.3 (Sep '26)", 59.8, 0.68, 4.40, 2.20),
+    Model.scaled("Z AI", "GLM-5.3 (Sep '26)", 59.8, 0.68, 2.20 / 4.40),
     Model("Alibaba", "Qwen3.8 Max", 58.0, 1.09),
     Model("Kimi", "Kimi K3", 60.2, 0.84),
     Model("SpaceXAI", "Grok 4.6 (low)", 52.0, 0.22),
@@ -381,7 +390,15 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
             frontier_x.append(x)
             frontier_y.append(y)
     if len(frontier_x) > 1:
-        ax.plot(frontier_x, frontier_y, linestyle=":", color="#7a7f8a", linewidth=1.2, alpha=0.9, zorder=2)
+        ax.plot(
+            frontier_x,
+            frontier_y,
+            linestyle=":",
+            color="#7a7f8a",
+            linewidth=1.2,
+            alpha=0.9,
+            zorder=2,
+        )
 
     # axes (set limits before placing labels -- placement uses pixel positions)
     ax.set_xlim(0, max(xs) * 1.03)

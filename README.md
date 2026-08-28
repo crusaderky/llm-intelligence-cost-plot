@@ -43,8 +43,14 @@ style="background-color:#E4F8EC;color:#1f2328">highlighted in green</span>.
   OpenCode Go/Zen.
 - Added GLM-5.3 as it is expected to be priced by third party providers on OpenRouter in
   September 2026, assuming no license changes from 5.2.
+- Extrapolated points for GLM-5.3-Flash at High reasoning effort by crossing AA scores
+  at Max with [Z.ai's coding scores](https://z.ai/blog/glm-5.3-flash) at different
+  effort levels
 - Changed cost of sub-35 billion parameters models from datacenter pricing (which nobody
   realistically will ever use) to cost to run locally.
+- Added Ornith-1.5-35B. The intelligence score is extrapolated from _self-reported_
+  benchmark results by the model authors and should be taken with a healthy dose of
+  skepticism.
 
 ## Cost calculation for local models
 
