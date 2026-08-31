@@ -17,6 +17,8 @@ first that collides with nothing already placed. So MODELS only needs
 publisher / name / price / index -- just add rows and re-run.
 """
 
+from __future__ import annotations
+
 import math
 from typing import NamedTuple
 
@@ -35,8 +37,8 @@ PUBLISHERS = {
     "DeepSeek": "#2243e6",
     "Google": "#34A853",
     "InclusionAI": "#4fb5ff",
-    "Kimi": "#047AFE",
     "Meta": "#0089f4",
+    "Moonshot AI": "#047AFE",
     "OpenAI": "#1f1f1f",
     "Ornith AI": "#dddddd",
     "SpaceXAI": "#736cd3",
@@ -54,6 +56,31 @@ class LocalHardware(NamedTuple):
 
 RTX3090 = LocalHardware("RTX 3090", 350, 43)
 STRIX_HALO = LocalHardware("Strix Halo 128GB", 170, 11)
+
+
+class ModelPrice:
+    input: float
+    output: float
+    cache_read: float
+
+    def __init__(
+        self, input: float, output: float, cache_read: float, total: float | None = None
+    ):
+        if total is not None:
+            scale = total / (input + output + cache_read)
+            input *= scale
+            output *= scale
+            cache_read *= scale
+        self.input = input
+        self.output = output
+        self.cache_read = cache_read
+
+    def __mul__(self, factor: float) -> ModelPrice:
+        return ModelPrice(
+            input=self.input * factor,
+            output=self.output * factor,
+            cache_read=self.cache_read * factor,
+        )
 
 
 class Model(NamedTuple):
@@ -82,42 +109,117 @@ class Model(NamedTuple):
         )
 
     @classmethod
-    def scaled(cls, publisher, name, intelligence, aa_cost_per_task, scale):
-        return cls(publisher, name, intelligence, aa_cost_per_task * scale)
+    def reduced_price(
+        cls,
+        publisher: str,
+        name: str,
+        intelligence: float,
+        nominal_cost_per_task: ModelPrice,
+        nominal_price: ModelPrice,
+        cheapest_price: ModelPrice,
+    ) -> Model:
+        nc = nominal_cost_per_task
+        np = nominal_price
+        cp = cheapest_price
+
+        input_cost = nc.input * cp.input / np.input
+        output_cost = nc.output * cp.output / np.output
+        cache_read_cost = nc.cache_read * cp.cache_read / np.cache_read
+
+        cost_per_task = input_cost + output_cost + cache_read_cost
+        print(
+            f"Reduced from ${nc.input + nc.output + nc.cache_read:.4f} to "
+            f"${cost_per_task:.4f}: {name}"
+        )
+        return cls(publisher, name, intelligence, cost_per_task)
 
 
 MODELS = [
     Model.local("InclusionAI", "Ling-3.0-Tiny", 25, 50676, 200),
     Model.local("Alibaba", "Qwen3.6-35B-A3B", 32, 30591, 150),
-    Model.local("Ornith AI", "Ornith-1.5-35B", 32 * 1.15, 30591, 110),
+    Model.local("Ornith AI", "Ornith-1.5-35B-A3B", 32 * 1.15, 30591, 110),
     Model.local("Meta", "Muse Glimmer", 35, 11993, 124),
     Model.local("Alibaba", "Qwen3.8-27B (non-reasoning)", 34.8, 17589, 67),
     Model.local("Alibaba", "Qwen3.8-27B (low)", 42.9, 26040, 67),
     Model.local("Alibaba", "Qwen3.8-27B (medium)", 44.5, 31215, 67),
     Model.local("Alibaba", "Qwen3.8-27B (xhigh)", 52.0, 47166, 67),
     Model.local("Alibaba", "Qwen3.8-Flash-Next", 55.7, 61494, 25, hardware=STRIX_HALO),
-    Model("Alibaba", "Qwen3.8-Flash-Next", 55.7, 61494 / 47166 * 0.47 / 3),
-    Model.scaled("DeepSeek", "DeepSeek V4 Flash 0731", 51.7, 0.11, 0.12 / 0.66),
-    Model("DeepSeek", "DeepSeek V4 Flash Vision", 51.5, 0.11),
+    Model("Alibaba", "Qwen3.8-Flash-Next", 55.7, 0.097),
+    Model.reduced_price(
+        "DeepSeek",
+        "DeepSeek V4 Flash 0731",
+        51.7,
+        ModelPrice(input=0.0327, output=0.06, cache_read=0.02, total=0.112),
+        nominal_price=ModelPrice(input=0.44, output=1.32, cache_read=0.014),
+        cheapest_price=ModelPrice(input=0.03, output=0.16, cache_read=0.013),
+    ),
+    Model("DeepSeek", "DeepSeek V4 Flash Vision", 51.5, 0.116),
     Model("DeepSeek", "DeepSeek V4 Pro 0813", 53.2, 0.25),
-    Model.scaled("Tencent", "Hy3", 42.2, 0.0358, 0.33 / 0.554),
+    Model.reduced_price(
+        "Tencent",
+        "Hy3",
+        42.2,
+        ModelPrice(input=0.0109, output=0.0142, cache_read=0.01, total=0.0358),
+        nominal_price=ModelPrice(input=0.136, output=0.554, cache_read=0.136 * 0.25),
+        cheapest_price=ModelPrice(input=0.132, output=0.528, cache_read=0.033),
+    ),
+    # Model.reduced_price(
+    #     "Tencent",
+    #     "Hy4 preview",
+    #     59,
+    #     ModelPrice(input=0.09, output=0.18, cache_read=0.41),
+    #     nominal_price=ModelPrice(input=1.40, output=4.40, cache_read=0.26),
+    #     cheapest_price=ModelPrice(input=0.834, output=2.501, cache_read=0.042),
+    # ),
     Model("Google", "Gemini 3.7 Flash", 56.0, 0.40),
     Model("Meta", "Muse Spark 1.2", 56.8, 0.40),
-    Model.scaled(
+    Model.reduced_price(
         "Z AI",
         "GLM-5.3-Flash (high)",
+        # scaled intelligence and output toks (estimate)
         57.4 * 28.01 / 28.99,
-        0.087,
-        0.25 / 0.50 * 70610 / 138690,
+        ModelPrice(input=0.011, output=0.03, cache_read=0.05, total=0.087)
+        * (70610 / 138690),
+        nominal_price=ModelPrice(input=0.15, output=0.50, cache_read=0.03),
+        cheapest_price=ModelPrice(input=0.075, output=0.25, cache_read=0.015),
     ),
-    Model.scaled("Z AI", "GLM-5.3-Flash (max)", 57.4, 0.087, 0.25 / 0.50),
-    Model("Z AI", "GLM-5.3", 59.8, 0.68),
-    Model.scaled("Z AI", "GLM-5.3 (Sep '26)", 59.8, 0.68, 2.20 / 4.40),
-    Model("Alibaba", "Qwen3.8 Max", 58.0, 1.09),
-    Model("Kimi", "Kimi K3", 60.2, 0.84),
+    Model.reduced_price(
+        "Z AI",
+        "GLM-5.3-Flash (max)",
+        57.4,
+        ModelPrice(input=0.011, output=0.03, cache_read=0.05, total=0.087),
+        nominal_price=ModelPrice(input=0.15, output=0.50, cache_read=0.03),
+        cheapest_price=ModelPrice(input=0.075, output=0.25, cache_read=0.015),
+    ),
+    Model.reduced_price(
+        "Z AI",
+        "GLM-5.3",
+        59.8,
+        ModelPrice(input=0.09, output=0.18, cache_read=0.41),
+        nominal_price=ModelPrice(input=1.40, output=4.40, cache_read=0.26),
+        cheapest_price=ModelPrice(input=1.40, output=4.40, cache_read=0.14),
+    ),
+    Model.reduced_price(
+        "Alibaba",
+        "Qwen3.8 Max",
+        58.0,
+        ModelPrice(input=0.30, output=0.23, cache_read=0.38),
+        nominal_price=ModelPrice(input=2.00, output=6.00, cache_read=0.25),
+        cheapest_price=ModelPrice(input=2.00, output=6.00, cache_read=0.20),
+    ),
+    Model.reduced_price(
+        "Moonshot AI",
+        "Kimi K3",
+        60.2,
+        ModelPrice(input=0.20, output=0.38, cache_read=0.25, total=0.84),
+        nominal_price=ModelPrice(input=3.00, output=15.00, cache_read=0.30),
+        cheapest_price=ModelPrice(input=2.55, output=12.75, cache_read=0.256),
+    ),
     Model("SpaceXAI", "Grok 4.6 (low)", 52.0, 0.22),
     Model("SpaceXAI", "Grok 4.6 (high)", 61.0, 0.84),
     Model("Xiaomi", "MiMo-V2.5", 38.03, 0.0104),
+    Model("OpenAI", "GPT-5.4 (Mar '26)", 53, 1.12),
+    Model("OpenAI", "GPT-5.5 (Apr '26)", 56, 1.19),
     Model("OpenAI", "GPT-5.6 Luna (low)", 33.85, 0.0088),
     Model("OpenAI", "GPT-5.6 Luna (medium)", 38.90, 0.0113),
     Model("OpenAI", "GPT-5.6 Luna (high)", 46.95, 0.0216),
@@ -128,8 +230,8 @@ MODELS = [
     Model("OpenAI", "GPT-5.6 Sol (high)", 57.3, 0.43),
     Model("OpenAI", "GPT-5.6 Sol (xhigh)", 59.0, 0.64),
     Model("OpenAI", "GPT-5.6 Sol (max)", 61.0, 0.96),
-    Model("Anthropic", "Claude Opus 4.7", 55.0, 2.23),
-    Model("Anthropic", "Claude Opus 4.8", 57.5, 2.03),
+    Model("Anthropic", "Claude Opus 4.7 (Apr '26)", 55.0, 2.23),
+    Model("Anthropic", "Claude Opus 4.8 (May '26)", 57.5, 2.03),
     Model("Anthropic", "Claude Sonnet 5", 55.2, 1.72),
     Model("Anthropic", "Claude Opus 5 (low)", 52.5, 0.43),
     Model("Anthropic", "Claude Opus 5 (medium)", 59, 0.72),
@@ -152,7 +254,7 @@ PLOTS = [
         0.10,
         "$%.2f",
         "bottom",
-        "intelligence_vs_cost",
+        "high_intelligence",
     ),
     (
         "Intelligence vs. Cost per Task (Low Cost)",
@@ -160,7 +262,7 @@ PLOTS = [
         0.005,
         "$%.3f",
         "top",
-        "intelligence_vs_cost_cheap",
+        "low_cost",
     ),
     (
         "Intelligence vs. Cost per Task (All Models)",
@@ -168,7 +270,7 @@ PLOTS = [
         0.10,
         "$%.2f",
         None,
-        "intelligence_vs_cost_all",
+        "all_models",
     ),
 ]
 
@@ -502,10 +604,8 @@ def main():
     # floor of the high-int plot's points and the ceil of the low-cost plot's points.
     # Identical on both plots.
     band = (
-        math.floor(min(m.intelligence for m in models_by_stem["intelligence_vs_cost"])),
-        math.ceil(
-            max(m.intelligence for m in models_by_stem["intelligence_vs_cost_cheap"])
-        ),
+        math.floor(min(m.intelligence for m in models_by_stem["high_intelligence"])),
+        math.ceil(max(m.intelligence for m in models_by_stem["low_cost"])),
     )
     for title, filt, step, fmt, band_side, stem in PLOTS:
         models = models_by_stem[stem]
