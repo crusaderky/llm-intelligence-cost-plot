@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-08-31
+**Last updated:** 2026-09-01
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -47,7 +47,7 @@ All intelligence index scores are from ArtificialAnalysis.
 All points are benchmarked at maximum thinking effort where not explicitly stated otherwise.
 All cost scores are from ArtificialAnalysis too, except where noted below.
 
-In the first plot we see the offering, as of August 31 2026, with the most intelligent
+In the first plot we see the offering, as of September 1 2026, with the most intelligent
 (and expensive) models.
 
 A good rule of thumb for reading the intelligence axis: a one-point difference is

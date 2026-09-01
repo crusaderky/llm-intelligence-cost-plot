@@ -166,7 +166,7 @@ MODELS = [
     # Model.reduced_price(
     #     "Tencent",
     #     "Hy4 preview",
-    #     59,
+    #     57.4 * 51.5 / 51.1,
     #     ModelPrice(input=0.09, output=0.18, cache_read=0.41),
     #     nominal_price=ModelPrice(input=1.40, output=4.40, cache_read=0.26),
     #     cheapest_price=ModelPrice(input=0.834, output=2.501, cache_read=0.042),
@@ -197,7 +197,7 @@ MODELS = [
         59.8,
         ModelPrice(input=0.09, output=0.18, cache_read=0.41),
         nominal_price=ModelPrice(input=1.40, output=4.40, cache_read=0.26),
-        cheapest_price=ModelPrice(input=1.40, output=4.40, cache_read=0.14),
+        cheapest_price=ModelPrice(input=1.20, output=4.00, cache_read=0.12),
     ),
     Model.reduced_price(
         "Alibaba",
