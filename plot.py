@@ -195,7 +195,22 @@ MODELS = [
     #     nominal_price=ModelPrice(input=1.40, output=4.40, cache_read=0.26),
     #     cheapest_price=ModelPrice(input=0.834, output=2.501, cache_read=0.042),
     # ),
-    Model("Meta", "Muse Spark 1.2", 56.8, 0.40),
+    Model.reduced_price(
+        "Meta",
+        "Muse Spark 1.3 (xhigh)",
+        60.78,
+        ModelPrice(input=0.18, output=0.13, cache_read=0.24),
+        nominal_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
+        cheapest_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
+    ),
+    Model.reduced_price(
+        "Meta",
+        "Muse Spark 1.3 (max)",
+        62.09,
+        ModelPrice(input=0.18, output=0.13, cache_read=0.24) * (35221 / 30543),
+        nominal_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
+        cheapest_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
+    ),
     Model.reduced_price(
         "Z AI",
         "GLM-5.3-Flash (high)",
