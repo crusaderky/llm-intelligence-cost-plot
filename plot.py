@@ -28,6 +28,7 @@ matplotlib.use("agg")  # Agg gives us a measurable renderer; we still save SVG
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
+from matplotlib.path import Path as MplPath
 from matplotlib.ticker import FormatStrFormatter, MultipleLocator
 
 # Publisher colors, replicated from artificialanalysis.ai
@@ -134,6 +135,10 @@ class Model(NamedTuple):
         )
         return cls(publisher, name, intelligence, cost_per_task)
 
+    @property
+    def trains_on_your_data(self) -> bool:
+        return "[TRAIN]" in self.name
+
 
 MODELS = [
     Model.local("InclusionAI", "Ling-3.0-Tiny", 25, 50676, 200),
@@ -161,7 +166,7 @@ MODELS = [
     #     ModelPrice(input=0.30, output=0.23, cache_read=0.38),
     #     nominal_price=ModelPrice(input=2.00, output=6.00, cache_read=0.25),
     #     cheapest_price=ModelPrice(input=2.00, output=6.00, cache_read=0.25),
-    # ),    
+    # ),
     Model.reduced_price(
         "DeepSeek",
         "DeepSeek V4 Flash 0731",
@@ -210,6 +215,22 @@ MODELS = [
         ModelPrice(input=0.18, output=0.13, cache_read=0.24) * (35221 / 30543),
         nominal_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
         cheapest_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
+    ),
+    Model.reduced_price(
+        "Meta",
+        "Muse Spark 1.3 (xhigh) [TRAIN]",
+        60.78,
+        ModelPrice(input=0.18, output=0.13, cache_read=0.24),
+        nominal_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
+        cheapest_price=ModelPrice(input=0.10, output=0.20, cache_read=0.002),
+    ),
+    Model.reduced_price(
+        "Meta",
+        "Muse Spark 1.3 (max) [TRAIN]",
+        62.09,
+        ModelPrice(input=0.18, output=0.13, cache_read=0.24) * (35221 / 30543),
+        nominal_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
+        cheapest_price=ModelPrice(input=0.10, output=0.20, cache_read=0.002),
     ),
     Model.reduced_price(
         "Z AI",
@@ -366,8 +387,116 @@ CANDIDATES = [
 ]
 
 
+# Colored vector icons that stand in for the ⚡ emoji: matplotlib cannot render
+# color emoji, so without this ⚡ draws as a thin black outline.
+ICON_SIZE = {"bolt": 15, "mask": 20}  # px
+ICON_GAP = 4  # px between a label's text and its icon
+ICON_COLORS = {
+    "bolt": ("#fbbf24", "#b45309"),  # amber fill, dark edge
+    "mask": ("#1f2937", "#09090b"),  # black fill, blacker edge
+}
+
+
+def _icon_path(pts):
+    """Path from (x, y) vertices, recentered on the bbox of its control points."""
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+    verts = [(x - cx, y - cy) for x, y in pts]
+    codes = [MplPath.MOVETO] + [MplPath.LINETO] * (len(pts) - 1)
+    return MplPath(verts + [(0.0, 0.0)], codes + [MplPath.CLOSEPOLY])
+
+
+# Thief mask: a black domino with swept-up wing tips and two almond eye
+# holes, cut out under the nonzero fill rule (eye holes wound counterclockwise
+# against the clockwise outline). Also rendered once to thief_mask.png for the
+# README.
+#
+# Mask outline details:
+_MASK_PTS = [
+    (0.00, 0.60),  # left wing tip
+    (0.10, 0.88),  # left wing peak
+    (0.34, 0.78),
+    (0.50, 0.72),  # nose-bridge dip
+    (0.66, 0.78),
+    (0.90, 0.88),  # right wing peak
+    (1.00, 0.60),  # right wing tip
+    (0.95, 0.32),  # right lower wing
+    (0.66, 0.26),
+    (0.50, 0.34),  # nose dip
+    (0.34, 0.26),
+    (0.05, 0.32),  # left lower wing
+]
+_MASK_CENTER = (
+    (min(p[0] for p in _MASK_PTS) + max(p[0] for p in _MASK_PTS)) / 2,
+    (min(p[1] for p in _MASK_PTS) + max(p[1] for p in _MASK_PTS)) / 2,
+)
+
+
+def _eye_pts(ecx, ecy, tilt):
+    """Eye-hole octagon, counterclockwise (opposite winding to the mask outline
+    so it cuts out a hole under the nonzero fill rule)."""
+    pts = []
+    for i in range(8):
+        a = i * math.pi / 4
+        x, y = 0.15 * math.cos(a), 0.10 * math.sin(a)
+        x, y = (
+            x * math.cos(tilt) - y * math.sin(tilt),
+            x * math.sin(tilt) + y * math.cos(tilt),
+        )
+        pts.append((ecx + x - _MASK_CENTER[0], ecy + y - _MASK_CENTER[1]))
+    return pts
+
+
+def _mask_path():
+    mask = _icon_path(_MASK_PTS)
+    verts, codes = mask.vertices.tolist(), mask.codes.tolist()
+    for ecx, ecy, tilt in ((0.30, 0.56, -0.22), (0.70, 0.56, 0.22)):
+        eye = _eye_pts(ecx, ecy, tilt)
+        verts += eye + [eye[0]]
+        codes += (
+            [MplPath.MOVETO] + [MplPath.LINETO] * (len(eye) - 1) + [MplPath.CLOSEPOLY]
+        )
+    return MplPath(verts, codes)
+
+
+ICON_PATHS = {
+    "bolt": _icon_path(
+        [
+            (0.65, 1.00),
+            (0.10, 0.42),
+            (0.42, 0.42),
+            (0.28, 0.00),
+            (0.92, 0.58),
+            (0.57, 0.58),
+        ]
+    ),
+    "mask": _mask_path(),
+}
+
+
+def _split_icon(name):
+    """Split the marker out of a model name.
+
+    Returns (left, icon, right): the text before the marker, the icon key
+    (None, "bolt", or "mask"), and the text after it. The icon is drawn
+    between the two halves, so e.g. "(RTX 3090 ⚡)" keeps its parentheses.
+    Models that train on your data are marked with [TRAIN] in the data; the
+    plots render them with the thief mask icon.
+    """
+    for marker, icon in (("⚡", "bolt"), ("[TRAIN]", "mask")):
+        idx = name.find(marker)
+        if idx >= 0:
+            left = name[:idx].rstrip()
+            right = name[idx + len(marker) :].lstrip()
+            return left, icon, right
+    return name, None, ""
+
+
 def _pad(bb, pad=PAD_PX):
-    return (bb.x0 - pad, bb.y0 - pad, bb.x1 + pad, bb.y1 + pad)
+    if hasattr(bb, "x0"):  # Bbox
+        bb = (bb.x0, bb.y0, bb.x1, bb.y1)
+    return (bb[0] - pad, bb[1] - pad, bb[2] + pad, bb[3] + pad)
 
 
 def _overlap_area(a, b):
@@ -376,8 +505,23 @@ def _overlap_area(a, b):
     return dx * dy if dx > 0 and dy > 0 else 0.0
 
 
+def _text_width(ax, renderer, text):
+    """Width of text in display pixels at LABEL_SIZE."""
+    t = ax.text(0, 0, text, fontsize=LABEL_SIZE)
+    w = t.get_window_extent(renderer).width
+    t.remove()
+    return w
+
+
 def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
-    """points: [(name, x, y)] in data coords. Adds annotations, auto-placed.
+    """points: [(left, right, icon, x, y)] in data coords -- icon is None,
+    "bolt", or "mask"; the icon is drawn as a colored vector marker between
+    the left and right text halves, so e.g. "(RTX 3090 ⚡)" keeps its parens.
+    Adds annotations, auto-placed.
+
+    Placement runs in rounds: a greedy sequential pass, then repair rounds in
+    which every label re-chooses its spot around everyone else's position, so
+    a crowded plot doesn't end up with cascading overlaps.
 
     extra_obstacles: additional (x0, y0, x1, y1) display-pixel boxes that
     labels must not overlap (e.g. the legend).
@@ -389,17 +533,14 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
     # Dots are sacred: a label is never allowed to sit on top of a marker
     # unless every candidate position is worse (see scoring below).
     dot_boxes = []
-    for _, x, y in points:
+    for _, _, _, x, y in points:
         px, py = ax.transData.transform((x, y))
         dot_boxes.append(
             (px - marker_r_px, py - marker_r_px, px + marker_r_px, py + marker_r_px)
         )
 
-    # The rest (legend, previously placed labels) is ranked below dot overlap.
-    obstacles = list(extra_obstacles)
-
     # Place the most crowded points first -- they have the fewest good options.
-    disp = [ax.transData.transform((x, y)) for _, x, y in points]
+    disp = [ax.transData.transform((x, y)) for _, _, _, x, y in points]
 
     def crowding(i):
         xi, yi = disp[i]
@@ -410,11 +551,14 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
         )
 
     crowd = [crowding(i) for i in range(len(points))]
-    order = sorted(range(len(points)), key=lambda i: (-crowd[i], -points[i][1]))
+    order = sorted(range(len(points)), key=lambda i: (-crowd[i], -points[i][4]))
 
-    for i in order:
-        name, x, y = points[i]
-        best = None  # (penalty, dx, dy, ha, va, bbox)
+    def choose(i, obstacles):
+        """Pick the best candidate position for label i. Returns
+        (score, bbox, left_x0, vc, icon_cx, right_x0, w_right); the bbox and
+        positions are display pixels."""
+        left, right, icon, x, y = points[i]
+        best = None
         # In a cluster, a label touching its dot is ambiguous no matter what, so
         # only consider the far slots -- that buys a visible leader line.
         # Right of the point is always tried first, then left; the stacked
@@ -428,7 +572,7 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
             cands = near + far
         for dx, dy, ha, va in cands:
             ann = ax.annotate(
-                name,
+                left,
                 (x, y),
                 textcoords="offset points",
                 xytext=(dx, dy),
@@ -440,43 +584,118 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
             )
             bb_raw = ann.get_window_extent(renderer)
             ann.remove()
-            bb = _pad(bb_raw)
+
+            w_left = bb_raw.width
+            h = bb_raw.height
+            vc = (bb_raw.y0 + bb_raw.y1) / 2
+            raw = (bb_raw.x0, bb_raw.y0, bb_raw.x1, bb_raw.y1)
+            left_x0 = bb_raw.x0
+            icon_cx = right_x0 = 0.0
+            w_right = 0.0
+            if icon is not None:
+                s = ICON_SIZE[icon]
+                extra = ICON_GAP + s + ICON_GAP
+                if right:
+                    w_right = _text_width(ax, renderer, right)
+                    extra += w_right
+                if ha == "right":
+                    left_x0 = bb_raw.x0 - extra
+                elif ha == "center":
+                    left_x0 = bb_raw.x0 - extra / 2
+                icon_cx = left_x0 + w_left + ICON_GAP + s / 2
+                right_x0 = icon_cx + s / 2 + ICON_GAP
+                half_h = max(h / 2, s / 2)
+                raw = (
+                    left_x0,
+                    vc - half_h,
+                    right_x0 + w_right,
+                    vc + half_h,
+                )
+            bb = _pad(raw)
 
             # Rank: spilling outside the axes is worst, then touching a marker,
             # then how much of it, then overlap with the legend/other labels.
             # Spilling is judged on the unpadded extent -- the pad only guards
             # collisions between labels, text may approach the frame closely.
             spill = (
-                bb_raw.x0 < axes_box[0]
-                or bb_raw.x1 > axes_box[2]
-                or bb_raw.y0 < axes_box[1]
-                or bb_raw.y1 > axes_box[3]
+                raw[0] < axes_box[0]
+                or raw[2] > axes_box[2]
+                or raw[1] < axes_box[1]
+                or raw[3] > axes_box[3]
             )
             dot_pen = sum(_overlap_area(bb, o) for o in dot_boxes)
             pen = sum(_overlap_area(bb, o) for o in obstacles)
             score = (spill, dot_pen > 0, dot_pen, pen)
 
             if not any(score):  # collision-free position
-                best = (score, dx, dy, ha, va, bb)
-                break
+                return (score, bb, left_x0, vc, icon_cx, right_x0, w_right)
             if best is None or score < best[0]:
-                best = (score, dx, dy, ha, va, bb)
+                best = (score, bb, left_x0, vc, icon_cx, right_x0, w_right)
+        return best
 
-        _, dx, dy, ha, va, bb = best
-        ax.annotate(
-            name,
-            (x, y),
-            textcoords="offset points",
-            xytext=(dx, dy),
-            ha=ha,
-            va=va,
+    # Round 0: greedy sequential pass (already-placed labels are obstacles).
+    placed = [None] * len(points)
+    obstacles = list(extra_obstacles)
+    for i in order:
+        b = choose(i, obstacles)
+        placed[i] = b
+        obstacles.append(b[1])
+
+    # Repair rounds: every label re-chooses with everyone else's previous
+    # position as obstacles, so no single greedy stumble cascades.
+    for _ in range(2):
+        old = [p[1] for p in placed]
+        new = [None] * len(points)
+        for i in order:
+            obs = list(extra_obstacles) + [old[j] for j in range(len(points)) if j != i]
+            new[i] = choose(i, obs)
+        placed = new
+
+    inv = ax.transData.inverted()
+    for i in order:
+        left, right, icon, x, y = points[i]
+        _, bb, left_x0, vc, icon_cx, right_x0, _ = placed[i]
+        ((tx, ty),) = inv.transform([(left_x0, vc)])
+        ax.text(
+            tx,
+            ty,
+            left,
+            ha="left",
+            va="center",
             fontsize=LABEL_SIZE,
             color="#1f2328",
             zorder=4,
         )
-        # Leader line from the dot to the nearest edge of its label. Always drawn
-        # for points in a cluster (where proximity alone is ambiguous), and for
-        # any label that ended up well away from its dot.
+        if icon is not None:
+            fill, edge = ICON_COLORS[icon]
+            ((ix, iy),) = inv.transform([(icon_cx, vc)])
+            ax.plot(
+                [ix],
+                [iy],
+                marker=ICON_PATHS[icon],
+                markersize=ICON_SIZE[icon] * 72 / DPI,
+                markerfacecolor=fill,
+                markeredgecolor=edge,
+                markeredgewidth=1.0,
+                linestyle="none",
+                zorder=4,
+                clip_on=False,
+            )
+        if right:
+            ((rx, ry),) = inv.transform([(right_x0, vc)])
+            ax.text(
+                rx,
+                ry,
+                right,
+                ha="left",
+                va="center",
+                fontsize=LABEL_SIZE,
+                color="#1f2328",
+                zorder=4,
+            )
+        # Leader line from the dot to the nearest edge of its label. Always
+        # drawn for points in a cluster (where proximity alone is ambiguous),
+        # and for any label that ended up well away from its dot.
         px, py = ax.transData.transform((x, y))
         anchor_x = max(bb[0], min(px, bb[2]))  # closest point on the label bbox
         anchor_y = max(bb[1], min(py, bb[3]))
@@ -491,7 +710,6 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
                 sx_, sy_ = px, py
             # Convert back to data coords: pixel-space artists don't survive the
             # SVG renderer's own coordinate space, data coords do.
-            inv = ax.transData.inverted()
             (x0, y0), (x1, y1) = inv.transform([(sx_, sy_), (anchor_x, anchor_y)])
             ax.add_line(
                 Line2D(
@@ -503,7 +721,6 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
                     clip_on=False,
                 )
             )
-        obstacles.append(bb)
 
 
 def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
@@ -521,8 +738,17 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
         zorder=3,
     )
 
-    # Faint dotted Pareto frontier: max intelligence for each cost
-    pts = sorted(zip(xs, ys), key=lambda p: (p[0], -p[1]))
+    # Faint dotted Pareto frontier: max intelligence for each cost. Models that
+    # train on your data ([TRAIN] in the name) are excluded: they are the same
+    # offers at providers that train on your data, not separate models.
+    pts = sorted(
+        (
+            (m.cost_per_task, m.intelligence)
+            for m in models
+            if not m.trains_on_your_data
+        ),
+        key=lambda p: (p[0], -p[1]),
+    )
     frontier_x, frontier_y = [], []
     best_int = -float("inf")
     for x, y in pts:
@@ -602,6 +828,36 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
         )
         for p in present
     ]
+    if any("⚡" in m.name for m in models):
+        fill, edge = ICON_COLORS["bolt"]
+        handles.append(
+            Line2D(
+                [0],
+                [0],
+                marker=ICON_PATHS["bolt"],
+                linestyle="none",
+                markersize=10,
+                markerfacecolor=fill,
+                markeredgecolor=edge,
+                markeredgewidth=0.9,
+                label="Local electricity cost",
+            )
+        )
+    if any(m.trains_on_your_data for m in models):
+        fill, edge = ICON_COLORS["mask"]
+        handles.append(
+            Line2D(
+                [0],
+                [0],
+                marker=ICON_PATHS["mask"],
+                linestyle="none",
+                markersize=12,
+                markerfacecolor=fill,
+                markeredgecolor=edge,
+                markeredgewidth=0.9,
+                label="Trains on your data",
+            )
+        )
     legend = ax.legend(
         handles=handles,
         loc="lower right",
@@ -620,7 +876,11 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
     place_labels(
         ax,
         fig,
-        [(m.name, m.cost_per_task, m.intelligence) for m in models],
+        [
+            (left, right, icon, m.cost_per_task, m.intelligence)
+            for m in models
+            for left, icon, right in [_split_icon(m.name)]
+        ],
         marker_r_px,
         extra_obstacles=(legend_box,),
     )
