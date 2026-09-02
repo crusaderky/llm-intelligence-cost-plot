@@ -141,9 +141,9 @@ MODELS = [
     Model.local("Apodex", "Apodex-1.1", 44, 47538, 127),
     Model.local("Meta", "Muse Glimmer", 35, 11993, 124),
     Model.local("Alibaba", "Qwen3.8-27B (non-reasoning)", 34.8, 17589, 67),
-    Model.local("Alibaba", "Qwen3.8-27B (low)", 42.9, 26040, 67),
-    Model.local("Alibaba", "Qwen3.8-27B (medium)", 44.5, 31215, 67),
-    Model.local("Alibaba", "Qwen3.8-27B (xhigh)", 52.0, 47166, 67),
+    Model.local("Alibaba", "Qwen3.8-27B (low)", 42.9, 26040, 60),
+    Model.local("Alibaba", "Qwen3.8-27B (medium)", 44.5, 31215, 60),
+    Model.local("Alibaba", "Qwen3.8-27B (xhigh)", 52.0, 47166, 60),
     Model.local("Alibaba", "Qwen3.8-Flash-Next", 55.7, 61494, 25, hardware=STRIX_HALO),
     Model("Alibaba", "Qwen3.8-Flash-Next", 55.7, 0.097),
     Model.reduced_price(
