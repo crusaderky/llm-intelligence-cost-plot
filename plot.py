@@ -138,7 +138,7 @@ class Model(NamedTuple):
 MODELS = [
     Model.local("InclusionAI", "Ling-3.0-Tiny", 25, 50676, 200),
     Model.local("Alibaba", "Qwen3.6-35B-A3B", 32, 30591, 150),
-    Model.local("Apodex", "Apodex-1.1", 44, 47538, 127),
+    Model.local("Ornith AI", "Ornith-1.5-35B-A3B", 32 * 1.15, 30591, 110),
     Model.local("Meta", "Muse Glimmer", 35, 11993, 124),
     Model.local("Alibaba", "Qwen3.8-27B (non-reasoning)", 34.8, 17589, 67),
     Model.local("Alibaba", "Qwen3.8-27B (low)", 42.9, 26040, 60),
