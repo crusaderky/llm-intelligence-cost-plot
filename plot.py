@@ -261,7 +261,7 @@ MODELS = [
     Model("Anthropic", "Claude Fable 5.1 (max)", 65.66, 3.687),
 ]
 
-HIGH_INTELLIGENCE_THRESHOLD = 50
+HIGH_INTELLIGENCE_THRESHOLD = 51
 LOW_COST_THRESHOLD = 0.05
 
 # The two plots to generate:

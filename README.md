@@ -52,7 +52,7 @@ models.
 
 A good rule of thumb for reading the intelligence axis: a one-point difference is
 unlikely to be noticeable by most, while a 5-point gap is substantial. It's important to
-point out that an intelligence score of 50, which is the rock bottom in this first plot,
+point out that an intelligence score of 51, which is the rock bottom in this first plot,
 is roughly what the smartest model in the world could deliver in February 2026 (Opus
 4.6).
 
