@@ -86,9 +86,6 @@ in performance/cost. Again, the area that's common to all plots is highlighted i
   different effort levels
 - Changed sub-35-billion-parameter models from datacenter pricing to cost to run locally
   (read below)
-- Added Ornith-1.5-35B-A3B. The intelligence score is extrapolated from _self-reported_
-  benchmark results by the model authors and should be taken with a healthy dose of
-  skepticism.
 
 ## Cost calculation for local models
 
