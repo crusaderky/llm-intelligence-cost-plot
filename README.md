@@ -56,7 +56,7 @@ point out that an intelligence score of 50, which is the rock bottom in this fir
 is roughly what the smartest model in the world could deliver in February 2026 (Opus
 4.6).
 
-<a href="high_intelligence.svg"><img src="high_intelligence.png" alt="Intelligence vs. Cost per Task (High Intelligence)"></a>
+<a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/high_intelligence.svg"><img src="high_intelligence.png" alt="Intelligence vs. Cost per Task (High Intelligence)"></a>
 
 The green area at the bottom left is where models become _extremely_ cheap. Let's zoom
 into it and extend the intelligence plot a bit lower, down to what can run today on a
@@ -68,12 +68,12 @@ is so small that it makes no sense to serve it from a datacenter. When comparing
 models against each other, it also offers a scale of how long each model takes to
 complete tasks.
 
-<a href="low_cost.svg"><img src="low_cost.png" alt="Intelligence vs. Cost per Task (Low Cost)"></a>
+<a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/low_cost.svg"><img src="low_cost.png" alt="Intelligence vs. Cost per Task (Low Cost)"></a>
 
 Finally, let's merge the two plots together to better visualize the diminishing returns
 in performance/cost. Again, the area that's common to all plots is highlighted in green:
 
-<a href="all_models.svg"><img src="all_models.png" alt="Intelligence vs. Cost per Task (All Models)"></a>
+<a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/all_models.svg"><img src="all_models.png" alt="Intelligence vs. Cost per Task (All Models)"></a>
 
 ## All the differences between AA's plot and mine
 
