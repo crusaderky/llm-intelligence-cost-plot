@@ -147,12 +147,20 @@ MODELS = [
     Model("Alibaba", "Qwen3.8-Flash-Next", 55.7, 0.097),
     Model.reduced_price(
         "Alibaba",
-        "Qwen3.8 Max",
+        "Qwen3.8-Max",
         58.0,
         ModelPrice(input=0.30, output=0.23, cache_read=0.38),
         nominal_price=ModelPrice(input=2.00, output=6.00, cache_read=0.25),
         cheapest_price=ModelPrice(input=2.00, output=6.00, cache_read=0.20),
     ),
+    # Model.reduced_price(
+    #     "Alibaba",
+    #     "Qwen3.8-Max-0902",
+    #     58.0 * 1.146,
+    #     ModelPrice(input=0.30, output=0.23, cache_read=0.38),
+    #     nominal_price=ModelPrice(input=2.00, output=6.00, cache_read=0.25),
+    #     cheapest_price=ModelPrice(input=2.00, output=6.00, cache_read=0.25),
+    # ),    
     Model.reduced_price(
         "DeepSeek",
         "DeepSeek V4 Flash 0731",

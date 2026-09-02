@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-09-01
+**Last updated:** 2026-09-02
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -24,11 +24,11 @@ Over time, I've become progressively more irritated by this plot, for a few reas
 
 The first issue I have with it is that it uses a logarithmic scale on the cost axis.
 Using a log scale is the only way to make you spot the difference between a model that
-costs $0.05 per task and one that costs $0.09, while the same plot contains a model that
-costs $3 — 60 times as expensive. However, the net result is that the viewers can no
-longer appreciate the immensity of the price difference between the cheap models and the
-heavy ones; nor can they realize how inconsequential the price differences are between
-the cheap models.
+costs $0.015 per task and one that costs $0.032, while the same plot contains a model
+that costs $3.69 — almost 250 times as expensive. However, the net result is that the
+viewers can no longer appreciate the immensity of the price difference between the cheap
+models and the heavy ones; nor can they realize how inconsequential the price
+differences are between the cheap models.
 
 The second thing that irks me is that it uses the official pricing from the model
 developers' own API offering. This is fine in most cases, but for open-weights models it
@@ -43,12 +43,12 @@ user will actively want to buy.
 
 ## I made my own plots
 
-All intelligence index scores are from ArtificialAnalysis.
-All points are benchmarked at maximum thinking effort where not explicitly stated otherwise.
-All cost scores are from ArtificialAnalysis too, except where noted below.
+All intelligence index scores are from ArtificialAnalysis. All points are benchmarked at
+maximum thinking effort where not explicitly stated otherwise. All cost scores are from
+ArtificialAnalysis too, except where noted below.
 
-In the first plot we see the offering, as of September 1 2026, with the most intelligent
-(and expensive) models.
+In the first plot we see the current offering with the most intelligent (and expensive)
+models.
 
 A good rule of thumb for reading the intelligence axis: a one-point difference is
 unlikely to be noticeable by most, while a 5-point gap is substantial. It's important to
@@ -56,7 +56,7 @@ point out that an intelligence score of 50, which is the rock bottom in this fir
 is roughly what the smartest model in the world could deliver in February 2026 (Opus
 4.6).
 
-![Intelligence vs. Cost per Task (High Intelligence)](high_intelligence.png)
+<a href="high_intelligence.svg"><img src="high_intelligence.png" alt="Intelligence vs. Cost per Task (High Intelligence)"></a>
 
 The green area at the bottom left is where models become _extremely_ cheap. Let's zoom
 into it and extend the intelligence plot a bit lower, down to what can run today on a
@@ -68,12 +68,12 @@ is so small that it makes no sense to serve it from a datacenter. When comparing
 models against each other, it also offers a scale of how long each model takes to
 complete tasks.
 
-![Intelligence vs. Cost per Task (Low Cost)](low_cost.png)
+<a href="low_cost.svg"><img src="low_cost.png" alt="Intelligence vs. Cost per Task (Low Cost)"></a>
 
 Finally, let's merge the two plots together to better visualize the diminishing returns
 in performance/cost. Again, the area that's common to all plots is highlighted in green:
 
-![Intelligence vs. Cost per Task (All Models)](all_models.png)
+<a href="all_models.svg"><img src="all_models.png" alt="Intelligence vs. Cost per Task (All Models)"></a>
 
 ## All the differences between AA's plot and mine
 
@@ -140,13 +140,13 @@ corporations](https://www.tomshardware.com/tech-industry/artificial-intelligence
 while the latter can be as cheap as a mobile phone subscription.
 
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
-returns: while a top-tier engineer or scientist _may_ be able to appreciate how much
-better Opus 5 (intelligence score 63, $2.34 per task) is compared to GLM-5.3
-(intelligence 60, $0.49), most people will have a hard time doing so. Going further
-down, GLM-5.3-Flash at high settings (intelligence 55, $0.023 — _one hundred times_
-cheaper than Opus) is visibly less capable when you give it very sophisticated
-tasks, like one-shotting a whole coding project on its own, but it remains _enough_ for
-90% of what people actually need. Even the highly specialized engineers and scientists
-mentioned above don't actually need the extra intelligence for a lot of what they do.
-Descending just a little bit further, an enthusiast gamer can run Qwen3.8-27B
-(intelligence 50, $0.015 in electricity) on a computer they already own.
+returns: while a top-tier engineer or scientist is probably going to be able to
+appreciate how much better Fable 5.1 (intelligence score 66, $3.69 per task) is compared
+to GLM-5.3 (intelligence 60, $0.49 — 7.5x cheaper), most people will have a hard time
+doing so. Going further down, GLM-5.3-Flash at high settings (intelligence 55, $0.023 —
+_one hundred and sixty times_ cheaper than Fable) is visibly less capable when you give
+it very sophisticated tasks, like one-shotting a whole coding project on its own, but it
+remains _enough_ for 90% of what people actually need. Even the highly specialized
+engineers and scientists mentioned above don't actually need the extra intelligence for
+a lot of what they do. Descending just a little bit further, an enthusiast gamer can run
+Qwen3.8-27B (intelligence 52, $0.015 in electricity) on a computer they already own.
