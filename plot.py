@@ -20,6 +20,7 @@ publisher / name / price / index -- just add rows and re-run.
 from __future__ import annotations
 
 import math
+import os
 from typing import NamedTuple
 
 import matplotlib
@@ -948,8 +949,9 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
         extra_obstacles=(legend_box,),
     )
 
-    fig.savefig(f"{stem}.svg", format="svg", bbox_inches="tight")
-    fig.savefig(f"{stem}.png", format="png", bbox_inches="tight")
+    os.makedirs("plots", exist_ok=True)
+    fig.savefig(f"plots/{stem}.svg", format="svg", bbox_inches="tight")
+    fig.savefig(f"plots/{stem}.png", format="png", bbox_inches="tight")
     plt.close(fig)
 
 
