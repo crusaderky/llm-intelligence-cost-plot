@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-09-02
+**Last updated:** 2026-09-03
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -56,7 +56,10 @@ point out that an intelligence score of 51, which is the rock bottom in this fir
 is roughly what the smartest model in the world could deliver in February 2026 (Opus
 4.6).
 
-Models marked with <img src="static/thief_mask.png" alt="[thief mask]" height="15" style="vertical-align: middle"> train on your data and you should not use them for anything that you would not want to become publicly available on the internet.
+Models marked with a thief mask symbol
+(<img src="static/thief_mask.png" alt="[thief mask]" height="15" style="vertical-align: middle">)
+train on your data and you should not use them for anything that you would not
+want to become publicly available on the internet.
 
 <a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/plots/high_intelligence.svg"><img src="plots/high_intelligence.png" alt="Intelligence vs. Cost per Task (High Intelligence)"></a>
 
@@ -64,11 +67,11 @@ The green area at the bottom left is where models become _extremely_ cheap. Let'
 into it and extend the intelligence plot a bit lower, down to what can run today on a
 smartphone.
 
-Some models are marked with a yellow lightning-bolt icon (⚡). It means that the cost was calculated as the
-electricity to run the model locally (details on the calculation below), since the model
-is so small that it makes no sense to serve it from a datacenter. When comparing local
-models against each other, it also offers a scale of how long each model takes to
-complete tasks.
+Some models are marked with a yellow lightning-bolt symbol (⚡). It means that the cost
+was calculated as the electricity to run the model locally (details on the calculation
+below), since the model is so small that it makes no sense to serve it from a
+datacenter. When comparing local models against each other, it also offers a scale of
+how long each model takes to complete tasks.
 
 <a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/plots/low_cost.svg"><img src="plots/low_cost.png" alt="Intelligence vs. Cost per Task (Low Cost)"></a>
 
@@ -94,7 +97,8 @@ in performance/cost. Again, the area that's common to all plots is highlighted i
 
 ## Cost calculation for local models
 
-Cost per task for models marked with the lightning-bolt icon was crudely calculated as follows:
+Cost per task for models marked with the lightning-bolt symbol (⚡) was crudely
+calculated as follows:
 
 - Take Output tokens per task [from
   artificialanalysis.ai](https://artificialanalysis.ai/#intelligence-comparison-tabs)
