@@ -26,6 +26,10 @@ from typing import NamedTuple
 import matplotlib
 
 matplotlib.use("agg")  # Agg gives us a measurable renderer; we still save SVG
+# Deterministic SVG output: hash salt makes element IDs (clip paths, glyph
+# defs) reproducible instead of uuid-derived, so re-running on unchanged data
+# produces a byte-identical SVG that git sees as clean.
+matplotlib.rcParams["svg.hashsalt"] = "llm-intelligence-cost-plot"
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
@@ -950,7 +954,14 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
     )
 
     os.makedirs("plots", exist_ok=True)
-    fig.savefig(f"plots/{stem}.svg", format="svg", bbox_inches="tight")
+    # Drop the <dc:date> timestamp so regenerating with unchanged data is a
+    # no-op for git.
+    fig.savefig(
+        f"plots/{stem}.svg",
+        format="svg",
+        bbox_inches="tight",
+        metadata={"Date": None},
+    )
     fig.savefig(f"plots/{stem}.png", format="png", bbox_inches="tight")
     plt.close(fig)
 
