@@ -139,6 +139,10 @@ class Model(NamedTuple):
     def trains_on_your_data(self) -> bool:
         return "[TRAIN]" in self.name
 
+    @property
+    def not_publicly_available(self) -> bool:
+        return "[UNAVAILABLE]" in self.name
+
 
 MODELS = [
     Model.local("InclusionAI", "Ling-3.0-Tiny", 25, 50676, 200),
@@ -210,7 +214,7 @@ MODELS = [
     ),
     Model.reduced_price(
         "Meta",
-        "Muse Spark 1.3 (max)",
+        "Muse Spark 1.3 (max) [UNAVAILABLE]",
         62.09,
         ModelPrice(input=0.18, output=0.13, cache_read=0.24) * (35221 / 30543),
         nominal_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
@@ -221,14 +225,6 @@ MODELS = [
         "Muse Spark 1.3 (xhigh) [TRAIN]",
         60.78,
         ModelPrice(input=0.18, output=0.13, cache_read=0.24),
-        nominal_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
-        cheapest_price=ModelPrice(input=0.10, output=0.20, cache_read=0.002),
-    ),
-    Model.reduced_price(
-        "Meta",
-        "Muse Spark 1.3 (max) [TRAIN]",
-        62.09,
-        ModelPrice(input=0.18, output=0.13, cache_read=0.24) * (35221 / 30543),
         nominal_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
         cheapest_price=ModelPrice(input=0.10, output=0.20, cache_read=0.002),
     ),
@@ -269,9 +265,11 @@ MODELS = [
     Model("Xiaomi", "MiMo-V2.5", 38.03, 0.0104),
     # Model("Google", "Gemini 3.8 Flash (low)", 51.75, 0.239),
     # Model("Google", "Gemini 3.8 Flash (medium)", 56.64, 0.410),
-    Model("Google", "Gemini 3.8 Flash (high)", 58.68, 0.577),
+    # Model("Google", "Gemini 3.8 Flash (high)", 58.68, 0.577),
+    Model("Google", "Gemini 3.8 Flash", 58.68, 0.577),
     # Model("SpaceXAI", "Grok 4.6 (low)", 52.0, 0.25),
-    Model("SpaceXAI", "Grok 4.6 (high)", 61.0, 0.94),
+    # Model("SpaceXAI", "Grok 4.6 (high)", 61.0, 0.94),
+    Model("SpaceXAI", "Grok 4.6", 61.0, 0.94),
     Model("OpenAI", "GPT-5.4 (Mar '26)", 53, 1.12),
     Model("OpenAI", "GPT-5.5 (Apr '26)", 56, 1.19),
     Model("OpenAI", "GPT-5.6 Luna (low)", 33.85, 0.0088),
@@ -288,7 +286,7 @@ MODELS = [
     Model("Anthropic", "Claude Opus 4.8 (May '26)", 57.5, 2.03),
     Model("Anthropic", "Claude Haiku 4.5", 29.9, 0.218),
     Model("Anthropic", "Claude Sonnet 5", 55.2, 1.72),
-    # Model("Anthropic", "Claude Opus 5 (low)", 52.5, 0.43),
+    Model("Anthropic", "Claude Opus 5 (low)", 52.5, 0.43),
     Model("Anthropic", "Claude Opus 5 (medium)", 58.74, 0.724),
     Model("Anthropic", "Claude Opus 5 (high)", 61.48, 1.226),
     Model("Anthropic", "Claude Opus 5 (xhigh)", 62.53, 1.80),
@@ -341,6 +339,7 @@ DOT_SIZE = 110
 LABEL_SIZE = 13
 PAD_PX = 4  # breathing room added around each label's bbox
 LEADER_COLOR = "#9aa1ad"
+UNAVAILABLE_COLOR = "#4b5563"  # dark grey for [UNAVAILABLE] labels
 LEADER_MIN = 8  # draw a leader once the label sits this far off the dot
 CROWD_X = 200  # px window used to decide a point is "in a cluster"
 CROWD_Y = 60
@@ -478,19 +477,25 @@ ICON_PATHS = {
 def _split_icon(name):
     """Split the marker out of a model name.
 
-    Returns (left, icon, right): the text before the marker, the icon key
-    (None, "bolt", or "mask"), and the text after it. The icon is drawn
-    between the two halves, so e.g. "(RTX 3090 ⚡)" keeps its parentheses.
-    Models that train on your data are marked with [TRAIN] in the data; the
-    plots render them with the thief mask icon.
+    Returns (left, icon, right, strike): the text before the marker, the icon
+    key (None, "bolt", or "mask"), the text after it, and whether the name
+    carried [UNAVAILABLE] (rendered dark grey with a strikethrough, no icon).
+    The icon is drawn between the two text halves, so e.g. "(RTX 3090 ⚡)"
+    keeps its parentheses. Models that train on your data are marked with
+    [TRAIN] in the data; the plots render them with the thief mask icon.
     """
     for marker, icon in (("⚡", "bolt"), ("[TRAIN]", "mask")):
         idx = name.find(marker)
         if idx >= 0:
             left = name[:idx].rstrip()
             right = name[idx + len(marker) :].lstrip()
-            return left, icon, right
-    return name, None, ""
+            return left, icon, right, False
+    idx = name.find("[UNAVAILABLE]")
+    if idx >= 0:
+        left = name[:idx].rstrip()
+        right = name[idx + len("[UNAVAILABLE]") :].lstrip()
+        return left, None, right, True
+    return name, None, "", False
 
 
 def _pad(bb, pad=PAD_PX):
@@ -513,11 +518,35 @@ def _text_width(ax, renderer, text):
     return w
 
 
+def _strike_text(ax, text, renderer, color=UNAVAILABLE_COLOR, zorder=4):
+    """Make a placed Text artist dark grey with a strikethrough. matplotlib
+    has no native strikethrough, so the strike is a line across the text's
+    measured extent (data coords, like the leader lines, so it survives SVG
+    export). zorder must sit above whatever covers the text (the legend frame
+    is zorder 5)."""
+    text.set_color(color)
+    bb = text.get_window_extent(renderer)
+    yc = (bb.y0 + bb.y1) / 2
+    inv = ax.transData.inverted()
+    (x0, y0), (x1, y1) = inv.transform([(bb.x0, yc), (bb.x1, yc)])
+    ax.add_line(
+        Line2D(
+            [x0, x1],
+            [y0, y1],
+            lw=1.0,
+            color=color,
+            zorder=zorder,
+            clip_on=False,
+        )
+    )
+
+
 def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
-    """points: [(left, right, icon, x, y)] in data coords -- icon is None,
-    "bolt", or "mask"; the icon is drawn as a colored vector marker between
-    the left and right text halves, so e.g. "(RTX 3090 ⚡)" keeps its parens.
-    Adds annotations, auto-placed.
+    """points: [(left, right, icon, strike, x, y)] in data coords -- icon is
+    None, "bolt", or "mask"; the icon is drawn as a colored vector marker
+    between the left and right text halves, so e.g. "(RTX 3090 ⚡)" keeps its
+    parens. strike=True (the [UNAVAILABLE] tag) renders the text dark grey
+    with a strikethrough and no icon. Adds annotations, auto-placed.
 
     Placement runs in rounds: a greedy sequential pass, then repair rounds in
     which every label re-chooses its spot around everyone else's position, so
@@ -533,14 +562,14 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
     # Dots are sacred: a label is never allowed to sit on top of a marker
     # unless every candidate position is worse (see scoring below).
     dot_boxes = []
-    for _, _, _, x, y in points:
+    for _, _, _, _, x, y in points:
         px, py = ax.transData.transform((x, y))
         dot_boxes.append(
             (px - marker_r_px, py - marker_r_px, px + marker_r_px, py + marker_r_px)
         )
 
     # Place the most crowded points first -- they have the fewest good options.
-    disp = [ax.transData.transform((x, y)) for _, _, _, x, y in points]
+    disp = [ax.transData.transform((x, y)) for _, _, _, _, x, y in points]
 
     def crowding(i):
         xi, yi = disp[i]
@@ -551,13 +580,13 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
         )
 
     crowd = [crowding(i) for i in range(len(points))]
-    order = sorted(range(len(points)), key=lambda i: (-crowd[i], -points[i][4]))
+    order = sorted(range(len(points)), key=lambda i: (-crowd[i], -points[i][5]))
 
     def choose(i, obstacles):
         """Pick the best candidate position for label i. Returns
         (score, bbox, left_x0, vc, icon_cx, right_x0, w_right); the bbox and
         positions are display pixels."""
-        left, right, icon, x, y = points[i]
+        left, right, icon, _strike, x, y = points[i]
         best = None
         # In a cluster, a label touching its dot is ambiguous no matter what, so
         # only consider the far slots -- that buys a visible leader line.
@@ -653,8 +682,9 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
 
     inv = ax.transData.inverted()
     for i in order:
-        left, right, icon, x, y = points[i]
+        left, right, icon, strike, x, y = points[i]
         _, bb, left_x0, vc, icon_cx, right_x0, _ = placed[i]
+        color = UNAVAILABLE_COLOR if strike else "#1f2328"
         ((tx, ty),) = inv.transform([(left_x0, vc)])
         ax.text(
             tx,
@@ -663,7 +693,7 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
             ha="left",
             va="center",
             fontsize=LABEL_SIZE,
-            color="#1f2328",
+            color=color,
             zorder=4,
         )
         if icon is not None:
@@ -690,8 +720,24 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
                 ha="left",
                 va="center",
                 fontsize=LABEL_SIZE,
-                color="#1f2328",
+                color=color,
                 zorder=4,
+            )
+        if strike:
+            # Strikethrough across the text (the bbox pad is not part of the
+            # text -- bb was padded by PAD_PX on each side).
+            (sx0, sy0), (sx1, sy1) = inv.transform(
+                [(bb[0] + PAD_PX, vc), (bb[2] - PAD_PX, vc)]
+            )
+            ax.add_line(
+                Line2D(
+                    [sx0, sx1],
+                    [sy0, sy1],
+                    lw=1.0,
+                    color=color,
+                    zorder=4,
+                    clip_on=False,
+                )
             )
         # Leader line from the dot to the nearest edge of its label. Always
         # drawn for points in a cluster (where proximity alone is ambiguous),
@@ -740,12 +786,14 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
 
     # Faint dotted Pareto frontier: max intelligence for each cost. Models that
     # train on your data ([TRAIN] in the name) are excluded: they are the same
-    # offers at providers that train on your data, not separate models.
+    # offers at providers that train on your data, not separate models. Models
+    # that are not publicly available ([UNAVAILABLE]) are excluded too: their
+    # cost is an estimate, not a real offer.
     pts = sorted(
         (
             (m.cost_per_task, m.intelligence)
             for m in models
-            if not m.trains_on_your_data
+            if not m.trains_on_your_data and not m.not_publicly_available
         ),
         key=lambda p: (p[0], -p[1]),
     )
@@ -858,6 +906,16 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
                 label="Trains on your data",
             )
         )
+    have_unavailable = any(m.not_publicly_available for m in models)
+    if have_unavailable:
+        handles.append(
+            Line2D(
+                [],
+                [],
+                linestyle="none",
+                label="Not publicly available",
+            )
+        )
     legend = ax.legend(
         handles=handles,
         loc="lower right",
@@ -872,14 +930,19 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
     legend_box = _pad(legend.get_window_extent(renderer))
+    if have_unavailable:
+        for t in legend.get_texts():
+            if t.get_text() == "Not publicly available":
+                _strike_text(ax, t, renderer, zorder=6)  # above the legend frame
+                break
     marker_r_px = (DOT_SIZE**0.5) / 2 / 72 * DPI + 2
     place_labels(
         ax,
         fig,
         [
-            (left, right, icon, m.cost_per_task, m.intelligence)
+            (left, right, icon, strike, m.cost_per_task, m.intelligence)
             for m in models
-            for left, icon, right in [_split_icon(m.name)]
+            for left, icon, right, strike in [_split_icon(m.name)]
         ],
         marker_r_px,
         extra_obstacles=(legend_box,),
