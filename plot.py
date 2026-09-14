@@ -48,6 +48,7 @@ PUBLISHERS = {
     "Meta": "#0089f4",
     "Moonshot AI": "#047AFE",
     "OpenAI": "#1f1f1f",
+    "OpenBMB": "#3B62EC",
     "Ornith AI": "#dddddd",
     "SpaceXAI": "#736cd3",
     "Tencent": "#66b7fb",
@@ -158,7 +159,7 @@ MODELS = [
     #   output     -> output (reasoning + answer)
     #   cache_read -> cacheRead + cacheWrite
     # so that the three components sum to AA's cost per task.
-    Model.local("InclusionAI", "Ling-3.0-Tiny", 11.87, 70287, 200),
+    Model.local("OpenBMB", "MiniCPM5-2B", 13.14, 21816, 180),
     Model.local("Alibaba", "Qwen3.6-35B-A3B", 18.81, 34594, 150),
     # Ornith-1.5 is not on AA: intelligence extrapolated from self-reported
     # benchmarks (Qwen3.6 x 1.15); output tokens assumed identical to Qwen3.6.
