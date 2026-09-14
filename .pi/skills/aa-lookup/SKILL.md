@@ -1,6 +1,7 @@
-______________________________________________________________________
-
-## name: aa-lookup description: Queries artificialanalysis.ai for a model's unrounded Intelligence Index and pricing (input/cache/output per M tokens, cost per task) via the AA free Data API. Use when the user asks for AA intelligence scores, model benchmark scores, or AA pricing for LLMs — replaces pixel-peeping AA's plots.
+---
+name: aa-lookup
+description: Queries artificialanalysis.ai for a model's unrounded Intelligence Index and pricing (input/cache/output per M tokens, cost per task) via the AA free Data API. Use when the user asks for AA intelligence scores, model benchmark scores, or AA pricing for LLMs — replaces pixel-peeping AA's plots.
+---
 
 # AA Lookup — Intelligence Index + pricing from Artificial Analysis
 
