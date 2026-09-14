@@ -19,6 +19,7 @@ publisher / name / price / index -- just add rows and re-run.
 
 from __future__ import annotations
 
+import argparse
 import math
 import os
 from typing import NamedTuple
@@ -150,11 +151,19 @@ class Model(NamedTuple):
 
 
 MODELS = [
+    # Data from artificialanalysis.ai (Data API + model pages)
+    # Cost per task is AA's intelligenceIndexCostPerTask, split into
+    # ModelPrice(input, output, cache_read) as:
+    #   input      -> nonCacheInput
+    #   output     -> output (reasoning + answer)
+    #   cache_read -> cacheRead + cacheWrite
+    # so that the three components sum to AA's cost per task.
     Model.local("InclusionAI", "Ling-3.0-Tiny", 25, 50676, 200),
     Model.local("Alibaba", "Qwen3.6-35B-A3B", 32, 30591, 150),
+    # Ornith-1.5 is not on AA: intelligence extrapolated from self-reported
+    # benchmarks (Qwen3.6 x 1.15); output tokens assumed identical to Qwen3.6.
     Model.local("Ornith AI", "Ornith-1.5-35B-A3B", 32 * 1.15, 30591, 110),
     Model.local("Meta", "Muse Glimmer", 35, 11993, 124),
-    Model.local("Alibaba", "Qwen3.8-27B (non-reasoning)", 34.8, 17589, 67),
     Model.local("Alibaba", "Qwen3.8-27B (low)", 42.9, 26040, 60),
     Model.local("Alibaba", "Qwen3.8-27B (medium)", 44.5, 31215, 60),
     Model.local("Alibaba", "Qwen3.8-27B (xhigh)", 52.0, 47166, 60),
@@ -194,14 +203,6 @@ MODELS = [
         cheapest_price=ModelPrice(input=0.0825, output=0.33, cache_read=0.02063),
     ),
     Model.reduced_price(
-        "Tencent",
-        "Hy4 preview",
-        57.4 * 51.5 / 51.1,
-        ModelPrice(input=0.09, output=0.18, cache_read=0.41),
-        nominal_price=ModelPrice(input=1.40, output=4.40, cache_read=0.26),
-        cheapest_price=ModelPrice(input=0.834, output=2.501, cache_read=0.042),
-    ),
-    Model.reduced_price(
         "Meta",
         "Muse Spark 1.3",
         62.09,
@@ -212,7 +213,7 @@ MODELS = [
     Model.reduced_price(
         "Meta",
         "Muse Spark 1.3 [TRAIN]",
-        60.78,
+        62.09,
         ModelPrice(input=0.18, output=0.13, cache_read=0.24) * (35221 / 30543),
         nominal_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
         cheapest_price=ModelPrice(input=0.10, output=0.20, cache_read=0.002),
@@ -254,7 +255,6 @@ MODELS = [
     Model("Xiaomi", "MiMo-V2.5", 38.03, 0.0104),
     Model("Google", "Gemini 3.8 Flash", 58.68, 0.577),
     Model("SpaceXAI", "Grok 4.6", 61.0, 0.94),
-    Model("OpenAI", "GPT-5.4 (Mar '26)", 53, 1.12),
     Model("OpenAI", "GPT-5.5 (Apr '26)", 56, 1.19),
     Model("OpenAI", "GPT-5.6 Luna (low)", 33.85, 0.0088),
     Model("OpenAI", "GPT-5.6 Luna (medium)", 38.90, 0.0113),
@@ -269,7 +269,6 @@ MODELS = [
     Model("OpenAI", "GPT-6 Astra (high)", 60.7, 0.96),
     Model("OpenAI", "GPT-6 Astra (xhigh)", 61.0, 1.20),
     Model("OpenAI", "GPT-6 Astra (max)", 61.3, 1.67),
-    Model("Anthropic", "Claude Opus 4.7 (Apr '26)", 55.0, 2.23),
     Model("Anthropic", "Claude Opus 4.8 (May '26)", 57.5, 2.03),
     Model("Anthropic", "Claude Haiku 4.5", 29.9, 0.218),
     Model("Anthropic", "Claude Sonnet 5", 55.2, 1.72),
@@ -286,6 +285,8 @@ MODELS = [
     Model("Anthropic", "Claude Fable 5.1 (max)", 65.66, 3.687),
 ]
 
+# Rock bottom of the high-intelligence plot: what the smartest model in the
+# world could deliver in February 2026 (Opus 4.6)
 HIGH_INTELLIGENCE_THRESHOLD = 51
 LOW_COST_THRESHOLD = 0.05
 
@@ -322,6 +323,7 @@ PLOTS = [
 # --- knobs -----------------------------------------------------------------
 FIG_W, FIG_H = 26, 14  # inches
 DPI = 100
+VERBOSE = False  # set by --verbose: report residual label overlaps to stderr
 DOT_SIZE = 110
 LABEL_SIZE = 13
 PAD_PX = 4  # breathing room added around each label's bbox
@@ -370,6 +372,34 @@ CANDIDATES = [
     (10, -79, "left", "top"),
     (-10, 79, "right", "bottom"),
     (-10, -79, "right", "top"),
+    # Wide horizontal slots: last resort when a dense cluster leaves no
+    # vertical room, e.g. two dots at the same intelligence level.
+    (26, 0, "left", "center"),
+    (-26, 0, "right", "center"),
+    (26, 9, "left", "bottom"),
+    (26, -9, "left", "top"),
+    (-26, 9, "right", "bottom"),
+    (-26, -9, "right", "top"),
+    (26, 23, "left", "bottom"),
+    (26, -23, "left", "top"),
+    (-26, 23, "right", "bottom"),
+    (-26, -23, "right", "top"),
+    # Very tall verticals and wide diagonals: escape hatches for dense
+    # clusters where every closer slot is taken.
+    (0, 94, "center", "bottom"),
+    (0, -94, "center", "top"),
+    (10, 93, "left", "bottom"),
+    (10, -93, "left", "top"),
+    (-10, 93, "right", "bottom"),
+    (-10, -93, "right", "top"),
+    (26, 37, "left", "bottom"),
+    (26, -37, "left", "top"),
+    (-26, 37, "right", "bottom"),
+    (-26, -37, "right", "top"),
+    (26, 51, "left", "bottom"),
+    (26, -51, "left", "top"),
+    (-26, 51, "right", "bottom"),
+    (-26, -51, "right", "top"),
 ]
 
 
@@ -657,16 +687,45 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
         placed[i] = b
         obstacles.append(b[1])
 
-    # Repair rounds: every label re-chooses with everyone else's previous
-    # position as obstacles, so no single greedy stumble cascades.
-    for _ in range(2):
-        old = [p[1] for p in placed]
-        new = [None] * len(points)
+    # Repair rounds: re-place every label, in crowd order, against the latest
+    # positions of the others (Gauss-Seidel style). Updating every label
+    # against a stale snapshot instead can end with two labels sitting on top
+    # of each other, each having dodged where the other used to be. Iterate
+    # until no label collides with anything, or give up after a fixed number
+    # of rounds (dense clusters may be unsatisfiable).
+    for _round in range(10):
         for i in order:
-            obs = list(extra_obstacles) + [old[j] for j in range(len(points)) if j != i]
-            new[i] = choose(i, obs)
-        placed = new
+            obs = list(extra_obstacles) + [
+                placed[j][1] for j in range(len(points)) if j != i
+            ]
+            placed[i] = choose(i, obs)
+        if not any(
+            _overlap_area(placed[i][1], placed[j][1]) > 4 * PAD_PX * PAD_PX
+            for i in range(len(points))
+            for j in range(i + 1, len(points))
+        ):
+            break
 
+    # Diagnostics toggle, set by --verbose in main().
+    if VERBOSE:
+        # Print pairwise overlaps between the *unpadded* label extents, in
+        # display px. Padded boxes may legally overlap by up to PAD_PX on
+        # each side; that is not a real collision.
+        for i in range(len(points)):
+            for j in range(i + 1, len(points)):
+                a = tuple(
+                    v + PAD_PX * s_ for v, s_ in zip(placed[i][1], (1, 1, -1, -1))
+                )
+                b = tuple(
+                    v + PAD_PX * s_ for v, s_ in zip(placed[j][1], (1, 1, -1, -1))
+                )
+                ov = _overlap_area(a, b)
+                if ov > 1:
+                    print(
+                        f"OVERLAP {ov:.0f}px^2: "
+                        f"[{points[i][0][:30]}|{points[i][1][:20]}] vs "
+                        f"[{points[j][0][:30]}|{points[j][1][:20]}]",
+                    )
     inv = ax.transData.inverted()
     for i in order:
         left, right, icon, strike, x, y = points[i]
@@ -948,7 +1007,18 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
     plt.close(fig)
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="report residual label overlaps to stderr",
+    )
+    args = parser.parse_args(argv)
+    global VERBOSE
+    VERBOSE = args.verbose
+
     models_by_stem = {}
     for title, filt, step, fmt, band_side, stem in PLOTS:
         models = [m for m in MODELS if filt(m)]
