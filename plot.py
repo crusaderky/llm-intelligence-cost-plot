@@ -830,15 +830,19 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
         zorder=3,
     )
 
-    # Faint dotted Pareto frontier: max intelligence for each cost. Models that
-    # train on your data ([TRAIN] in the name) are excluded: they are the same
-    # offers at providers that train on your data, not separate models. Models
-    # that are not publicly available ([UNAVAILABLE]) are excluded too: their
-    # cost is an estimate, not a real offer.
+    # Faint dotted Pareto frontier: max intelligence for each cost, computed
+    # over ALL models, not this plot's filtered view. Each plot is a zoom of
+    # the same frontier; the axes clip the line, so on the zoomed plots it
+    # runs off the edge ("continues"), while on the all-models plot it ends
+    # at the frontier's true last step. Models that train on your data
+    # ([TRAIN] in the name) are excluded: they are the same offers at
+    # providers that train on your data, not separate models. Models that are
+    # not publicly available ([UNAVAILABLE]) are excluded too: their cost is
+    # an estimate, not a real offer.
     pts = sorted(
         (
             (m.cost_per_task, m.intelligence)
-            for m in models
+            for m in MODELS
             if not m.trains_on_your_data and not m.not_publicly_available
         ),
         key=lambda p: (p[0], -p[1]),
