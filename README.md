@@ -83,9 +83,9 @@ in performance/cost. Again, the area that's common to all plots is highlighted i
 ## All the differences between AA's plot and mine
 
 - Changed x scale from logarithmic to linear, because people's money is not logarithmic
-- Changed Kimi K3, Qwen3.8 Max, DeepSeek V4 Flash 0731, GLM-5.3, GLM-5.3-Flash, and Hy3
+- Changed Kimi K3, Qwen3.8 Max, DeepSeek V4.1 Flash, GLM-5.3, GLM-5.3-Flash, and Hy3
   to the price you can get them for on OpenRouter (excessively slow or unreliable
-  providers and those without Zero Data Retention policies are excluded)
+  providers are excluded)
 - Extrapolated points for GLM-5.3-Flash at high reasoning effort, by crossing AA scores
   at max effort with [Z.ai's coding scores](https://z.ai/blog/glm-5.3-flash) at
   different effort levels
