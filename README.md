@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-09-03
+**Last updated:** 2026-09-14
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -24,8 +24,8 @@ Over time, I've become progressively more irritated by this plot, for a few reas
 
 The first issue I have with it is that it uses a logarithmic scale on the cost axis.
 Using a log scale is the only way to make you spot the difference between a model that
-costs $0.015 per task and one that costs $0.032, while the same plot contains a model
-that costs $3.69 — almost 250 times as expensive. However, the net result is that the
+costs $0.010 per task and one that costs $0.019, while the same plot contains a model
+that costs $7.63 — over 700 times as expensive. However, the net result is that the
 viewers can no longer appreciate the immensity of the price difference between the cheap
 models and the heavy ones; nor can they realize how inconsequential the price
 differences are between the cheap models.
@@ -52,7 +52,7 @@ models.
 
 A good rule of thumb for reading the intelligence axis: a one-point difference is
 unlikely to be noticeable by most, while a 5-point gap is substantial. It's important to
-point out that an intelligence score of 51, which is the rock bottom in this first plot,
+point out that an intelligence score of 32, which is the rock bottom in this first plot,
 is roughly what the smartest model in the world could deliver in February 2026 (Opus
 4.6).
 
@@ -147,12 +147,12 @@ while the latter can be as cheap as a mobile phone subscription.
 
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
-appreciate how much better Fable 5.1 (intelligence score 66, $3.69 per task) is compared
-to GLM-5.3 (intelligence 60, $0.49 — 7.5x cheaper), most people will have a hard time
-doing so. Going further down, GLM-5.3-Flash at high settings (intelligence 55, $0.023 —
-_one hundred and sixty times_ cheaper than Fable) is visibly less capable when you give
+appreciate how much better Fable 5.1 (intelligence score 53, $7.63 per task) is compared
+to GLM-5.3 (intelligence 45, $1.07 — 7x cheaper), most people will have a hard time
+doing so. Going further down, GLM-5.3-Flash at high settings (intelligence 41, $0.073 —
+_one hundred times_ cheaper than Fable) is visibly less capable when you give
 it very sophisticated tasks, like one-shotting a whole coding project on its own, but it
 remains _enough_ for 90% of what people actually need. Even the highly specialized
 engineers and scientists mentioned above don't actually need the extra intelligence for
 a lot of what they do. Descending just a little bit further, an enthusiast gamer can run
-Qwen3.8-27B (intelligence 52, $0.015 in electricity) on a computer they already own.
+Qwen3.8-27B (intelligence 34, $0.023 in electricity) on a computer they already own.
