@@ -187,7 +187,7 @@ MODELS = [
         39.5454,
         ModelPrice(input=0.0039, output=0.1063, cache_read=0.1550, total=0.2652),
         nominal_price=ModelPrice(input=0.30, output=1.20, cache_read=0.006),
-        cheapest_price=ModelPrice(input=0.285, output=1.14, cache_read=0.00285),
+        cheapest_price=ModelPrice(input=0.15, output=0.60, cache_read=0.0015),
     ),
     Model.reduced_price(
         "Tencent",
@@ -220,7 +220,7 @@ MODELS = [
         41.91 * 28.01 / 28.99,
         ModelPrice(input=0.0033, output=0.0343, cache_read=0.2156) * (70610 / 138690),
         nominal_price=ModelPrice(input=0.15, output=0.50, cache_read=0.03),
-        cheapest_price=ModelPrice(input=0.075, output=0.25, cache_read=0.015),
+        cheapest_price=ModelPrice(input=0.10, output=0.3333, cache_read=0.02),
     ),
     Model.reduced_price(
         "Z AI",
@@ -228,7 +228,7 @@ MODELS = [
         41.91,
         ModelPrice(input=0.0033, output=0.0343, cache_read=0.2156),
         nominal_price=ModelPrice(input=0.15, output=0.50, cache_read=0.03),
-        cheapest_price=ModelPrice(input=0.075, output=0.25, cache_read=0.015),
+        cheapest_price=ModelPrice(input=0.10, output=0.3333, cache_read=0.02),
     ),
     Model.reduced_price(
         "Z AI",
@@ -236,7 +236,7 @@ MODELS = [
         44.86,
         ModelPrice(input=0.0135, output=0.3130, cache_read=1.6792),
         nominal_price=ModelPrice(input=1.40, output=4.40, cache_read=0.26),
-        cheapest_price=ModelPrice(input=1.20, output=4.00, cache_read=0.12),
+        cheapest_price=ModelPrice(input=1.40, output=4.40, cache_read=0.14),
     ),
     Model.reduced_price(
         "Moonshot AI",
@@ -244,7 +244,7 @@ MODELS = [
         43.78,
         ModelPrice(input=0.0662, output=0.7268, cache_read=1.2071),
         nominal_price=ModelPrice(input=3.00, output=15.00, cache_read=0.30),
-        cheapest_price=ModelPrice(input=2.85, output=14.25, cache_read=0.285),
+        cheapest_price=ModelPrice(input=2.60, output=13.00, cache_read=0.26),
     ),
     Model("Xiaomi", "MiMo-V2.5", 22.30, 0.0191),
     Model("Google", "Gemini 3.8 Flash", 41.19, 1.2428),
