@@ -39,6 +39,7 @@ from matplotlib.ticker import FormatStrFormatter, MultipleLocator
 
 # Publisher colors, replicated from artificialanalysis.ai
 PUBLISHERS = {
+    "Accio": "#43674c",
     "Alibaba": "#ff7018",
     "Anthropic": "#cc785c",
     "Apodex": "#30d8d1",
@@ -161,9 +162,9 @@ MODELS = [
     # so that the three components sum to AA's cost per task.
     Model.local("OpenBMB", "MiniCPM5-2B", 13.14, 21816, 180),
     Model.local("Alibaba", "Qwen3.6-35B-A3B", 18.81, 34594, 150),
-    # Ornith-1.5 is not on AA: intelligence extrapolated from self-reported
-    # benchmarks (Qwen3.6 x 1.15); output tokens assumed identical to Qwen3.6.
-    Model.local("Ornith AI", "Ornith-1.5-35B-A3B", 18.81 * 1.15, 34594, 110),
+    # Occamy is not on AA: intelligence extrapolated from self-reported
+    # benchmarks vs Qwen3.6 and GLM5.2.
+    Model.local("Accio", "Occamy-1.0", 30.6, 34594 * 1.23, 106),
     Model.local("Meta", "Muse Glimmer", 18.07, 13925, 124),
     Model.local("Alibaba", "Qwen3.8-27B (low)", 26.49, 45426, 60),
     Model.local("Alibaba", "Qwen3.8-27B (medium)", 27.81, 51943, 60),
