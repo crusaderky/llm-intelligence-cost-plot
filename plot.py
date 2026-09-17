@@ -265,6 +265,7 @@ MODELS = [
     Model("OpenAI", "GPT-6 Astra (max)", 52.81, 3.2575),
     Model("Anthropic", "Claude Opus 4.8 (May '26)", 41.99, 4.0810),
     Model("Anthropic", "Claude Haiku 4.5", 17.59, 0.2077),
+    Model("Anthropic", "Claude Sonnet 4.6 (max) (Feb '26)", 30, 2.49),
     Model("Anthropic", "Claude Sonnet 5", 38.36, 5.0912),
     Model("Anthropic", "Claude Opus 5 (low)", 39.79, 1.0983),
     Model("Anthropic", "Claude Opus 5 (medium)", 45.06, 2.1895),
