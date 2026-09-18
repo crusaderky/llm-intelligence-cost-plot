@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-09-16
+**Last updated:** 2026-09-18
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -24,17 +24,19 @@ Over time, I've become progressively more irritated by this plot, for a few reas
 
 The first issue I have with it is that it uses a logarithmic scale on the cost axis.
 Using a log scale is the only way to make you spot the difference between a model that
-costs $0.010 per task and one that costs $0.019, while the same plot contains a model
-that costs $7.63 — over 700 times as expensive. However, the net result is that the
+costs $0.005 per task and one that costs $0.053, while the same plot contains a model
+that costs $4.26 — 850 times as expensive. However, the net result is that the
 viewers can no longer appreciate the immensity of the price difference between the cheap
 models and the heavy ones; nor can they realize how inconsequential the price
 differences are between the cheap models.
 
-The second thing that irks me is that it uses the official pricing from the model
-developers' own API offering. This is fine in most cases, but for open-weights models it
-can be a lot more expensive than what the exact same model can be rented for from
-third-party API providers. [OpenRouter](https://openrouter.ai) makes it very easy to
-switch providers on the fly and always get the cheapest offer.
+The second thing that irks me is that it uses the official baseline pricing from the
+model developers' own API offering, with input cache hit rate sampled on the very first
+days the model was released. This is, in many cases, vastly different from what the
+exact same model can be rented either for from third-party API providers or by using
+opt-in service tiers (e.g. OpenAI's `flex`, which costs half the baseline).
+[OpenRouter](https://openrouter.ai) makes it very easy to switch providers and service
+tiers on the fly and always get the cheapest offer.
 
 The third and final issue is that local models — those that can fit on consumer hardware
 — appear on the plot at their datacenter pricing, which is always very expensive in
@@ -83,9 +85,8 @@ in performance/cost. Again, the area that's common to all plots is highlighted i
 ## All the differences between AA's plot and mine
 
 - Changed x scale from logarithmic to linear, because people's money is not logarithmic
-- Changed Kimi K3, Qwen3.8 Max, DeepSeek V4.1 Flash, GLM-5.3, GLM-5.3-Flash, and Hy3
-  to the price you can get them for on OpenRouter (excessively slow or unreliable
-  providers are excluded)
+- Recalculated price of all datacenter models to use the cheapest effective price currently
+  available on OpenRouter (excessively slow or unreliable providers are excluded).  
 - Extrapolated points for GLM-5.3-Flash at high reasoning effort, by crossing AA scores
   at max effort with [Z.ai's coding scores](https://z.ai/blog/glm-5.3-flash) at
   different effort levels
@@ -94,6 +95,39 @@ in performance/cost. Again, the area that's common to all plots is highlighted i
 - Added [Occamy-1.0](https://huggingface.co/Accio-Lab/occamy-1.0). The intelligence
   score is extrapolated from _self-reported_ benchmark results by the model authors and
   should be taken with a healthy dose of skepticism.
+
+## Cost calculation for datacenter models
+
+Cost per task for models served by datacenters was calculated as follows:
+
+- From ArtificialAnalysis, read the breakdown of the cost per task (input, output, cached
+  input) and the pricing from which it was calculated
+- From the model's page on OpenRouter, discard anomalously poor performers on
+
+  - GPQA Diamond
+  - TAU-Bench
+  - Tool Call Error Rate
+  - Structured Output Error Rate
+  - Uptime
+
+  Include opt-in service tiers, like OpenAI's `flex`. Providers that train on your data
+  are excluded and appear on the plot as a separate entry (e.g. Muse Spark).
+
+- Note down Effective in and Effective out.
+- Find the cheapest overall provider assuming 99%/1% input/output rate.
+- Calculate
+
+  ```python
+  input tokens = (
+    input price per task / AA input price 
+    + cached input price per task / AA cached input price
+  )
+  output tokens = output price per task / AA output price
+  openrouter price per task = (
+    input tokens * effective input price
+    + output tokens * effective output price
+  )
+  ```
 
 ## Cost calculation for local models
 
@@ -132,10 +166,11 @@ cost:
 
 | Memory | Hardware | Models |
 | --- | --- | --- |
-| 128 GB RAM | Strix Halo ($3,600)<br>DGX Spark ($4,300)<br>Mac Studio M5 Max ($5,100)<br>MacBook Pro M5 Max ($7,150) | Qwen3.8-Flash<br>GLM-5.3-Flash (degraded intelligence)<br>DeepSeek-V4-Flash (degraded intelligence) |
-| 256 GB RAM | 2x DGX Spark ($8,700)<br>Mac Studio M5 Ultra ($11,300) | GLM-5.3-Flash<br>DeepSeek-V4-Flash |
-| 512 GB RAM | 2x Mac Studio M5 Ultra ($22,600) | GLM-5.3 |
-| 2 TB RAM | 2x TensTorrent Galaxy Blackhole ($320,000) | Kimi K3 |
+| 128 GB RAM | Strix Halo ($3,600)<br>DGX Spark ($4,300)<br>Mac Studio M5 Max ($5,100)<br>MacBook Pro M5 Max ($7,150) | Qwen3.8-Flash<br> |
+| 256 GB RAM | 2x DGX Spark ($8,700)<br>Mac Studio M5 Ultra ($11,300) | GLM-5.3-Flash |
+| 384 GB RAM | 3x DGX Spark ($13,200)<br> | DeepSeek-V4.1-Flash |
+| 512 GB RAM | 4x DGX Spark + QFP28 switch($18,400)<br>2x Mac Studio M5 Ultra ($22,600) | GLM-5.3 |
+| 2 TB RAM | 2x TensTorrent Galaxy Blackhole ($320,000) | Kimi K3<br>Qwen3.8-Max |
 
 ## Conclusion
 
@@ -147,10 +182,10 @@ while the latter can be as cheap as a mobile phone subscription.
 
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
-appreciate how much better Fable 5.1 (intelligence score 53, $7.63 per task) is compared
-to GLM-5.3 (intelligence 45, $1.23 — 6x cheaper), most people will have a hard time
-doing so. Going further down, GLM-5.3-Flash at high settings (intelligence 41, $0.086 —
-almost _ninety times_ cheaper than Fable) is visibly less capable when you give
+appreciate how much better Fable 5.1 (intelligence score 53, $4.26 per task) is compared
+to GLM-5.3 (intelligence 45, $1.46 — almost 3x cheaper), most people will have a hard
+time doing so. Going further down, GLM-5.3-Flash at high settings (intelligence 41,
+$0.11 — almost _fourty times_ cheaper than Fable) is visibly less capable when you give
 it very sophisticated tasks, like one-shotting a whole coding project on its own, but it
 remains _enough_ for 90% of what people actually need. Even the highly specialized
 engineers and scientists mentioned above don't actually need the extra intelligence for
