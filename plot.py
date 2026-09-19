@@ -295,7 +295,7 @@ MODELS = [
         38.63,
         ModelPrice(input=1.9242, output=0.7097, cache_read=0.0),
         nominal_price=ModelPrice(input=5.00, output=30.00, cache_read=0.5),
-        cheapest_price=EffectivePrice(1.32, 30.04),
+        cheapest_price=EffectivePrice(1.437, 15.07),
     ),
     Model.openrouter(
         "OpenAI",
@@ -303,7 +303,7 @@ MODELS = [
         21.55,
         ModelPrice(input=0.0068, output=0.0030, cache_read=0.0),
         nominal_price=ModelPrice(input=0.20, output=1.20, cache_read=0.02),
-        cheapest_price=EffectivePrice(0.0727, 1.2026),
+        cheapest_price=EffectivePrice(0.0448, 0.6),
     ),
     Model.openrouter(
         "OpenAI",
@@ -311,7 +311,7 @@ MODELS = [
         25.48,
         ModelPrice(input=0.0102, output=0.0054, cache_read=0.0),
         nominal_price=ModelPrice(input=0.20, output=1.20, cache_read=0.02),
-        cheapest_price=EffectivePrice(0.0727, 1.2026),
+        cheapest_price=EffectivePrice(0.0448, 0.6),
     ),
     Model.openrouter(
         "OpenAI",
@@ -319,7 +319,7 @@ MODELS = [
         32.41,
         ModelPrice(input=0.0273, output=0.0166, cache_read=0.0),
         nominal_price=ModelPrice(input=0.20, output=1.20, cache_read=0.02),
-        cheapest_price=EffectivePrice(0.0727, 1.2026),
+        cheapest_price=EffectivePrice(0.0448, 0.6),
     ),
     Model.openrouter(
         "OpenAI",
@@ -327,7 +327,7 @@ MODELS = [
         34.77,
         ModelPrice(input=0.0570, output=0.0283, cache_read=0.0),
         nominal_price=ModelPrice(input=0.20, output=1.20, cache_read=0.02),
-        cheapest_price=EffectivePrice(0.0727, 1.2026),
+        cheapest_price=EffectivePrice(0.0448, 0.6),
     ),
     Model.openrouter(
         "OpenAI",
@@ -335,7 +335,7 @@ MODELS = [
         37.50,
         ModelPrice(input=0.1288, output=0.0495, cache_read=0.0),
         nominal_price=ModelPrice(input=0.20, output=1.20, cache_read=0.02),
-        cheapest_price=EffectivePrice(0.0727, 1.2026),
+        cheapest_price=EffectivePrice(0.0448, 0.6),
     ),
     Model.openrouter(
         "OpenAI",
@@ -343,7 +343,7 @@ MODELS = [
         47.06,
         ModelPrice(input=1.4023, output=0.5862, cache_read=0.0),
         nominal_price=ModelPrice(input=4.00, output=20.00, cache_read=0.4),
-        cheapest_price=EffectivePrice(0.5203, 10.5805),
+        cheapest_price=EffectivePrice(0.3022, 5.2687),
     ),
     Model.openrouter(
         "OpenAI",
@@ -351,7 +351,7 @@ MODELS = [
         45.9945,
         ModelPrice(input=0.5959, output=0.2216, cache_read=0.0),
         nominal_price=ModelPrice(input=10.00, output=50.00, cache_read=1.0),
-        cheapest_price=EffectivePrice(2.2441, 53.7549),
+        cheapest_price=EffectivePrice(0.9016, 26.8141),
     ),
     Model.openrouter(
         "OpenAI",
@@ -359,7 +359,7 @@ MODELS = [
         49.6685,
         ModelPrice(input=1.0612, output=0.4795, cache_read=0.0),
         nominal_price=ModelPrice(input=10.00, output=50.00, cache_read=1.0),
-        cheapest_price=EffectivePrice(2.2441, 53.7549),
+        cheapest_price=EffectivePrice(0.9016, 26.8141),
     ),
     Model.openrouter(
         "OpenAI",
@@ -367,7 +367,7 @@ MODELS = [
         51.05,
         ModelPrice(input=1.1317, output=0.5897, cache_read=0.0),
         nominal_price=ModelPrice(input=10.00, output=50.00, cache_read=1.0),
-        cheapest_price=EffectivePrice(2.2441, 53.7549),
+        cheapest_price=EffectivePrice(0.9016, 26.8141),
     ),
     Model.openrouter(
         "OpenAI",
@@ -375,7 +375,7 @@ MODELS = [
         52.51,
         ModelPrice(input=1.4637, output=0.8451, cache_read=0.0),
         nominal_price=ModelPrice(input=10.00, output=50.00, cache_read=1.0),
-        cheapest_price=EffectivePrice(2.2441, 53.7549),
+        cheapest_price=EffectivePrice(0.9016, 26.8141),
     ),
     Model.openrouter(
         "OpenAI",
@@ -383,7 +383,7 @@ MODELS = [
         52.81,
         ModelPrice(input=1.8972, output=1.3603, cache_read=0.0),
         nominal_price=ModelPrice(input=10.00, output=50.00, cache_read=1.0),
-        cheapest_price=EffectivePrice(2.2441, 53.7549),
+        cheapest_price=EffectivePrice(0.9016, 26.8141),
     ),
     Model.openrouter(
         "Anthropic",
