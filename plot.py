@@ -93,11 +93,6 @@ class ModelPrice:
         )
 
 
-class EffectivePrice(NamedTuple):
-    input: float
-    output: float
-
-
 class Model(NamedTuple):
     publisher: str
     name: str
@@ -124,26 +119,27 @@ class Model(NamedTuple):
         )
 
     @classmethod
-    def openrouter(
+    def reduced_price(
         cls,
         publisher: str,
         name: str,
         intelligence: float,
         nominal_cost_per_task: ModelPrice,
         nominal_price: ModelPrice,
-        cheapest_price: EffectivePrice,
+        cheapest_price: ModelPrice,
     ) -> Model:
         nc = nominal_cost_per_task
         np = nominal_price
         cp = cheapest_price
 
-        nominal_total = nc.input + nc.output + nc.cache_read
-        output_tokens = nc.output / np.output
-        input_tokens = nc.input / np.input + nc.cache_read / np.cache_read
-        cost_per_task = input_tokens * cp.input + output_tokens * cp.output
+        input_cost = nc.input * cp.input / np.input
+        output_cost = nc.output * cp.output / np.output
+        cache_read_cost = nc.cache_read * cp.cache_read / np.cache_read
+
+        cost_per_task = input_cost + output_cost + cache_read_cost
         print(
-            f"Changed from ${nominal_total:.4f} to "
-            f"${cost_per_task:.4f} ({cost_per_task / nominal_total * 100:3.0f}%): {name}"
+            f"Reduced from ${nc.input + nc.output + nc.cache_read:.4f} to "
+            f"${cost_per_task:.4f}: {name}"
         )
         return cls(publisher, name, intelligence, cost_per_task)
 
@@ -176,325 +172,117 @@ MODELS = [
     Model.local(
         "Alibaba", "Qwen3.8-Flash-Next", 39.91, 107885, 25, hardware=STRIX_HALO
     ),
-    Model.openrouter(
-        "Alibaba",
-        "Qwen3.8-Flash-Next",
-        39.91,
-        ModelPrice(input=0.0527, output=0.05, cache_read=0.27, total=0.37),
-        nominal_price=ModelPrice(input=0.15, output=0.47, cache_read=0.016),
-        cheapest_price=EffectivePrice(0.0361, 0.4696),
-    ),
-    Model.openrouter(
+    Model("Alibaba", "Qwen3.8-Flash-Next", 39.91, 0.3722),
+    Model.reduced_price(
         "Alibaba",
         "Qwen3.8 2.4T A95B",
         40.30,
         ModelPrice(input=0.52, output=0.41, cache_read=1.22),
         nominal_price=ModelPrice(input=2.00, output=6.00, cache_read=0.25),
-        cheapest_price=EffectivePrice(0.4009, 6),
+        cheapest_price=ModelPrice(input=2.00, output=6.00, cache_read=0.20),
     ),
-    Model.openrouter(
-        "Alibaba",
-        "Qwen3.8 Max (0902)",
-        45.4,
-        ModelPrice(input=1.80, output=0.64, cache_read=2.96),
-        nominal_price=ModelPrice(input=2.00, output=6.00, cache_read=0.25),
-        cheapest_price=EffectivePrice(0.4479, 6),
-    ),
-    Model.openrouter(
+    Model("Alibaba", "Qwen3.8 Max (0902)", 45.4, 5.41),
+    Model.reduced_price(
         "DeepSeek",
         "DeepSeek V4.1 Flash",
         39.5454,
         ModelPrice(input=0.0039, output=0.1063, cache_read=0.1550, total=0.2652),
         nominal_price=ModelPrice(input=0.30, output=1.20, cache_read=0.006),
-        cheapest_price=EffectivePrice(0.0214, 0.6595),
+        cheapest_price=ModelPrice(input=0.15, output=0.60, cache_read=0.0015),
     ),
-    Model.openrouter(
+    Model.reduced_price(
         "Tencent",
         "Hy3",
         25.77,
         ModelPrice(input=0.0012, output=0.0256, cache_read=0.0450),
         nominal_price=ModelPrice(input=0.136, output=0.554, cache_read=0.136 * 0.25),
-        cheapest_price=EffectivePrice(0.04563, 0.5249),
+        cheapest_price=ModelPrice(input=0.0825, output=0.33, cache_read=0.02063),
     ),
-    Model.openrouter(
+    Model.reduced_price(
         "Meta",
         "Muse Spark 1.3",
         48.17,
         ModelPrice(input=0.0225, output=0.2559, cache_read=1.3266),
         nominal_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
-        cheapest_price=EffectivePrice(0.3918, 4.25),
+        cheapest_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
     ),
-    Model.openrouter(
+    Model.reduced_price(
         "Meta",
         "Muse Spark 1.3 [TRAIN]",
         48.17,
         ModelPrice(input=0.0225, output=0.2559, cache_read=1.3266),
         nominal_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
-        cheapest_price=EffectivePrice(0.0226, 0.1995),
+        cheapest_price=ModelPrice(input=0.10, output=0.20, cache_read=0.002),
     ),
-    Model.openrouter(
+    Model.reduced_price(
         "Z AI",
         "GLM-5.3-Flash (high)",
         # scaled intelligence and output toks (estimate)
         41.91 * 28.01 / 28.99,
         ModelPrice(input=0.0033, output=0.0343, cache_read=0.2156) * (70610 / 138690),
         nominal_price=ModelPrice(input=0.15, output=0.50, cache_read=0.03),
-        cheapest_price=EffectivePrice(0.0267, 0.2993),
+        cheapest_price=ModelPrice(input=0.10, output=0.3333, cache_read=0.02),
     ),
-    Model.openrouter(
+    Model.reduced_price(
         "Z AI",
         "GLM-5.3-Flash (max)",
         41.91,
         ModelPrice(input=0.0033, output=0.0343, cache_read=0.2156),
         nominal_price=ModelPrice(input=0.15, output=0.50, cache_read=0.03),
-        cheapest_price=EffectivePrice(0.0267, 0.2993),
+        cheapest_price=ModelPrice(input=0.10, output=0.3333, cache_read=0.02),
     ),
-    Model.openrouter(
+    Model.reduced_price(
         "Z AI",
         "GLM-5.3",
         44.86,
         ModelPrice(input=0.0135, output=0.3130, cache_read=1.6792),
         nominal_price=ModelPrice(input=1.40, output=4.40, cache_read=0.26),
-        cheapest_price=EffectivePrice(0.1942, 2.8596),
+        cheapest_price=ModelPrice(input=1.40, output=4.40, cache_read=0.14),
     ),
-    Model.openrouter(
+    Model.reduced_price(
         "Moonshot AI",
         "Kimi K3",
         43.78,
         ModelPrice(input=0.0662, output=0.7268, cache_read=1.2071),
         nominal_price=ModelPrice(input=3.00, output=15.00, cache_read=0.30),
-        cheapest_price=EffectivePrice(0.3544, 10.7635),
+        cheapest_price=ModelPrice(input=2.60, output=13.00, cache_read=0.26),
     ),
-    Model.openrouter(
-        "Xiaomi",
-        "MiMo-V2.5",
-        22.30,
-        ModelPrice(input=0.0104, output=0.0087, cache_read=0.0),
-        nominal_price=ModelPrice(input=0.14, output=0.28, cache_read=0.0028),
-        cheapest_price=EffectivePrice(0.01372, 0.2792),
-    ),
-    Model.openrouter(
-        "Google",
-        "Gemini 3.8 Flash",
-        41.19,
-        ModelPrice(input=0.9765, output=0.2663, cache_read=0.0),
-        nominal_price=ModelPrice(input=0.75, output=3.75, cache_read=0.075),
-        cheapest_price=EffectivePrice(0.2206, 1.8757),
-    ),
-    Model.openrouter(
-        "SpaceXAI",
-        "Grok 4.6",
-        44.27,
-        ModelPrice(input=2.0980, output=0.2256, cache_read=0.0),
-        nominal_price=ModelPrice(input=2.00, output=6.00, cache_read=0.5),
-        cheapest_price=EffectivePrice(0.8689, 6.2045),
-    ),
-    Model.openrouter(
-        "OpenAI",
-        "GPT-5.5 (Apr '26)",
-        38.63,
-        ModelPrice(input=1.9242, output=0.7097, cache_read=0.0),
-        nominal_price=ModelPrice(input=5.00, output=30.00, cache_read=0.5),
-        cheapest_price=EffectivePrice(1.437, 15.07),
-    ),
-    Model.openrouter(
-        "OpenAI",
-        "GPT-5.6 Luna (low)",
-        21.55,
-        ModelPrice(input=0.0068, output=0.0030, cache_read=0.0),
-        nominal_price=ModelPrice(input=0.20, output=1.20, cache_read=0.02),
-        cheapest_price=EffectivePrice(0.0448, 0.6),
-    ),
-    Model.openrouter(
-        "OpenAI",
-        "GPT-5.6 Luna (medium)",
-        25.48,
-        ModelPrice(input=0.0102, output=0.0054, cache_read=0.0),
-        nominal_price=ModelPrice(input=0.20, output=1.20, cache_read=0.02),
-        cheapest_price=EffectivePrice(0.0448, 0.6),
-    ),
-    Model.openrouter(
-        "OpenAI",
-        "GPT-5.6 Luna (high)",
-        32.41,
-        ModelPrice(input=0.0273, output=0.0166, cache_read=0.0),
-        nominal_price=ModelPrice(input=0.20, output=1.20, cache_read=0.02),
-        cheapest_price=EffectivePrice(0.0448, 0.6),
-    ),
-    Model.openrouter(
-        "OpenAI",
-        "GPT-5.6 Luna (xhigh)",
-        34.77,
-        ModelPrice(input=0.0570, output=0.0283, cache_read=0.0),
-        nominal_price=ModelPrice(input=0.20, output=1.20, cache_read=0.02),
-        cheapest_price=EffectivePrice(0.0448, 0.6),
-    ),
-    Model.openrouter(
-        "OpenAI",
-        "GPT-5.6 Luna (max)",
-        37.50,
-        ModelPrice(input=0.1288, output=0.0495, cache_read=0.0),
-        nominal_price=ModelPrice(input=0.20, output=1.20, cache_read=0.02),
-        cheapest_price=EffectivePrice(0.0448, 0.6),
-    ),
-    Model.openrouter(
-        "OpenAI",
-        "GPT-5.6 Sol (Jul '26)",
-        47.06,
-        ModelPrice(input=1.4023, output=0.5862, cache_read=0.0),
-        nominal_price=ModelPrice(input=4.00, output=20.00, cache_read=0.4),
-        cheapest_price=EffectivePrice(0.3022, 5.2687),
-    ),
-    Model.openrouter(
-        "OpenAI",
-        "GPT-6 Astra (low)",
-        45.9945,
-        ModelPrice(input=0.5959, output=0.2216, cache_read=0.0),
-        nominal_price=ModelPrice(input=10.00, output=50.00, cache_read=1.0),
-        cheapest_price=EffectivePrice(0.9016, 26.8141),
-    ),
-    Model.openrouter(
-        "OpenAI",
-        "GPT-6 Astra (medium)",
-        49.6685,
-        ModelPrice(input=1.0612, output=0.4795, cache_read=0.0),
-        nominal_price=ModelPrice(input=10.00, output=50.00, cache_read=1.0),
-        cheapest_price=EffectivePrice(0.9016, 26.8141),
-    ),
-    Model.openrouter(
-        "OpenAI",
-        "GPT-6 Astra (high)",
-        51.05,
-        ModelPrice(input=1.1317, output=0.5897, cache_read=0.0),
-        nominal_price=ModelPrice(input=10.00, output=50.00, cache_read=1.0),
-        cheapest_price=EffectivePrice(0.9016, 26.8141),
-    ),
-    Model.openrouter(
-        "OpenAI",
-        "GPT-6 Astra (xhigh)",
-        52.51,
-        ModelPrice(input=1.4637, output=0.8451, cache_read=0.0),
-        nominal_price=ModelPrice(input=10.00, output=50.00, cache_read=1.0),
-        cheapest_price=EffectivePrice(0.9016, 26.8141),
-    ),
-    Model.openrouter(
-        "OpenAI",
-        "GPT-6 Astra (max)",
-        52.81,
-        ModelPrice(input=1.8972, output=1.3603, cache_read=0.0),
-        nominal_price=ModelPrice(input=10.00, output=50.00, cache_read=1.0),
-        cheapest_price=EffectivePrice(0.9016, 26.8141),
-    ),
-    Model.openrouter(
-        "Anthropic",
-        "Claude Opus 4.8 (May '26)",
-        41.99,
-        ModelPrice(input=2.3172, output=1.7637, cache_read=0.0),
-        nominal_price=ModelPrice(input=5.00, output=25.00, cache_read=0.5),
-        cheapest_price=EffectivePrice(1.0996, 25),
-    ),
-    Model.openrouter(
-        "Anthropic",
-        "Claude Sonnet 5",
-        38.36,
-        ModelPrice(input=3.9133, output=1.1779, cache_read=0.0),
-        nominal_price=ModelPrice(input=2.00, output=10.00, cache_read=0.2),
-        cheapest_price=EffectivePrice(0.2926, 11),
-    ),
-    Model.openrouter(
-        "Anthropic",
-        "Claude Opus 5 (low)",
-        39.79,
-        ModelPrice(input=0.7316, output=0.3667, cache_read=0.0),
-        nominal_price=ModelPrice(input=5.00, output=25.00, cache_read=0.5),
-        cheapest_price=EffectivePrice(1.0094, 27.4997),
-    ),
-    Model.openrouter(
-        "Anthropic",
-        "Claude Opus 5 (medium)",
-        45.06,
-        ModelPrice(input=1.4650, output=0.7244, cache_read=0.0),
-        nominal_price=ModelPrice(input=5.00, output=25.00, cache_read=0.5),
-        cheapest_price=EffectivePrice(1.0094, 27.4997),
-    ),
-    Model.openrouter(
-        "Anthropic",
-        "Claude Opus 5 (high)",
-        48.24,
-        ModelPrice(input=2.4573, output=1.1560, cache_read=0.0),
-        nominal_price=ModelPrice(input=5.00, output=25.00, cache_read=0.5),
-        cheapest_price=EffectivePrice(1.0094, 27.4997),
-    ),
-    Model.openrouter(
-        "Anthropic",
-        "Claude Opus 5 (xhigh)",
-        49.65,
-        ModelPrice(input=3.3615, output=1.5164, cache_read=0.0),
-        nominal_price=ModelPrice(input=5.00, output=25.00, cache_read=0.5),
-        cheapest_price=EffectivePrice(1.0094, 27.4997),
-    ),
-    Model.openrouter(
-        "Anthropic",
-        "Claude Opus 5 (max)",
-        50.70,
-        ModelPrice(input=4.0456, output=1.8128, cache_read=0.0),
-        nominal_price=ModelPrice(input=5.00, output=25.00, cache_read=0.5),
-        cheapest_price=EffectivePrice(1.0094, 27.4997),
-    ),
-    Model.openrouter(
-        "Anthropic",
-        "Claude Fable 5 (Jun '26)",
-        49.70,
-        ModelPrice(input=5.4361, output=3.3098, cache_read=0.0),
-        nominal_price=ModelPrice(input=10.00, output=50.00, cache_read=1.0),
-        cheapest_price=EffectivePrice(1.884, 50),
-    ),
-    Model.openrouter(
-        "Anthropic",
-        "Claude Fable 5.1 (low)",
-        47.04,
-        ModelPrice(input=1.2950, output=1.0760, cache_read=0.0),
-        nominal_price=ModelPrice(input=10.00, output=50.00, cache_read=0.25),
-        cheapest_price=EffectivePrice(0.9984, 50),
-    ),
-    Model.openrouter(
-        "Anthropic",
-        "Claude Fable 5.1 (medium)",
-        49.06,
-        ModelPrice(input=1.5896, output=1.3930, cache_read=0.0),
-        nominal_price=ModelPrice(input=10.00, output=50.00, cache_read=0.25),
-        cheapest_price=EffectivePrice(0.9984, 50),
-    ),
-    Model.openrouter(
-        "Anthropic",
-        "Claude Fable 5.1 (high)",
-        51.21,
-        ModelPrice(input=2.0109, output=1.9017, cache_read=0.0),
-        nominal_price=ModelPrice(input=10.00, output=50.00, cache_read=0.25),
-        cheapest_price=EffectivePrice(0.9984, 50),
-    ),
-    Model.openrouter(
-        "Anthropic",
-        "Claude Fable 5.1 (xhigh)",
-        53.18,
-        ModelPrice(input=2.9577, output=3.0206, cache_read=0.0),
-        nominal_price=ModelPrice(input=10.00, output=50.00, cache_read=0.25),
-        cheapest_price=EffectivePrice(0.9984, 50),
-    ),
-    Model.openrouter(
-        "Anthropic",
-        "Claude Fable 5.1 (max)",
-        53.37,
-        ModelPrice(input=3.7263, output=3.9034, cache_read=0.0),
-        nominal_price=ModelPrice(input=10.00, output=50.00, cache_read=0.25),
-        cheapest_price=EffectivePrice(0.9984, 50),
-    ),
+    Model("Xiaomi", "MiMo-V2.5", 22.30, 0.0191),
+    Model("Google", "Gemini 3.8 Flash", 41.19, 1.2428),
+    Model("SpaceXAI", "Grok 4.6", 44.27, 2.3237),
+    Model("OpenAI", "GPT-5.5 (Apr '26)", 38.63, 2.6340),
+    Model("OpenAI", "GPT-5.6 Luna (low)", 21.55, 0.0098),
+    Model("OpenAI", "GPT-5.6 Luna (medium)", 25.48, 0.0156),
+    Model("OpenAI", "GPT-5.6 Luna (high)", 32.41, 0.0440),
+    Model("OpenAI", "GPT-5.6 Luna (xhigh)", 34.77, 0.0853),
+    Model("OpenAI", "GPT-5.6 Luna (max)", 37.50, 0.1783),
+    # Model("OpenAI", "GPT-5.6 Terra (max)", 42.25, 1.3987),
+    Model("OpenAI", "GPT-5.6 Sol (Jul '26)", 47.06, 1.9885),
+    Model("OpenAI", "GPT-6 Astra (low)", 45.9945, 0.8175),
+    Model("OpenAI", "GPT-6 Astra (medium)", 49.6685, 1.5406),
+    Model("OpenAI", "GPT-6 Astra (high)", 51.05, 1.7214),
+    Model("OpenAI", "GPT-6 Astra (xhigh)", 52.51, 2.3088),
+    Model("OpenAI", "GPT-6 Astra (max)", 52.81, 3.2575),
+    Model("Anthropic", "Claude Opus 4.8 (May '26)", 41.99, 4.0810),
+    Model("Anthropic", "Claude Haiku 4.5", 17.59, 0.2077),
+    Model("Anthropic", "Claude Sonnet 5", 38.36, 5.0912),
+    Model("Anthropic", "Claude Opus 5 (low)", 39.79, 1.0983),
+    Model("Anthropic", "Claude Opus 5 (medium)", 45.06, 2.1895),
+    Model("Anthropic", "Claude Opus 5 (high)", 48.24, 3.6133),
+    Model("Anthropic", "Claude Opus 5 (xhigh)", 49.65, 4.8778),
+    Model("Anthropic", "Claude Opus 5 (max)", 50.70, 5.8584),
+    Model("Anthropic", "Claude Fable 5 (Jun '26)", 49.70, 8.7460),
+    Model("Anthropic", "Claude Fable 5.1 (low)", 47.04, 2.3710),
+    Model("Anthropic", "Claude Fable 5.1 (medium)", 49.06, 2.9826),
+    Model("Anthropic", "Claude Fable 5.1 (high)", 51.21, 3.9125),
+    Model("Anthropic", "Claude Fable 5.1 (xhigh)", 53.18, 5.9783),
+    Model("Anthropic", "Claude Fable 5.1 (max)", 53.37, 7.6297),
 ]
 
 # Rock bottom of the high-intelligence plot: what the smartest model in the
 # world could deliver in February 2026 (Opus 4.6)
 HIGH_INTELLIGENCE_THRESHOLD = 32
-LOW_COST_THRESHOLD = 0.15
+LOW_COST_THRESHOLD = 0.10
 
 # The two plots to generate:
 # (title, filter, x tick step, x tick format, band side, file stem)
