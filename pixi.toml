@@ -7,7 +7,7 @@ version = "0.1.0"
 
 [tasks]
 plot = "python plot.py"
-aa-query = "python .pi/skills/aa-lookup/scripts/aa_query.py"
+aa-query = "python .agents/skills/aa-lookup/scripts/aa_query.py"
 lint = "ruff check --fix && ruff format && mdformat README.md AGENTS.md"
 
 [dependencies]
