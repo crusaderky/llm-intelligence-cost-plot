@@ -182,10 +182,10 @@ while the latter can be as cheap as a mobile phone subscription.
 
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
-appreciate how much better Fable 5.1 (intelligence score 53, $4.61 per task) is compared
-to GLM-5.3 (intelligence 45, $1.46 — 3x cheaper), most people will have a hard
+appreciate how much better Fable 5.1 (intelligence score 53, $4.26 per task) is compared
+to GLM-5.3 (intelligence 45, $1.46 — almost 3x cheaper), most people will have a hard
 time doing so. Going further down, GLM-5.3-Flash at high settings (intelligence 41,
-$0.11 — over _fourty times_ cheaper than Fable) is visibly less capable when you give
+$0.11 — almost _fourty times_ cheaper than Fable) is visibly less capable when you give
 it very sophisticated tasks, like one-shotting a whole coding project on its own, but it
 remains _enough_ for 90% of what people actually need. Even the highly specialized
 engineers and scientists mentioned above don't actually need the extra intelligence for
