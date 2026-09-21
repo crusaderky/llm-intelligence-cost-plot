@@ -59,6 +59,7 @@ PUBLISHERS = {
     "DeepSeek": "#2243e6",
     "Google": "#34A853",
     "InclusionAI": "#4fb5ff",
+    "Institute of Foundation Models": "#1521a9",
     "Meta": "#0089f4",
     "Moonshot AI": "#047AFE",
     "OpenAI": "#1f1f1f",
@@ -193,6 +194,7 @@ MODELS = [
     Model.local("OpenBMB", "MiniCPM5-2B", 12.4634, 21834, 180),
     Model.local("Alibaba", "Qwen3.6-35B-A3B", 18.2290, 34594, 150),
     Model.local("Meta", "Muse Glimmer", 17.4754, 13925, 124),
+    Model.local("Institute of Foundation Models", "K2 Horizon 7B", 20.5959, 72163, 100),
     Model.local("Alibaba", "Qwen3.8-27B", 33.6963, 66797, 60),
     Model.local(
         "Alibaba", "Qwen3.8-Flash-Next", 39.8223, 107885, 25, hardware=STRIX_HALO
