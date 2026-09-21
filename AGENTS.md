@@ -20,18 +20,26 @@ Single script, `plot.py`. All model data lives in the `MODELS` list; label place
 automatic, so adding a model = adding one row and re-running. The `PLOTS` list defines
 which filtered views get generated.
 
-## Adding a model — which constructor to use
+## Adding or refreshing a model
 
-Three constructors, each encoding a different cost provenance (see README for rationale):
+Follow `.agents/skills/refresh-models/SKILL.md`: it re-fetches the AA and OpenRouter
+numbers for every existing model (and prints a ready-to-paste constructor row for a new
+one). `.agents/skills/aa-lookup` is the low-level AA query tool it builds on.
 
-- `Model(publisher, name, intelligence, cost_per_task)` — datacenter/AA pricing.
+Two constructors, each encoding a different cost provenance (see README for rationale):
+
+- `Model.datacenter(publisher, name, intelligence, or_slug, or_session_cost_10_49_turns, aa_output_tokens_per_task)` — reference cost computed as
+  `OR avg 10-49-turn session cost (across OR coding harnesses) x AA output tokens per task / HOUR_SCALE`. All three inputs are re-fetched from AA/OpenRouter on every refresh.
 - `Model.local(publisher, name, intelligence, tok_per_task, tok_per_sec, hardware=RTX3090)`
-  — cost computed as local electricity. Use for sub-35B models; `hardware=STRIX_HALO` for
-  the ~120B class. Requires tok/s measured on local hardware, not from AA.
-- `Model.reduced_price(...)` — OpenRouter cheapest-provider pricing. Takes the AA
-  `nominal_cost_per_task`, the developer's `nominal_price`, and the OpenRouter
-  `cheapest_price`; scales each token-type cost by the price ratio. It prints the
-  computed cost per task to stdout — sanity-check it.
+  — electricity cost, normalized to the datacenter scale through the hardcoded
+  GPT-5.6 Luna (max) anchor inside `local()`. Use for sub-35B models;
+  `hardware=STRIX_HALO` for the ~120B class. Requires tok/s measured on local
+  hardware, not from AA; `tok_per_task` is AA's output tokens per task and is
+  re-fetched on every refresh.
+
+When OR carries no 10-49-turn session data for a model on any harness (e.g.
+`qwen/qwen3.8-2.4t-a95b`), comment the row out — there is no fallback statistic for
+this metric.
 
 ## Name markers (load-bearing strings)
 

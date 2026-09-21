@@ -1,12 +1,25 @@
 """
-Scatter plots: Cost per Task (USD, linear) vs Artificial Analysis Intelligence Index.
+Scatter plots: Reference Cost (USD, linear) vs Artificial Analysis Intelligence Index.
 
-Built with matplotlib, saved as SVG and PNG. Two plots are generated:
-- all models with intelligence above fixed threshold
-- all models with cost per task below fixed threshold
+Built with matplotlib, saved as SVG and PNG. Three plots are generated:
+- all models with intelligence above a fixed threshold
+- all models with reference cost below a fixed threshold
+- all models
 
 The figures are deliberately very wide so the cost gap between the cheap
 models and the frontier models is dramatic.
+
+The "reference cost" is not a sticker price; it is calibrated on what
+OpenRouter's customers actually pay (the average of the median costs of a
+real agentic session of 10-49 turns across OR's coding harnesses), scaled
+to the size of Artificial Analysis's benchmark task by AA's
+output-tokens-per-task figure:
+
+    reference cost = OR session cost (10-49 turns) x AA output tokens / HOUR_SCALE
+
+Local (electricity-powered) models are anchored to the same scale via
+GPT-5.6 Luna (max), whose AA cost per task and OpenRouter session cost are
+hardcoded inside Model.local.
 
 Dots are colored by publisher (colors replicated from artificialanalysis.ai)
 and a legend lists only the publishers present in each plot.
@@ -14,7 +27,7 @@ and a legend lists only the publishers present in each plot.
 Label placement is automatic: the script measures each label's real rendered
 size and tries a list of candidate positions around its dot, keeping the
 first that collides with nothing already placed. So MODELS only needs
-publisher / name / price / index -- just add rows and re-run.
+publisher / name / cost / index -- just add rows and re-run.
 """
 
 from __future__ import annotations
@@ -68,37 +81,58 @@ class LocalHardware(NamedTuple):
 RTX3090 = LocalHardware("RTX 3090", 350, 43)
 STRIX_HALO = LocalHardware("Strix Halo 128GB", 170, 11)
 
-
-class ModelPrice:
-    input: float
-    output: float
-    cache_read: float
-
-    def __init__(
-        self, input: float, output: float, cache_read: float, total: float | None = None
-    ):
-        if total is not None:
-            scale = total / (input + output + cache_read)
-            input *= scale
-            output *= scale
-            cache_read *= scale
-        self.input = input
-        self.output = output
-        self.cache_read = cache_read
-
-    def __mul__(self, factor: float) -> ModelPrice:
-        return ModelPrice(
-            input=self.input * factor,
-            output=self.output * factor,
-            cache_read=self.cache_read * factor,
-        )
+"""Crude finger-in-the-air indicator used to fit each model to one hour-long session"""
+HOUR_SCALE = 2500
 
 
 class Model(NamedTuple):
     publisher: str
     name: str
     intelligence: float
-    cost_per_task: float
+    reference_cost: float
+    # Provenance. aa_output_tokens_per_task is set for every model (it is the
+    # AA benchmark task size, and also the tok_per_task input of Model.local).
+    aa_output_tokens_per_task: float
+    # The or_* fields record the OpenRouter numbers and are None for local
+    # models:
+    or_slug: str | None = None
+    or_session_cost_10_49_turns: float | None = None
+
+    @classmethod
+    def datacenter(
+        cls,
+        publisher: str,
+        name: str,
+        intelligence: float,
+        or_slug: str,
+        or_session_cost_10_49_turns: float,
+        aa_output_tokens_per_task: float,
+    ) -> Model:
+        """Datacenter model, priced at what OpenRouter's customers actually pay.
+
+        or_session_cost_10_49_turns is the average, across the OpenRouter
+        coding harnesses that carry session data for the model, of the median
+        cost of a real agentic session of 10-49 turns ("core" bucket), as
+        published on GET /api/frontend/v1/rankings/session-cost.
+        Scaled to the size of AA's benchmark task by output tokens per task
+        (the factor also re-spreads the effort variants, which share one
+        session cost per permaslug):
+
+            reference cost = session cost x AA output tokens / HOUR_SCALE
+        """
+        reference_cost = (
+            or_session_cost_10_49_turns * aa_output_tokens_per_task / HOUR_SCALE
+        )
+        print(f"{name}: {reference_cost:.2f}$/h")
+        return cls(
+            publisher,
+            name,
+            intelligence,
+            reference_cost,
+            aa_output_tokens_per_task,
+            or_slug,
+            or_session_cost_10_49_turns,
+        )
 
     @classmethod
     def local(
@@ -107,42 +141,37 @@ class Model(NamedTuple):
         # Weighted by population, May 2026 (USD/KWh)
         # https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a
         US_ELECTRICITY_PRICE = 0.2049
+        # The electricity computed below is in "AA benchmark task" units; the
+        # datacenter reference costs are in "OpenRouter average customer" units.
+        # GPT-5.6 Luna (max) bridges the two, since it has both an AA cost per
+        # task and an OpenRouter session cost. Refresh these three numbers
+        # whenever the datacenter models are refreshed (see .agents skills).
+        GPT_LUNA_OR_SESSION_COST = 0.04783455  # avg 10-49-turn session cost
+        GPT_LUNA_TOKENS_PER_TASK = 41235  # AA output tokens per task
+        GPT_LUNA_AA_COST_PER_TASK = 0.178297  # AA cost per task
+        luna_reference = (
+            GPT_LUNA_OR_SESSION_COST * GPT_LUNA_TOKENS_PER_TASK / HOUR_SCALE
+        )
+        scale = luna_reference / GPT_LUNA_AA_COST_PER_TASK  # ~x11.1
+
         sec_per_task = tok_per_task / tok_per_sec
         power_draw = hardware.peak_power_draw - hardware.idle_power_draw
         joules_per_task = power_draw * sec_per_task
         kwh_per_task = joules_per_task / 3_600_000
         cost_per_task = kwh_per_task * US_ELECTRICITY_PRICE
         # Finger-in-the-air overhead to account for prefill
-        cost_per_task *= 1.2
-
+        PREFILL_OVERHEAD = 1.2
+        reference_cost = cost_per_task * PREFILL_OVERHEAD * scale
+        print(f"{name} ({hardware.name} ⚡): {reference_cost:.4f}$/h")
         return cls(
-            publisher, f"{name} ({hardware.name} ⚡)", intelligence, cost_per_task
+            publisher,
+            f"{name} ({hardware.name} ⚡)",
+            intelligence,
+            reference_cost,
+            tok_per_task,
+            None,
+            None,
         )
-
-    @classmethod
-    def reduced_price(
-        cls,
-        publisher: str,
-        name: str,
-        intelligence: float,
-        nominal_cost_per_task: ModelPrice,
-        nominal_price: ModelPrice,
-        cheapest_price: ModelPrice,
-    ) -> Model:
-        nc = nominal_cost_per_task
-        np = nominal_price
-        cp = cheapest_price
-
-        input_cost = nc.input * cp.input / np.input
-        output_cost = nc.output * cp.output / np.output
-        cache_read_cost = nc.cache_read * cp.cache_read / np.cache_read
-
-        cost_per_task = input_cost + output_cost + cache_read_cost
-        print(
-            f"Reduced from ${nc.input + nc.output + nc.cache_read:.4f} to "
-            f"${cost_per_task:.4f}: {name}"
-        )
-        return cls(publisher, name, intelligence, cost_per_task)
 
     @property
     def trains_on_your_data(self) -> bool:
@@ -154,163 +183,212 @@ class Model(NamedTuple):
 
 
 MODELS = [
-    # Data from artificialanalysis.ai (Data API + model pages)
-    # Cost per task is AA's intelligenceIndexCostPerTask, split into
-    # ModelPrice(input, output, cache_read) as:
-    #   input      -> nonCacheInput
-    #   output     -> output (reasoning + answer)
-    #   cache_read -> cacheRead + cacheWrite
-    # so that the three components sum to AA's cost per task.
-    Model.local("OpenBMB", "MiniCPM5-2B", 13.14, 21816, 180),
-    Model.local("Alibaba", "Qwen3.6-35B-A3B", 18.81, 34594, 150),
-    # Occamy is not on AA: intelligence extrapolated from self-reported
-    # benchmarks vs Qwen3.6 and GLM5.2.
-    Model.local("Accio", "Occamy-1.0", 30.6, 34594 * 1.23, 106),
-    Model.local("Meta", "Muse Glimmer", 18.07, 13925, 124),
-    Model.local("Alibaba", "Qwen3.8-27B (low)", 26.49, 45426, 60),
-    Model.local("Alibaba", "Qwen3.8-27B (medium)", 27.81, 51943, 60),
-    Model.local("Alibaba", "Qwen3.8-27B (xhigh)", 33.90, 66783, 60),
+    # Intelligence and output tokens per task: artificialanalysis.ai (AA Data
+    # API + model page flight payloads, sub-unit precision).
+    # or_slug / or_session_cost_10_49_turns: openrouter.ai (average across
+    # coding harnesses of the median 10-49-turn session cost, "core" bucket,
+    # from GET /api/frontend/v1/rankings/session-cost).
+    # See .agents/skills/refresh-models for how to re-fetch these numbers.
+    # --- Local models (reference cost = normalized electricity) ---
+    Model.local("OpenBMB", "MiniCPM5-2B", 12.4634, 21834, 180),
+    Model.local("Alibaba", "Qwen3.6-35B-A3B", 18.2290, 34594, 150),
+    Model.local("Meta", "Muse Glimmer", 17.4754, 13925, 124),
+    Model.local("Alibaba", "Qwen3.8-27B", 33.6963, 66797, 60),
     Model.local(
-        "Alibaba", "Qwen3.8-Flash-Next", 39.91, 107885, 25, hardware=STRIX_HALO
+        "Alibaba", "Qwen3.8-Flash-Next", 39.8223, 107885, 25, hardware=STRIX_HALO
     ),
-    Model("Alibaba", "Qwen3.8-Flash-Next", 39.91, 0.3722),
-    Model.reduced_price(
+    # --- Datacenter models (reference cost = OR avg price per 100 requests
+    # x AA output tokens per task / HOUR_SCALE) ---
+    Model.datacenter(
         "Alibaba",
-        "Qwen3.8 2.4T A95B",
-        40.30,
-        ModelPrice(input=0.52, output=0.41, cache_read=1.22),
-        nominal_price=ModelPrice(input=2.00, output=6.00, cache_read=0.25),
-        cheapest_price=ModelPrice(input=2.00, output=6.00, cache_read=0.25),
+        "Qwen3.8 Max (0902)",
+        45.4152,
+        "qwen/qwen3.8-max-20260902",
+        0.46068045,
+        107730,
     ),
-    Model("Alibaba", "Qwen3.8 Max (0902)", 45.4, 5.41),
-    Model.reduced_price(
+    Model.datacenter(
         "DeepSeek",
         "DeepSeek V4.1 Flash",
-        39.5454,
-        ModelPrice(input=0.0039, output=0.1063, cache_read=0.1550, total=0.2652),
-        nominal_price=ModelPrice(input=0.30, output=1.20, cache_read=0.006),
-        cheapest_price=ModelPrice(input=0.20, output=0.60, cache_read=0.006),
+        39.4562,
+        "deepseek/deepseek-v4.1-flash-20260910",
+        0.11168341,
+        88574,
     ),
-    Model.reduced_price(
-        "Tencent",
-        "Hy3",
-        25.77,
-        ModelPrice(input=0.0012, output=0.0256, cache_read=0.0450),
-        nominal_price=ModelPrice(input=0.136, output=0.554, cache_read=0.136 * 0.25),
-        cheapest_price=ModelPrice(input=0.0825, output=0.33, cache_read=0.02063),
+    Model.datacenter(
+        "Tencent", "Hy3", 25.2973, "tencent/hy3-20260706", 0.047709204, 46161
     ),
-    Model.reduced_price(
+    Model.datacenter(
         "Meta",
         "Muse Spark 1.3",
-        48.17,
-        ModelPrice(input=0.0225, output=0.2559, cache_read=1.3266),
-        nominal_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
-        cheapest_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
+        48.0923,
+        "meta/muse-spark-1.3-20260902",
+        0.5788921,
+        60200,
     ),
-    Model.reduced_price(
+    Model.datacenter(
         "Meta",
         "Muse Spark 1.3 [TRAIN]",
-        48.17,
-        ModelPrice(input=0.0225, output=0.2559, cache_read=1.3266),
-        nominal_price=ModelPrice(input=1.25, output=4.25, cache_read=0.15),
-        cheapest_price=ModelPrice(input=0.10, output=0.20, cache_read=0.002),
+        48.0923,
+        "meta/muse-spark-1.3-contributor-20260902",
+        0.025887777,
+        60200,
     ),
-    Model.reduced_price(
+    Model.datacenter(
         "Z AI",
-        "GLM-5.3-Flash (high)",
-        # scaled intelligence and output toks (estimate)
-        41.91 * 28.01 / 28.99,
-        ModelPrice(input=0.0033, output=0.0343, cache_read=0.2156) * (70610 / 138690),
-        nominal_price=ModelPrice(input=0.15, output=0.50, cache_read=0.03),
-        cheapest_price=ModelPrice(input=0.09, output=0.28, cache_read=0.02),
+        "GLM-5.3-Flash",
+        41.8075,
+        "z-ai/glm-5.3-flash-20260826",
+        0.03415882,
+        68673,
     ),
-    Model.reduced_price(
-        "Z AI",
-        "GLM-5.3-Flash (max)",
-        41.91,
-        ModelPrice(input=0.0033, output=0.0343, cache_read=0.2156),
-        nominal_price=ModelPrice(input=0.15, output=0.50, cache_read=0.03),
-        cheapest_price=ModelPrice(input=0.09, output=0.28, cache_read=0.02),
-    ),
-    Model.reduced_price(
+    Model.datacenter(
         "Z AI",
         "GLM-5.3",
-        44.86,
-        ModelPrice(input=0.0135, output=0.3130, cache_read=1.6792),
-        nominal_price=ModelPrice(input=1.40, output=4.40, cache_read=0.26),
-        cheapest_price=ModelPrice(input=0.90, output=3.00, cache_read=0.15),
+        44.7774,
+        "z-ai/glm-5.3-20260816",
+        0.516295,
+        71128,
     ),
-    Model.reduced_price(
+    Model.datacenter(
         "Moonshot AI",
         "Kimi K3",
-        43.78,
-        ModelPrice(input=0.0662, output=0.7268, cache_read=1.2071),
-        nominal_price=ModelPrice(input=3.00, output=15.00, cache_read=0.30),
-        cheapest_price=ModelPrice(input=1.70, output=8.50, cache_read=0.17),
+        43.5938,
+        "moonshotai/kimi-k3-20260715",
+        0.86816495,
+        48455,
     ),
-    Model("Xiaomi", "MiMo-V2.5", 22.30, 0.0191),
-    Model("Google", "Gemini 3.8 Flash", 41.19, 1.2428),
-    Model("SpaceXAI", "Grok 4.6", 44.27, 2.3237),
-    Model("StepFun", "Step 5 Preview", 43.5, 0.71),
-    Model("OpenAI", "GPT-5.5 (Apr '26)", 38.63, 2.6340),
-    Model("OpenAI", "GPT-5.6 Luna (low)", 21.55, 0.0098),
-    Model("OpenAI", "GPT-5.6 Luna (medium)", 25.48, 0.0156),
-    Model("OpenAI", "GPT-5.6 Luna (high)", 32.41, 0.0440),
-    Model("OpenAI", "GPT-5.6 Luna (xhigh)", 34.77, 0.0853),
-    Model("OpenAI", "GPT-5.6 Luna (max)", 37.50, 0.1783),
-    # Model("OpenAI", "GPT-5.6 Terra (max)", 42.25, 1.3987),
-    Model("OpenAI", "GPT-5.6 Sol (Jul '26)", 47.06, 1.9885),
-    Model("OpenAI", "GPT-6 Astra (low)", 45.9945, 0.8175),
-    Model("OpenAI", "GPT-6 Astra (medium)", 49.6685, 1.5406),
-    Model("OpenAI", "GPT-6 Astra (high)", 51.05, 1.7214),
-    Model("OpenAI", "GPT-6 Astra (xhigh)", 52.51, 2.3088),
-    Model("OpenAI", "GPT-6 Astra (max)", 52.81, 3.2575),
-    Model("Anthropic", "Claude Opus 4.8 (May '26)", 41.99, 4.0810),
-    Model("Anthropic", "Claude Haiku 4.5", 17.59, 0.2077),
-    Model("Anthropic", "Claude Sonnet 5", 38.36, 5.0912),
-    Model("Anthropic", "Claude Opus 5 (low)", 39.79, 1.0983),
-    Model("Anthropic", "Claude Opus 5 (medium)", 45.06, 2.1895),
-    Model("Anthropic", "Claude Opus 5 (high)", 48.24, 3.6133),
-    Model("Anthropic", "Claude Opus 5 (xhigh)", 49.65, 4.8778),
-    Model("Anthropic", "Claude Opus 5 (max)", 50.70, 5.8584),
-    Model("Anthropic", "Claude Fable 5 (Jun '26)", 49.70, 8.7460),
-    Model("Anthropic", "Claude Fable 5.1 (low)", 47.04, 2.3710),
-    Model("Anthropic", "Claude Fable 5.1 (medium)", 49.06, 2.9826),
-    Model("Anthropic", "Claude Fable 5.1 (high)", 51.21, 3.9125),
-    Model("Anthropic", "Claude Fable 5.1 (xhigh)", 53.18, 5.9783),
-    Model("Anthropic", "Claude Fable 5.1 (max)", 53.37, 7.6297),
+    Model.datacenter(
+        "Google",
+        "Gemini 3.8 Flash",
+        40.9262,
+        "google/gemini-3.8-flash-20260902",
+        0.28484775,
+        71003,
+    ),
+    Model.datacenter(
+        "SpaceXAI",
+        "Grok 4.6",
+        44.1998,
+        "x-ai/grok-4.6-20260810",
+        1.10929385,
+        37608,
+    ),
+    # Model.datacenter(
+    #     "StepFun", "Step 5 Preview", 43.7343,
+    #     "", 0.0, 63974,
+    # ),  # not on OpenRouter: no permaslug, no session statistic
+    Model.datacenter(
+        "OpenAI",
+        "GPT-5.5 (Apr '26)",
+        38.3556,
+        "openai/gpt-5.5-20260423",
+        1.25220965,
+        23658,
+    ),
+    Model.datacenter(
+        "OpenAI",
+        "GPT-5.6 Luna",
+        37.3244,
+        "openai/gpt-5.6-luna-20260709",
+        0.04783455,
+        41235,
+    ),
+    Model.datacenter(
+        "OpenAI",
+        "GPT-5.6 Sol (Jul '26)",
+        46.9727,
+        "openai/gpt-5.6-sol-20260709",
+        0.71564054,
+        29309,
+    ),
+    Model.datacenter(
+        "OpenAI",
+        "GPT-6 Astra",
+        52.6737,
+        "openai/gpt-6-astra-20260903",
+        2.97380257,
+        27206,
+    ),
+    Model.datacenter(
+        "Anthropic",
+        "Claude Opus 4.8 (May '26)",
+        41.7899,
+        "anthropic/claude-4.8-opus-20260528",
+        1.83426385,
+        70550,
+    ),
+    Model.datacenter(
+        "Anthropic",
+        "Claude Haiku 4.5",
+        16.8822,
+        "anthropic/claude-4.5-haiku-20251001",
+        0.2121337,
+        18485,
+    ),
+    Model.datacenter(
+        "Anthropic",
+        "Claude Sonnet 5",
+        38.1639,
+        "anthropic/claude-sonnet-5-20260630",
+        0.66817926,
+        117787,
+    ),
+    Model.datacenter(
+        "Anthropic",
+        "Claude Opus 5",
+        50.7771,
+        "anthropic/claude-opus-5-20260723",
+        2.07708197,
+        72511,
+    ),
+    Model.datacenter(
+        "Anthropic",
+        "Claude Fable 5 (Jun '26)",
+        49.6258,
+        "anthropic/claude-5-fable-20260609",
+        4.1789565,
+        66848,
+    ),
+    Model.datacenter(
+        "Anthropic",
+        "Claude Fable 5.1",
+        53.3549,
+        "anthropic/claude-fable-5.1-20260831",
+        2.6497516,
+        78111,
+    ),
 ]
 
-# Rock bottom of the high-intelligence plot: what the smartest model in the
-# world could deliver in February 2026 (Opus 4.6)
-HIGH_INTELLIGENCE_THRESHOLD = 32
-LOW_COST_THRESHOLD = 0.10
+# Bottom of the high-intelligence plot
+HIGH_INTELLIGENCE_THRESHOLD = 33
+LOW_COST_THRESHOLD = 1.00
 
-# The two plots to generate:
+# The three plots to generate:
 # (title, filter, x tick step, x tick format, band side, file stem)
 # "band side" is the plot edge that coincides with the green band's edge.
 PLOTS = [
     (
-        "Intelligence vs. Cost per Task (High Intelligence)",
+        "Intelligence vs. Reference Cost (High Intelligence)",
         lambda m: m.intelligence >= HIGH_INTELLIGENCE_THRESHOLD,
-        0.25,
-        "$%.2f",
+        5,
+        "$%.0f",
         "bottom",
         "high_intelligence",
     ),
     (
-        "Intelligence vs. Cost per Task (Low Cost)",
-        lambda m: m.cost_per_task <= LOW_COST_THRESHOLD,
-        0.005,
-        "$%.3f",
+        "Intelligence vs. Reference Cost (Low Cost)",
+        lambda m: m.reference_cost <= LOW_COST_THRESHOLD,
+        0.05,
+        "$%.2f",
         "top",
         "low_cost",
     ),
     (
-        "Intelligence vs. Cost per Task (All Models)",
-        lambda m: True,
-        0.25,
-        "$%.2f",
+        "Intelligence vs. Reference Cost (All Models)",
+        lambda _: True,
+        5,
+        "$%.0f",
         None,
         "all_models",
     ),
@@ -396,6 +474,23 @@ CANDIDATES = [
     (26, -51, "left", "top"),
     (-26, 51, "right", "bottom"),
     (-26, -51, "right", "top"),
+    # Even taller verticals: the reference-cost axis squeezes a dozen models
+    # into a handful of pixels at the left edge, and labels need to queue
+    # several intelligence units away from their dots.
+    (0, 108, "center", "bottom"),
+    (0, -108, "center", "top"),
+    (10, 107, "left", "bottom"),
+    (10, -107, "left", "top"),
+    (-10, 107, "right", "bottom"),
+    (-10, -107, "right", "top"),
+    (0, 122, "center", "bottom"),
+    (0, -122, "center", "top"),
+    (10, 121, "left", "bottom"),
+    (10, -121, "left", "top"),
+    (-10, 122, "right", "bottom"),
+    (-10, -122, "right", "top"),
+    (0, 136, "center", "bottom"),
+    (0, -136, "center", "top"),
 ]
 
 
@@ -689,7 +784,7 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
     # of each other, each having dodged where the other used to be. Iterate
     # until no label collides with anything, or give up after a fixed number
     # of rounds (dense clusters may be unsatisfiable).
-    for _round in range(10):
+    for _round in range(40):
         for i in order:
             obs = list(extra_obstacles) + [
                 placed[j][1] for j in range(len(points)) if j != i
@@ -812,7 +907,7 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
 
 
 def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
-    xs = [m.cost_per_task for m in models]
+    xs = [m.reference_cost for m in models]
     ys = [m.intelligence for m in models]
     colors = [PUBLISHERS[m.publisher] for m in models]
 
@@ -837,7 +932,7 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
     # an estimate, not a real offer.
     pts = sorted(
         (
-            (m.cost_per_task, m.intelligence)
+            (m.reference_cost, m.intelligence)
             for m in MODELS
             if not m.trains_on_your_data and not m.not_publicly_available
         ),
@@ -887,7 +982,7 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
     ax.xaxis.set_major_formatter(FormatStrFormatter(xtick_format))
     ax.yaxis.set_major_locator(MultipleLocator(1))
 
-    ax.set_xlabel("Cost per Task (USD)", fontsize=15, fontweight="bold", labelpad=12)
+    ax.set_xlabel("Reference Cost (USD)", fontsize=15, fontweight="bold", labelpad=12)
     ax.set_ylabel(
         "Artificial Analysis Intelligence Index",
         fontsize=15,
@@ -986,7 +1081,7 @@ def make_plot(title, models, xtick_step, xtick_format, band, y_lim, stem):
         ax,
         fig,
         [
-            (left, right, icon, strike, m.cost_per_task, m.intelligence)
+            (left, right, icon, strike, m.reference_cost, m.intelligence)
             for m in models
             for left, icon, right, strike in [_split_icon(m.name)]
         ],
@@ -1029,7 +1124,7 @@ def main(argv=None):
     # Green band (x $0-$LOW_COST_THRESHOLD): the points that appear on both plots (cheap
     # AND smart). Its edges coincide with the band-side axis edge of each plot: the
     # floor of the high-int plot's points and the ceil of the low-cost plot's points.
-    # Identical on both plots.
+    # Identical on both plots. Empty (skipped) when no model is both cheap and smart.
     band = (
         math.floor(min(m.intelligence for m in models_by_stem["high_intelligence"])),
         math.ceil(max(m.intelligence for m in models_by_stem["low_cost"])),

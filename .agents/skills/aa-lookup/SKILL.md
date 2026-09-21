@@ -57,19 +57,19 @@ query with the full exact name (as printed by `--list`) for a reliable page matc
 
 ## Feeding results into plot.py
 
-`plot.py` wants `(input, output, cache_read)` **rounded as displayed on AA's website**
-plus optional unrounded total. Recommended flow:
+`plot.py` consumes, per model:
 
-1. Run the script → get unrounded per-M prices + Intelligence Index.
-1. Cross-check against the AA model page for the displayed (rounded) figures; enter
-   those rounded values in `Model(...)` / `ModelPrice(...)`.
-1. `cost_per_task` from the API, when computable, is the unrounded total — pass it via
-   `ModelPrice(..., total=...)` and let `plot.py` auto-scale subtotals. This removes
-   the rounding-drift problem on very cheap models entirely.
+- `intelligence` — the page record's sub-unit value (the API-side
+  `evaluations.artificial_analysis_intelligence_index` may be rounded).
+- `output_tokens_per_task` — AA's benchmark task size in output tokens; feeds the
+  reference-cost formula (`OR session cost x tokens / HOUR_SCALE`) in
+  `Model.datacenter` and the electricity calculation in `Model.local`.
+- `cost_per_task_total` — no longer plotted, but still needed for the hardcoded
+  GPT-5.6 Luna (max) anchor inside `Model.local` and as a sanity cross-check.
 
-If the free API's `pricing` object lacks a cache split for a given model (it varies),
-fall back to the model's page on artificialanalysis.ai, or leave cache fields as
-manual entry as done today.
+The `.agents/skills/refresh-models` skill automates all of this (AA + OpenRouter)
+and prints old -> new values plus paste-ready constructor rows; prefer it over
+manual entry.
 
 ## Attribution
 
