@@ -65,6 +65,7 @@ PUBLISHERS = {
     "OpenAI": "#1f1f1f",
     "OpenBMB": "#3B62EC",
     "Ornith AI": "#dddddd",
+    "Prism-ML": "#d6409f",
     "SpaceXAI": "#736cd3",
     "StepFun": "#32f4e6",
     "Tencent": "#66b7fb",
@@ -195,7 +196,11 @@ MODELS = [
     Model.local("Alibaba", "Qwen3.6-35B-A3B", 18.2290, 34594, 150),
     Model.local("Meta", "Muse Glimmer", 17.4754, 13925, 124),
     Model.local("Institute of Foundation Models", "K2 Horizon 7B", 20.5959, 72163, 100),
-    Model.local("Alibaba", "Qwen3.8-27B", 33.6963, 66797, 60),
+    Model.local("Alibaba", "Qwen3.8-27B", 33.6963, 66797, 46),
+    # Not on AA: intelligence = 0.9165 x Qwen3.8-27B, the 91.65% of BF16 that
+    # ByteShape measured for this ternary quant (see README note); tokens per
+    # task assumed identical to Qwen3.8-27B.
+    Model.local("Prism-ML", "Ternary-Bonsai-2", 30.8827, 66797, 73),
     Model.local(
         "Alibaba", "Qwen3.8-Flash-Next", 39.8223, 107885, 25, hardware=STRIX_HALO
     ),

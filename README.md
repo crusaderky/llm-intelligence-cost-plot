@@ -94,6 +94,8 @@ in performance/cost. Again, the area that's common to all plots is highlighted i
   token mix) with the reference cost described below
 - Changed sub-200-billion-parameter models from datacenter pricing to cost to run locally
   (read below)
+- Extrapolated Ternary-Bonsai-2's intelligence as ~92% of Qwen3.8-27B's, as reported
+  by [ByteShape](https://byteshape.com/blogs/Qwen3.8-27B/)
 
 ## Cost calculation for datacenter models
 
@@ -113,8 +115,9 @@ reference cost = OR session cost (10-49 turns) × AA output tokens per task / ho
 ```
 
 Where the hourly scale is a crude constant, identical for all models, which roughly fits
-each model to the cost of running it as an agent for an hour. It is not meant to be
-accurate in absolute terms; it helps ground the $ values to something tangible.
+each model to the cost of running it as an agent for an hour at ~50 tok/s. It is not
+meant to be accurate in absolute terms; it helps ground the $ values to something
+tangible.
 
 In other words: **the reference cost is proportional to how much a session with the same
 median number of turns costs in real life, multiplied by how many turns it will take to
