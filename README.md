@@ -121,21 +121,22 @@ it needs to run longer to complete the same tasks.
 Not including the cost of hardware stops being defensible once you upgrade beyond 64 GB
 RAM, as almost nobody needs that much RAM if not for AI.
 
-Qwen3.8-Flash needs, as a minimum, a 128GB Strix Halo; it is shown on the plot as priced
-by datacenters as well as the electricity it costs to run it locally; however the latter
-already hides a substantial expense for hardware: a 64 GB Strix Halo, which is a very
-desirable general purpose mini PC, costs $2,000; a 128 GB one costs $3,600 and doesn't
-enable anything other than AI models in the ~120B-parameter class.
+Qwen3.8-Flash needs, as a minimum, a 128GB Strix Halo; it is shown on the plot as the
+electricity it costs to run it locally; however this already hides a substantial expense
+for hardware: a 64 GB Strix Halo, which is a very desirable general purpose mini PC,
+costs $2,000; a 128 GB one costs $3,600 and doesn't enable anything other than AI models
+in the ~120B-parameter class.
 
 The following models _can_ be run locally, but carry a very steep up-front hardware
 cost:
 
-| Memory | Hardware | Models |
-| --- | --- | --- |
-| 128 GB RAM | Strix Halo ($3,600)<br>DGX Spark ($4,300)<br>Mac Studio M5 Max ($5,100)<br>MacBook Pro M5 Max ($7,150) | Qwen3.8-Flash<br>GLM-5.3-Flash (degraded intelligence)<br>DeepSeek-V4-Flash (degraded intelligence) |
-| 256 GB RAM | 2x DGX Spark ($8,700)<br>Mac Studio M5 Ultra ($11,300) | GLM-5.3-Flash<br>DeepSeek-V4-Flash |
-| 512 GB RAM | 2x Mac Studio M5 Ultra ($22,600) | GLM-5.3 |
-| 2 TB RAM | 2x TensTorrent Galaxy Blackhole ($320,000) | Kimi K3 |
+| Memory | Hardware | Price | Models |
+| --- | --- | --- | --- |
+| 128 GB RAM | Strix Halo<br>DGX Spark<br>Mac Studio M5 Max<br>MacBook Pro M5 Max | $3,600<br>$4,300<br>$5,100<br>$7,200 | Qwen3.8-Flash<br> |
+| 256 GB RAM | 2x DGX Spark<br>Mac Studio M5 Ultra | $8,700<br>$11,300 | GLM-5.3-Flash |
+| 384 GB RAM | 3x DGX Spark | $13,200 | DeepSeek-V4.1-Flash |
+| 512 GB RAM | 4x DGX Spark + QFP28 switch<br>2x Mac Studio M5 Ultra | $18,400<br>$22,600 | GLM-5.3 |
+| 2 TB RAM | 2x TensTorrent Galaxy Blackhole | $320,000 | Kimi K3 |
 
 ## Conclusion
 
