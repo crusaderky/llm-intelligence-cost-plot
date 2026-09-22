@@ -167,9 +167,10 @@ cost:
 | Memory | Hardware | Price | Models |
 | --- | --- | --- | --- |
 | 128 GB RAM | Strix Halo<br>DGX Spark<br>Mac Studio M5 Max<br>MacBook Pro M5 Max | $3,800<br>$5,000<br>$5,100<br>$7,000 | Qwen3.8-Flash<br> |
-| 256 GB RAM | 2x DGX Spark<br>Mac Studio M5 Ultra | $10,200<br>$11,300 | GLM-5.3-Flash |
+| 256 GB RAM | 2x DGX Spark<br>Mac Studio M5 Ultra | $10,200<br>$11,300 | GLM-5.3-Flash<br>MiMo-v2.6-Flash |
 | 384 GB RAM | 3x DGX Spark | $15,300 | DeepSeek-V4.1-Flash |
 | 512 GB RAM | 4x DGX Spark + QFP28 switch<br>2x Mac Studio M5 Ultra | $21,200<br>$22,600 | GLM-5.3 |
+| 640 GB RAM | 5x DGX Spark + 2x QFP28 switch | $27,200 | MiMo-v2.6-Pro |
 | 2 TB RAM | 2x TensTorrent Galaxy Blackhole | $320,000 | Kimi K3 |
 
 ## Conclusion
@@ -182,12 +183,12 @@ while the latter can be as cheap as a mobile phone subscription.
 
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
-appreciate how much better Fable 5.1 (intelligence score 53, ~$83/h) is compared to
-GLM-5.3 (intelligence 45, $15/h — 5~6x cheaper), most people will have a hard time doing
-so. Going further down, GLM-5.3-Flash (intelligence 42, $0.94 — almost _ninety times_
+appreciate how much better Fable 5.1 (intelligence score 53, ~$94/h) is compared to
+GLM-5.3 (intelligence 45, $13/h — ~7x cheaper), most people will have a hard time doing
+so. Going further down, GLM-5.3-Flash (intelligence 42, $1.01 — almost _ninety times_
 cheaper than Fable) is visibly less capable when you give it very sophisticated tasks,
 like one-shotting a whole coding project on its own, but it remains _enough_ for 90% of
 what people actually need. Even the highly specialized engineers and scientists
 mentioned above don't actually need the extra intelligence for a lot of what they do.
 Descending just a little bit further, an enthusiast gamer can run Qwen3.8-27B
-(intelligence 34, $0.10/h in electricity) on a computer they already own.
+(intelligence 34, $0.14/h in electricity) on a computer they already own.

@@ -34,9 +34,11 @@ inspect the PNGs, `pixi r lint`).
 
 ## Reading the report
 
-- `INT!` / `TOK!` / `REF!` — intelligence, tokens per task, or reference cost drifted
-  beyond the round-off threshold. Values usually match what is already in `plot.py`;
-  only drifted rows need edits.
+- `INT!` / `TOK!` / `REF!` — intelligence, tokens per task, or reference cost no
+  longer matches `plot.py`. REF! is exact: the stored OR session cost is
+  full-precision, so any nonzero difference flags the row (there is no round-off
+  tolerance on it). INT! and TOK! keep small tolerances for AA-side rounding.
+  Values usually match what is already in `plot.py`; only flagged rows need edits.
 - The session-cost statistic is a **30-day trailing median, and OR only rolls its
   window periodically** (observed `windowEnd` frozen for 8+ days at 2026-09-13).
   Between window rolls a refresh returns byte-identical values; a `REF!` flag therefore

@@ -148,7 +148,7 @@ class Model(NamedTuple):
         # GPT-5.6 Luna (max) bridges the two, since it has both an AA cost per
         # task and an OpenRouter session cost. Refresh these three numbers
         # whenever the datacenter models are refreshed (see .agents skills).
-        GPT_LUNA_OR_SESSION_COST = 0.04783455  # avg 10-49-turn session cost
+        GPT_LUNA_OR_SESSION_COST = 0.0480767055  # avg 10-49-turn session cost
         GPT_LUNA_TOKENS_PER_TASK = 41235  # AA output tokens per task
         GPT_LUNA_AA_COST_PER_TASK = 0.178297  # AA cost per task
         luna_reference = (
@@ -211,7 +211,7 @@ MODELS = [
         "Qwen3.8 Max (0902)",
         45.4152,
         "qwen/qwen3.8-max-20260902",
-        0.46068045,
+        0.80500755,
         107730,
     ),
     Model.datacenter(
@@ -219,18 +219,18 @@ MODELS = [
         "DeepSeek V4.1 Flash",
         39.4562,
         "deepseek/deepseek-v4.1-flash-20260910",
-        0.11168341,
+        0.0695178665,
         88574,
     ),
     Model.datacenter(
-        "Tencent", "Hy3", 25.2973, "tencent/hy3-20260706", 0.047709204, 46161
+        "Tencent", "Hy3", 25.2973, "tencent/hy3-20260706", 0.047079116, 46161
     ),
     Model.datacenter(
         "Meta",
         "Muse Spark 1.3",
         48.0923,
         "meta/muse-spark-1.3-20260902",
-        0.5788921,
+        0.5541186,
         60200,
     ),
     Model.datacenter(
@@ -238,7 +238,7 @@ MODELS = [
         "Muse Spark 1.3 [TRAIN]",
         48.0923,
         "meta/muse-spark-1.3-contributor-20260902",
-        0.025887777,
+        0.025736046749999998,
         60200,
     ),
     Model.datacenter(
@@ -246,7 +246,7 @@ MODELS = [
         "GLM-5.3-Flash",
         41.8075,
         "z-ai/glm-5.3-flash-20260826",
-        0.03415882,
+        0.03686909175,
         68673,
     ),
     Model.datacenter(
@@ -254,7 +254,7 @@ MODELS = [
         "GLM-5.3",
         44.7774,
         "z-ai/glm-5.3-20260816",
-        0.516295,
+        0.46436525,
         71128,
     ),
     Model.datacenter(
@@ -262,7 +262,7 @@ MODELS = [
         "Kimi K3",
         43.5938,
         "moonshotai/kimi-k3-20260715",
-        0.86816495,
+        0.7605297775,
         48455,
     ),
     Model.datacenter(
@@ -270,7 +270,7 @@ MODELS = [
         "Gemini 3.8 Flash",
         40.9262,
         "google/gemini-3.8-flash-20260902",
-        0.28484775,
+        0.263355655,
         71003,
     ),
     Model.datacenter(
@@ -278,19 +278,34 @@ MODELS = [
         "Grok 4.6",
         44.1998,
         "x-ai/grok-4.6-20260810",
-        1.10929385,
+        1.105664425,
         37608,
     ),
+    # Model.datacenter(
+    #     "SpaceXAI", "Grok 4.7", 46.4465506302286,
+    #     "x-ai/grok-4.7-20260916", 0.0, 80561,
+    # ),  # on OpenRouter (2026-09-16) but too new for its session stats: no
+    #     # 10-49-turn session cost on any OR harness yet
     # Model.datacenter(
     #     "StepFun", "Step 5 Preview", 43.7343,
     #     "", 0.0, 63974,
     # ),  # not on OpenRouter: no permaslug, no session statistic
+    # Model.datacenter(
+    #     "Xiaomi", "MiMo-V2.6-Flash", 0.0,
+    #     "xiaomi/mimo-v2.6-flash-20260921", 0.0, 0.0,
+    # ),  # on OpenRouter (2026-09-21) but too new for its session stats: no
+    #     # 10-49-turn session cost on any OR harness yet; not on AA yet either
+    # Model.datacenter(
+    #     "Xiaomi", "MiMo-V2.6-Pro", 46.3242,
+    #     "xiaomi/mimo-v2.6-pro-20260921", 0.0, 64276,
+    # ),  # on OpenRouter (2026-09-21) but too new for its session stats: no
+    #     # 10-49-turn session cost on any OR harness yet
     Model.datacenter(
         "OpenAI",
         "GPT-5.5 (Apr '26)",
         38.3556,
         "openai/gpt-5.5-20260423",
-        1.25220965,
+        1.2579325,
         23658,
     ),
     Model.datacenter(
@@ -298,7 +313,7 @@ MODELS = [
         "GPT-5.6 Luna",
         37.3244,
         "openai/gpt-5.6-luna-20260709",
-        0.04783455,
+        0.0480767055,
         41235,
     ),
     Model.datacenter(
@@ -306,7 +321,7 @@ MODELS = [
         "GPT-5.6 Sol (Jul '26)",
         46.9727,
         "openai/gpt-5.6-sol-20260709",
-        0.71564054,
+        0.682004125,
         29309,
     ),
     Model.datacenter(
@@ -314,7 +329,7 @@ MODELS = [
         "GPT-6 Astra",
         52.6737,
         "openai/gpt-6-astra-20260903",
-        2.97380257,
+        2.9325880250000003,
         27206,
     ),
     Model.datacenter(
@@ -322,7 +337,7 @@ MODELS = [
         "Claude Opus 4.8 (May '26)",
         41.7899,
         "anthropic/claude-4.8-opus-20260528",
-        1.83426385,
+        1.8253488,
         70550,
     ),
     Model.datacenter(
@@ -330,7 +345,7 @@ MODELS = [
         "Claude Haiku 4.5",
         16.8822,
         "anthropic/claude-4.5-haiku-20251001",
-        0.2121337,
+        0.21401766,
         18485,
     ),
     Model.datacenter(
@@ -338,7 +353,7 @@ MODELS = [
         "Claude Sonnet 5",
         38.1639,
         "anthropic/claude-sonnet-5-20260630",
-        0.66817926,
+        0.6635357566666666,
         117787,
     ),
     Model.datacenter(
@@ -346,7 +361,7 @@ MODELS = [
         "Claude Opus 5",
         50.7771,
         "anthropic/claude-opus-5-20260723",
-        2.07708197,
+        2.0553596666666665,
         72511,
     ),
     Model.datacenter(
@@ -354,7 +369,7 @@ MODELS = [
         "Claude Fable 5 (Jun '26)",
         49.6258,
         "anthropic/claude-5-fable-20260609",
-        4.1789565,
+        4.214160700000001,
         66848,
     ),
     Model.datacenter(
@@ -362,14 +377,14 @@ MODELS = [
         "Claude Fable 5.1",
         53.3549,
         "anthropic/claude-fable-5.1-20260831",
-        2.6497516,
+        3.00280475,
         78111,
     ),
 ]
 
 # Bottom of the high-intelligence plot
 HIGH_INTELLIGENCE_THRESHOLD = 33
-LOW_COST_THRESHOLD = 1.00
+LOW_COST_THRESHOLD = 1.25
 
 # The three plots to generate:
 # (title, filter, x tick step, x tick format, band side, file stem)

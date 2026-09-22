@@ -71,6 +71,9 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "Kimi K3": ("kimi-k3", "Kimi K3 (max)", False),
     "Gemini 3.8 Flash": ("gemini-3-8-flash", "Gemini 3.8 Flash (high)", False),
     "Grok 4.6": ("grok-4-6", "Grok 4.6 (xhigh)", False),
+    "Grok 4.7": ("grok-4-7", "Grok 4.7 (xhigh)", False),
+    "MiMo-V2.6-Flash": ("", "", False),  # not on AA yet
+    "MiMo-V2.6-Pro": ("mimo-v2-6-pro", "MiMo-V2.6-Pro", False),
     "GPT-5.5 (Apr '26)": ("gpt-5-5", "GPT-5.5 (xhigh)", False),
     "GPT-5.6 Luna": ("gpt-5-6-luna", "GPT-5.6 Luna (max)", False),
     "GPT-5.6 Sol (Jul '26)": ("gpt-5-6-sol", "GPT-5.6 Sol (max)", False),
@@ -280,7 +283,9 @@ def main() -> None:
                 and abs(new_tok - old_tok) > max(2, old_tok * 0.001)
             ):
                 mark += " TOK!"
-            if new_ref is not None and abs(new_ref - old_ref) / old_ref > 0.02:
+            # exact: plot.py stores the full-precision average, so any nonzero
+            # change means the stored value no longer matches the OR window
+            if new_ref is not None and new_ref != old_ref:
                 mark += " REF!"
         if mark:
             changed += 1
