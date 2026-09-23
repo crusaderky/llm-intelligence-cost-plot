@@ -46,8 +46,8 @@ user will actively want to buy.
 
 ## I made my own plots
 
-All intelligence index scores are from ArtificialAnalysis.
-All points are benchmarked at maximum thinking effort.
+All intelligence index scores are from ArtificialAnalysis. All points are
+benchmarked at maximum thinking effort where not explicitly stated otherwise.
 
 The X axis shows the cost of one Artificial Analysis Intelligence Index task, derived
 from AA's benchmark task size and what OpenRouter's users actually pay for a real
@@ -102,6 +102,9 @@ absent as they have no sticker price to compare with.
   below
 - Changed sub-200-billion-parameter models from datacenter pricing to cost to run locally
   (read below)
+- Extrapolated points for GLM-5.3-Flash at high reasoning effort, by crossing AA scores
+  at max effort with [Z.ai's coding scores](https://z.ai/blog/glm-5.3-flash) at
+  different effort levels
 - Extrapolated Ternary-Bonsai-2's intelligence as ~92% of Qwen3.8-27B's, as reported
   by [ByteShape](https://byteshape.com/blogs/Qwen3.8-27B/)
 
@@ -193,10 +196,10 @@ while the latter can be as cheap as a mobile phone subscription.
 
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
-appreciate how much better Fable 5.1 (intelligence score 53, $14.18/task) is compared to
-GLM-5.3 (intelligence 45, $2.00/task — 7x cheaper), most people will have a hard time
-doing so. Going further down, GLM-5.3-Flash (intelligence 42, $0.15/task — almost
-_ninety times_ cheaper than Fable) is visibly less capable when you give it very
+appreciate how much better Fable 5.1 (intelligence score 53, $14.77/task) is compared to
+GLM-5.3 (intelligence 45, $2.08/task — 7x cheaper), most people will have a hard time
+doing so. Going further down, GLM-5.3-Flash at max effort (intelligence 42, $0.16/task —
+almost _ninety times_ cheaper than Fable) is visibly less capable when you give it very
 sophisticated tasks, like one-shotting a whole coding project on its own, but it remains
 _enough_ for 90% of what people actually need. Even the highly specialized engineers and
 scientists mentioned above don't actually need the extra intelligence for a lot of what

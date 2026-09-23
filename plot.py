@@ -252,7 +252,31 @@ MODELS = [
     ),
     Model(
         "Alibaba",
-        "Qwen3.8-27B",
+        "Qwen3.8-27B (Non-reasoning)",
+        20.1502,
+        ProviderType.LOCAL,
+        aa_tok_per_task=29975,
+        tok_per_sec=46,
+    ),
+    Model(
+        "Alibaba",
+        "Qwen3.8-27B (low)",
+        26.2048,
+        ProviderType.LOCAL,
+        aa_tok_per_task=45426,
+        tok_per_sec=46,
+    ),
+    Model(
+        "Alibaba",
+        "Qwen3.8-27B (medium)",
+        27.5508,
+        ProviderType.LOCAL,
+        aa_tok_per_task=51943,
+        tok_per_sec=46,
+    ),
+    Model(
+        "Alibaba",
+        "Qwen3.8-27B (xhigh)",
         33.6963,
         ProviderType.LOCAL,
         aa_tok_per_task=66797,
@@ -300,7 +324,7 @@ MODELS = [
         aa_price_per_task=0.26522527009606844,
         or_slug="deepseek/deepseek-v4.1-flash-20260910",
         or_session_cost_10_49_turns=0.06962802900000001,
-        or_toks_served=17834858596065,
+        or_toks_served=17834860326691,
     ),
     Model(
         "Tencent",
@@ -337,14 +361,26 @@ MODELS = [
     ),
     Model(
         "Z AI",
-        "GLM-5.3-Flash",
+        "GLM-5.3-Flash (high)",
+        # scaled from the (max) record, see the README note
+        41.8075 * 28.01 / 28.99,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=round(68673 * 70610 / 138690),
+        aa_price_per_task=0.2532595604307378 * 70610 / 138690,
+        or_slug="z-ai/glm-5.3-flash-20260826",
+        or_session_cost_10_49_turns=0.03686962075,
+        or_toks_served=18427117932787,
+    ),
+    Model(
+        "Z AI",
+        "GLM-5.3-Flash (max)",
         41.8075,
         ProviderType.DATACENTER,
         aa_tok_per_task=68673,
         aa_price_per_task=0.2532595604307378,
         or_slug="z-ai/glm-5.3-flash-20260826",
         or_session_cost_10_49_turns=0.03686962075,
-        or_toks_served=18427116913864,
+        or_toks_served=18427117932787,
     ),
     Model(
         "Z AI",
@@ -390,26 +426,44 @@ MODELS = [
         or_session_cost_10_49_turns=1.106407675,
         or_toks_served=311526744654,
     ),
-    # Model(
-    #     "SpaceXAI", "Grok 4.7", 46.4465506302286, ProviderType.DATACENTER,
-    #     aa_tok_per_task=80561, or_slug="x-ai/grok-4.7-20260916",
-    # ),  # on OpenRouter (2026-09-16) but too new for its session stats: no
-    #     # 10-49-turn session cost on any OR harness yet; aa_price_per_task
-    #     # and or_toks_served still to be filled in
-    # Model(
-    #     "StepFun", "Step 5 Preview", 43.7343, ProviderType.DATACENTER,
-    #     aa_tok_per_task=63974,
-    # ),  # not on OpenRouter: no permaslug, no session statistic
+    Model(
+        "SpaceXAI",
+        "Grok 4.7",
+        46.4465506302286,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=80561,
+        aa_price_per_task=3.738325952106939,
+        or_slug="x-ai/grok-4.7-20260916",
+        or_toks_served=70052675398,
+    ),  # on OpenRouter (2026-09-16) but too new for its session stats: no
+    # 10-49-turn session cost on any OR harness yet, so the price is AA's
+    # cost per task, unscaled
+    Model(
+        "StepFun",
+        "Step 5 Preview",
+        43.7343049141614,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=63974,
+        aa_price_per_task=0.715523357458521,
+    ),  # not on OpenRouter: no permaslug, so the price is AA's cost per task,
+    # unscaled
     # Model(
     #     "Xiaomi", "MiMo-V2.6-Flash", 0.0, ProviderType.DATACENTER,
     #     aa_tok_per_task=0.0, or_slug="xiaomi/mimo-v2.6-flash-20260921",
     # ),  # on OpenRouter (2026-09-21) but too new for its session stats: no
     #     # 10-49-turn session cost on any OR harness yet; not on AA yet either
-    # Model(
-    #     "Xiaomi", "MiMo-V2.6-Pro", 46.3242, ProviderType.DATACENTER,
-    #     aa_tok_per_task=64276, or_slug="xiaomi/mimo-v2.6-pro-20260921",
-    # ),  # on OpenRouter (2026-09-21) but too new for its session stats: no
-    #     # 10-49-turn session cost on any OR harness yet
+    Model(
+        "Xiaomi",
+        "MiMo-V2.6-Pro",
+        46.3242065310383,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=64276,
+        aa_price_per_task=0.13322318937213493,
+        or_slug="xiaomi/mimo-v2.6-pro-20260921",
+        or_toks_served=201796558953,
+    ),  # on OpenRouter (2026-09-21) but too new for its session stats: no
+    # 10-49-turn session cost on any OR harness yet, so the price is AA's
+    # cost per task, unscaled
     Model(
         "OpenAI",
         "GPT-5.5 (Apr '26)",
@@ -420,17 +474,6 @@ MODELS = [
         or_slug="openai/gpt-5.5-20260423",
         or_session_cost_10_49_turns=1.2579325,
         or_toks_served=59598673999,
-    ),
-    Model(
-        "OpenAI",
-        "GPT-5.6 Luna",
-        37.3244,
-        ProviderType.DATACENTER,
-        aa_tok_per_task=41235,
-        aa_price_per_task=0.17829726152289094,
-        or_slug="openai/gpt-5.6-luna-20260709",
-        or_session_cost_10_49_turns=0.048065558,
-        or_toks_served=8705829974839,
     ),
     Model(
         "OpenAI",
@@ -445,7 +488,155 @@ MODELS = [
     ),
     Model(
         "OpenAI",
-        "GPT-6 Astra",
+        "GPT-6 Luna (low)",
+        20.9225480080866,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=2054,
+        aa_price_per_task=0.004483809259539013,
+        or_slug="openai/gpt-6-luna-20260922",
+        or_toks_served=72935760636,
+    ),
+    Model(
+        "OpenAI",
+        "GPT-6 Luna (medium)",
+        29.4619523515762,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=11227,
+        aa_price_per_task=0.01725359419426588,
+        or_slug="openai/gpt-6-luna-20260922",
+        or_toks_served=72935760636,
+    ),
+    Model(
+        "OpenAI",
+        "GPT-6 Luna (high)",
+        32.1482304150837,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=19771,
+        aa_price_per_task=0.02861964876935845,
+        or_slug="openai/gpt-6-luna-20260922",
+        or_toks_served=72935760636,
+    ),
+    Model(
+        "OpenAI",
+        "GPT-6 Luna (xhigh)",
+        33.8845820217785,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=27189,
+        aa_price_per_task=0.041708771594451556,
+        or_slug="openai/gpt-6-luna-20260922",
+        or_toks_served=72935760636,
+    ),
+    Model(
+        "OpenAI",
+        "GPT-6 Luna (max)",
+        37.2559686869738,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=50537,
+        aa_price_per_task=0.06809498628701058,
+        or_slug="openai/gpt-6-luna-20260922",
+        or_toks_served=72935760636,
+    ),  # on OpenRouter (2026-09-22) but too new for its session stats: no
+    # 10-49-turn session cost on any OR harness yet, so the price is AA's
+    # cost per task, unscaled
+    Model(
+        "OpenAI",
+        "GPT-6 Sol (low)",
+        33.9008505585733,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=3358,
+        aa_price_per_task=0.13224085088798104,
+        or_slug="openai/gpt-6-sol-20260922",
+        or_toks_served=18699869899,
+    ),
+    Model(
+        "OpenAI",
+        "GPT-6 Sol (medium)",
+        39.7820971749522,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=6478,
+        aa_price_per_task=0.24820209578663968,
+        or_slug="openai/gpt-6-sol-20260922",
+        or_toks_served=18699869899,
+    ),
+    Model(
+        "OpenAI",
+        "GPT-6 Sol (high)",
+        42.8215513642985,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=10232,
+        aa_price_per_task=0.3746326907148203,
+        or_slug="openai/gpt-6-sol-20260922",
+        or_toks_served=18699869899,
+    ),
+    Model(
+        "OpenAI",
+        "GPT-6 Sol (xhigh)",
+        44.1009705516407,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=16013,
+        aa_price_per_task=0.5318962692390143,
+        or_slug="openai/gpt-6-sol-20260922",
+        or_toks_served=18699869899,
+    ),
+    Model(
+        "OpenAI",
+        "GPT-6 Sol (max)",
+        47.5276426437724,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=31238,
+        aa_price_per_task=1.0564240894076389,
+        or_slug="openai/gpt-6-sol-20260922",
+        or_toks_served=18699869899,
+    ),  # on OpenRouter (2026-09-22) but too new for its session stats: no
+    # 10-49-turn session cost on any OR harness yet, so the price is AA's
+    # cost per task, unscaled
+    Model(
+        "OpenAI",
+        "GPT-6 Astra (low)",
+        45.7819243120341,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=4433,
+        aa_price_per_task=0.8175139285656057,
+        or_slug="openai/gpt-6-astra-20260903",
+        or_session_cost_10_49_turns=2.9237528,
+        or_toks_served=1849344485783,
+    ),
+    Model(
+        "OpenAI",
+        "GPT-6 Astra (medium)",
+        49.5704363034369,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=9590,
+        aa_price_per_task=1.5406493220021167,
+        or_slug="openai/gpt-6-astra-20260903",
+        or_session_cost_10_49_turns=2.9237528,
+        or_toks_served=1849344485783,
+    ),
+    Model(
+        "OpenAI",
+        "GPT-6 Astra (high)",
+        50.9191471636152,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=11813,
+        aa_price_per_task=1.7252530861048456,
+        or_slug="openai/gpt-6-astra-20260903",
+        or_session_cost_10_49_turns=2.9237528,
+        or_toks_served=1849344485783,
+    ),
+    Model(
+        "OpenAI",
+        "GPT-6 Astra (xhigh)",
+        52.3863277108782,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=16901,
+        aa_price_per_task=2.308795912269076,
+        or_slug="openai/gpt-6-astra-20260903",
+        or_session_cost_10_49_turns=2.9237528,
+        or_toks_served=1849344485783,
+    ),
+    Model(
+        "OpenAI",
+        "GPT-6 Astra (max)",
         52.6737,
         ProviderType.DATACENTER,
         aa_tok_per_task=27206,
@@ -489,7 +680,7 @@ MODELS = [
     ),
     Model(
         "Anthropic",
-        "Claude Opus 5",
+        "Claude Opus 5 (Jul '26)",
         50.7771,
         ProviderType.DATACENTER,
         aa_tok_per_task=72511,
@@ -511,7 +702,7 @@ MODELS = [
     ),
     Model(
         "Anthropic",
-        "Claude Fable 5.1",
+        "Claude Fable 5.1 (Aug '26)",
         53.3549,
         ProviderType.DATACENTER,
         aa_tok_per_task=78111,
@@ -520,6 +711,58 @@ MODELS = [
         or_session_cost_10_49_turns=2.99685025,
         or_toks_served=500274922710,
     ),
+    Model(
+        "Anthropic",
+        "Claude Opus 5.5 (low)",
+        42.3077781466168,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=10151,
+        aa_price_per_task=0.551180473909146,
+        or_slug="anthropic/claude-opus-5.5-20260921",
+        or_toks_served=27634285008,
+    ),
+    Model(
+        "Anthropic",
+        "Claude Opus 5.5 (medium)",
+        51.2434931792768,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=25745,
+        aa_price_per_task=1.3360093438976588,
+        or_slug="anthropic/claude-opus-5.5-20260921",
+        or_toks_served=27634285008,
+    ),
+    Model(
+        "Anthropic",
+        "Claude Opus 5.5 (high)",
+        53.5831959822067,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=35584,
+        aa_price_per_task=1.822504718771704,
+        or_slug="anthropic/claude-opus-5.5-20260921",
+        or_toks_served=27634285008,
+    ),
+    Model(
+        "Anthropic",
+        "Claude Opus 5.5 (xhigh)",
+        55.9873505840139,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=65667,
+        aa_price_per_task=3.459110175822289,
+        or_slug="anthropic/claude-opus-5.5-20260921",
+        or_toks_served=27634285008,
+    ),
+    Model(
+        "Anthropic",
+        "Claude Opus 5.5 (max)",
+        57.6223698102963,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=119166,
+        aa_price_per_task=5.982012019521066,
+        or_slug="anthropic/claude-opus-5.5-20260921",
+        or_toks_served=27634285008,
+    ),  # on OpenRouter (2026-09-21) but too new for its session stats: no
+    # 10-49-turn session cost on any OR harness yet, so the price is AA's
+    # cost per task, unscaled
 ]
 
 
@@ -582,6 +825,8 @@ class PlotSpec(NamedTuple):
     zero_line: bool = False
     x_min: float = -math.inf  # hard lower bound on a signed x axis
     bar: bool = False  # draw horizontal bars (sorted by intelligence) not dots
+    one_per_model: bool = False  # collapse a model's effort variants to one
+    # bar (they share a permaslug, and with it the x statistic)
 
 
 # The four plots to generate.
@@ -618,6 +863,7 @@ PLOTS = [
         zero_line=True,
         x_min=-100,
         bar=True,
+        one_per_model=True,
     ),
 ]
 
@@ -1358,7 +1604,18 @@ def make_bar_plot(spec, models):
     ordered by intelligence (dumbest at the bottom). The model names are the
     y tick labels, so there is no auto-placed text, no Pareto frontier and no
     green band.
+
+    With one_per_model, a model's effort variants collapse to a single bar:
+    they share a permaslug, and with it the scaling factor behind x, so they
+    would all draw the same bar; the max-effort row stands in for the rest.
     """
+    if spec.one_per_model:
+        best: dict[str, Model] = {}
+        for m in models:
+            key = m.or_slug or m.name
+            if key not in best or m.intelligence > best[key].intelligence:
+                best[key] = m
+        models = list(best.values())
     ordered = sorted(models, key=lambda m: m.intelligence)
     ys = list(range(len(ordered)))
     xs = [spec.x_of(m) for m in ordered]

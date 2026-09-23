@@ -58,7 +58,14 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "MiniCPM5-2B": ("minicpm5-2b", "MiniCPM5-2B", False),
     "Muse Glimmer": ("muse-glimmer", "Muse Glimmer (high)", False),
     "Qwen3.6-35B-A3B": ("qwen3-6-35b-a3b", "Qwen3.6 35B A3B (Reasoning)", False),
-    "Qwen3.8-27B": ("qwen3-8-27b", "Qwen3.8 27B (xhigh)", False),
+    "Qwen3.8-27B (Non-reasoning)": (
+        "qwen3-8-27b",
+        "Qwen3.8 27B (Non-reasoning)",
+        False,
+    ),
+    "Qwen3.8-27B (low)": ("qwen3-8-27b", "Qwen3.8 27B (low)", False),
+    "Qwen3.8-27B (medium)": ("qwen3-8-27b", "Qwen3.8 27B (medium)", False),
+    "Qwen3.8-27B (xhigh)": ("qwen3-8-27b", "Qwen3.8 27B (xhigh)", False),
     "Ternary-Bonsai-2": ("", "", False),  # not on AA: manual entry
     "Qwen3.8-Flash-Next": ("qwen3-8-flash-next", "Qwen3.8-Flash-Next", False),
     "K2 Horizon 7B": ("k2-horizon-7b", "K2 Horizon 7B", False),
@@ -70,7 +77,11 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     ),
     "Hy3": ("hy3", "Hy3", False),
     "Muse Spark 1.3": ("muse-spark-1-3", "Muse Spark 1.3 (max)", False),
-    "GLM-5.3-Flash": ("glm-5-3-flash", "GLM 5.3 Flash", False),
+    # (high) is extrapolated from the (max) record: intelligence x
+    # 28.01/28.99, tokens and price x 70610/138690 (ratios from Z.ai's coding
+    # scores and AA's GLM-5.3 effort split, see the README note)
+    "GLM-5.3-Flash (high)": ("glm-5-3-flash", "GLM 5.3 Flash", True),
+    "GLM-5.3-Flash (max)": ("glm-5-3-flash", "GLM 5.3 Flash", False),
     "GLM-5.3": ("glm-5-3", "GLM-5.3 (max)", False),
     "Kimi K3": ("kimi-k3", "Kimi K3 (max)", False),
     "Gemini 3.8 Flash": ("gemini-3-8-flash", "Gemini 3.8 Flash (high)", False),
@@ -79,9 +90,23 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "MiMo-V2.6-Flash": ("", "", False),  # not on AA yet
     "MiMo-V2.6-Pro": ("mimo-v2-6-pro", "MiMo-V2.6-Pro", False),
     "GPT-5.5 (Apr '26)": ("gpt-5-5", "GPT-5.5 (xhigh)", False),
-    "GPT-5.6 Luna": ("gpt-5-6-luna", "GPT-5.6 Luna (max)", False),
     "GPT-5.6 Sol (Jul '26)": ("gpt-5-6-sol", "GPT-5.6 Sol (max)", False),
-    "GPT-6 Astra": ("gpt-6-astra", "GPT-6 Astra (max)", False),
+    "GPT-6 Luna (low)": ("gpt-6-luna-low", "GPT-6 Luna (low)", False),
+    "GPT-6 Luna (medium)": ("gpt-6-luna-medium", "GPT-6 Luna (medium)", False),
+    "GPT-6 Luna (high)": ("gpt-6-luna-high", "GPT-6 Luna (high)", False),
+    "GPT-6 Luna (xhigh)": ("gpt-6-luna-xhigh", "GPT-6 Luna (xhigh)", False),
+    "GPT-6 Luna (max)": ("gpt-6-luna", "GPT-6 Luna (max)", False),
+    "GPT-6 Sol (low)": ("gpt-6-sol-low", "GPT-6 Sol (low)", False),
+    "GPT-6 Sol (medium)": ("gpt-6-sol-medium", "GPT-6 Sol (medium)", False),
+    "GPT-6 Sol (high)": ("gpt-6-sol-high", "GPT-6 Sol (high)", False),
+    "GPT-6 Sol (xhigh)": ("gpt-6-sol-xhigh", "GPT-6 Sol (xhigh)", False),
+    "GPT-6 Sol (max)": ("gpt-6-sol", "GPT-6 Sol (max)", False),
+    "GPT-6 Astra (low)": ("gpt-6-astra-low", "GPT-6 Astra (low)", False),
+    "GPT-6 Astra (medium)": ("gpt-6-astra-medium", "GPT-6 Astra (medium)", False),
+    "GPT-6 Astra (high)": ("gpt-6-astra-high", "GPT-6 Astra (high)", False),
+    "GPT-6 Astra (xhigh)": ("gpt-6-astra-xhigh", "GPT-6 Astra (xhigh)", False),
+    "GPT-6 Astra (max)": ("gpt-6-astra", "GPT-6 Astra (max)", False),
+    "Step 5 Preview": ("step-5", "Step 5 Preview", False),
     "Claude Opus 4.8 (May '26)": (
         "claude-opus-4-8",
         "Claude Opus 4.8 (Adaptive Reasoning, Max Effort)",
@@ -97,7 +122,7 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
         "Claude Sonnet 5 (Adaptive Reasoning, Max Effort)",
         False,
     ),
-    "Claude Opus 5": (
+    "Claude Opus 5 (Jul '26)": (
         "claude-opus-5",
         "Claude Opus 5 (Adaptive Reasoning, Max Effort)",
         False,
@@ -107,9 +132,34 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
         "Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback)",
         False,
     ),
-    "Claude Fable 5.1": (
+    "Claude Fable 5.1 (Aug '26)": (
         "claude-fable-5-1",
         "Claude Fable 5.1 (Adaptive Reasoning, Max Effort, Default Fallback)",
+        False,
+    ),
+    "Claude Opus 5.5 (low)": (
+        "claude-opus-5-5-low",
+        "Claude Opus 5.5 (Adaptive Reasoning, Low Effort, Default Fallback)",
+        False,
+    ),
+    "Claude Opus 5.5 (medium)": (
+        "claude-opus-5-5-medium",
+        "Claude Opus 5.5 (Adaptive Reasoning, Medium Effort, Default Fallback)",
+        False,
+    ),
+    "Claude Opus 5.5 (high)": (
+        "claude-opus-5-5-high",
+        "Claude Opus 5.5 (Adaptive Reasoning, High Effort, Default Fallback)",
+        False,
+    ),
+    "Claude Opus 5.5 (xhigh)": (
+        "claude-opus-5-5-xhigh",
+        "Claude Opus 5.5 (Adaptive Reasoning, Xhigh Effort, Default Fallback)",
+        False,
+    ),
+    "Claude Opus 5.5 (max)": (
+        "claude-opus-5-5",
+        "Claude Opus 5.5 (Adaptive Reasoning, Max Effort, Default Fallback)",
         False,
     ),
 }
@@ -355,6 +405,11 @@ def main() -> None:
             f"{fmt(old_sess, '.6f'):>12s} -> {fmt(new_sess, '.6f'):>12s} "
             f"{fmt_vol(old_vol):>8s} -> {fmt_vol(new_vol):>8s}{mark}{src}"
         )
+        if derived:
+            print(
+                "   (derived: values are extrapolated from the (max) record — "
+                "the ratios are historical, see the README note)"
+            )
         if "[TRAIN]" in m.name:
             print("   ([TRAIN] twin of the entry above — keep values in sync)")
         if m.provider_type is plot.ProviderType.LOCAL:
