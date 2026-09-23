@@ -424,7 +424,7 @@ MODELS = [
         aa_price_per_task=3.738325952106939,
         or_slug="x-ai/grok-4.7-20260916",
         or_toks_served=70052675398,
-    ), 
+    ),
     # Expected to land on OpenRouter on 2026-10-15
     Model(
         "StepFun",
@@ -433,12 +433,25 @@ MODELS = [
         ProviderType.DATACENTER,
         aa_tok_per_task=63974,
         aa_price_per_task=0.715523357458521,
-    ),  
-    # not on OpenRouter: no permaslug, so the price is AA's cost per task, unscaled
-    # Model(
-    #     "Xiaomi", "MiMo-V2.6-Flash", 0.0, ProviderType.DATACENTER,
-    #     aa_tok_per_task=0.0, or_slug="xiaomi/mimo-v2.6-flash-20260921",
-    # ),
+    ),
+    # Guesstimate - not on AA yet
+    Model(
+        "Xiaomi",
+        "MiMo-V2.6-Flash",
+        # Intelligence = MiMo-V2.6-Pro's AA index times the geometric mean of the
+        # flash/pro benchmark score ratios Xiaomi published at
+        # https://mimo.xiaomi.com/mimo-v2-6
+        39.22,
+        ProviderType.DATACENTER,
+        # Assumed identical to Pro's
+        aa_tok_per_task=64276,
+        # Pro's AA cost per task breakdown 
+        # -> Pro's AA output/input/cache hit tokens 
+        # -> nominal Flash pricing
+        aa_price_per_task=0.049,
+        or_slug="xiaomi/mimo-v2.6-flash-20260921",
+        or_toks_served=152403470153,
+    ),
     Model(
         "Xiaomi",
         "MiMo-V2.6-Pro",

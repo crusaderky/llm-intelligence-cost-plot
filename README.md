@@ -107,6 +107,11 @@ absent as they have no sticker price to compare with.
   different effort levels
 - Extrapolated Ternary-Bonsai-2's intelligence as ~92% of Qwen3.8-27B's, as reported
   by [ByteShape](https://byteshape.com/blogs/Qwen3.8-27B/)
+- Estimated MiMo-V2.6-Flash's point (not on AA yet): intelligence as Pro's AA score
+  times the geometric mean of the 16 flash/pro benchmark score ratios Xiaomi
+  published at [mimo.xiaomi.com/mimo-v2-6](https://mimo.xiaomi.com/mimo-v2-6), and
+  cost per task as Pro's AA cost per task scaled by Xiaomi's nominal flash/pro
+  price ratios
 
 ## Cost calculation for datacenter models
 
