@@ -1567,7 +1567,9 @@ def make_bar_plot(spec, models):
     """Horizontal bar version of a PlotSpec: one bar per model, x = x_of(m),
     ordered by intelligence (dumbest at the bottom). The model names are the
     y tick labels, so there is no auto-placed text, no Pareto frontier and no
-    green band.
+    green band. A name's markers ([TRAIN], ⚡) cannot be embedded in a plain
+    tick string: they are stripped from the label and drawn as their vector
+    icons just right of the label text (see the icon pass after the draw).
 
     With one_per_model, a model's effort variants collapse to a single bar:
     they share a permaslug, and with it the scaling factor behind x, so they
@@ -1588,15 +1590,23 @@ def make_bar_plot(spec, models):
     colors = [PUBLISHERS[m.publisher] for m in ordered]
     # Collapsed bars represent the whole permaslug family, not just the
     # max-effort row that stands in: drop the effort suffix from the label.
+    # The tick labels are plain strings, so a name's markers ([TRAIN], ⚡)
+    # cannot be embedded: strip them from the text and record the row, the
+    # matching icon is drawn next to the label after the figure is rendered
+    # (below).
     labels = []
-    for m in ordered:
+    icon_rows = []
+    for i, m in enumerate(ordered):
         name = m.name
         if spec.one_per_model:
             for suffix in (" (low)", " (medium)", " (high)", " (xhigh)", " (max)"):
                 if name.endswith(suffix):
                     name = name[: -len(suffix)]
                     break
-        labels.append(name)
+        left, icon, right, _strike = _split_icon(name)
+        labels.append((left + " " + right).strip())
+        if icon is not None:
+            icon_rows.append((i, icon))
 
     fig, ax = plt.subplots(figsize=(FIG_W, FIG_H), dpi=DPI)
     ax.barh(ys, xs, height=0.7, color=colors, zorder=3)
@@ -1623,7 +1633,12 @@ def make_bar_plot(spec, models):
     ax.set_axisbelow(True)
     for side in ("top", "right", "left"):
         ax.spines[side].set_visible(False)
-    ax.tick_params(axis="y", length=0)
+    # Room in the tick pad for the row icons, drawn between the label text
+    # and the axes (below).
+    y_pad = plt.rcParams["ytick.major.pad"]
+    if icon_rows:
+        y_pad += (ICON_GAP + max(ICON_SIZE[i] for _, i in icon_rows)) * 72 / DPI + 2
+    ax.tick_params(axis="y", length=0, pad=y_pad)
     ax.tick_params(axis="x", labelsize=12, colors="#5b6270")
 
     legend, have_unavailable = _plot_legend(
@@ -1637,6 +1652,33 @@ def make_bar_plot(spec, models):
             if text.get_text() == "Not publicly available":
                 _strike_text(ax, text, renderer, zorder=6)  # above the legend frame
                 break
+
+    # The marker icons for the tick labels: each is a separate vector
+    # marker, centred just right of its label text (the y pad above leaves
+    # room). In data coords, like the leader lines in place_labels, so it
+    # survives SVG export.
+    if icon_rows:
+        inv = ax.transData.inverted()
+        tick_labels = ax.get_yticklabels()
+        for i, icon in icon_rows:
+            bb = tick_labels[i].get_window_extent(renderer)
+            s = ICON_SIZE[icon]
+            cx = bb.x1 + ICON_GAP + s / 2
+            cy = (bb.y0 + bb.y1) / 2
+            fill, edge = ICON_COLORS[icon]
+            ((ix, iy),) = inv.transform([(cx, cy)])
+            ax.plot(
+                [ix],
+                [iy],
+                marker=ICON_PATHS[icon],
+                markersize=s * 72 / DPI,
+                markerfacecolor=fill,
+                markeredgecolor=edge,
+                markeredgewidth=1.0,
+                linestyle="none",
+                zorder=4,
+                clip_on=False,
+            )
 
     os.makedirs("plots", exist_ok=True)
     # Drop the <dc:date> timestamp so regenerating with unchanged data is a
