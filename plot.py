@@ -713,7 +713,7 @@ def or_tokens_per_session() -> float:
 
 
 # Bottom of the high-intelligence plot
-HIGH_INTELLIGENCE_THRESHOLD = 33
+HIGH_INTELLIGENCE_THRESHOLD = 37
 # Right edge of the green band: the cheap cluster tops out at ~$0.15/task on
 # the new scale, and the next most expensive model sits at ~$1.4.
 LOW_COST_THRESHOLD = 0.2
