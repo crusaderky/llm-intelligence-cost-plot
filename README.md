@@ -68,6 +68,10 @@ Models marked with a thief mask symbol
 train on your data and you should not use them for anything that you would not
 want to become publicly available on the internet.
 
+Models that ArtificialAnalysis has not measured are drawn as hollow circles; their
+positions are extrapolated or estimated (the details are in the list of differences
+below).
+
 <a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/plots/high_intelligence.svg"><img src="plots/high_intelligence.png" alt="Intelligence vs. Price per Task (High Intelligence)"></a>
 
 The green area at the bottom left is where models become _extremely_ cheap. Let's zoom

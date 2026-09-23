@@ -30,8 +30,10 @@ Models are `Model(...)` dataclasses: `publisher`, `name`, `intelligence` and
 `provider_type` (`ProviderType.LOCAL` or `ProviderType.DATACENTER`) are positional,
 every other field is keyword-only. `aa_tok_per_task` is mandatory; `or_slug`,
 `or_session_cost_10_49_turns`, `or_toks_served` and `hardware` are optional.
-`__post_init__` enforces the per-type minimums: `aa_price_per_task` for datacenter
-models, `tok_per_sec` for local ones. The displayed price per task is derived on demand
+`estimated=True` marks points extrapolated outside AA: they render as hollow
+circles and add an `Estimated (not on AA)` legend entry. `__post_init__` enforces
+the per-type minimums: `aa_price_per_task` for datacenter models, `tok_per_sec`
+for local ones. The displayed price per task is derived on demand
 by `Model.price_per_task()` (see README for rationale):
 
 - `ProviderType.DATACENTER` — OR's session cost converted to $/task as

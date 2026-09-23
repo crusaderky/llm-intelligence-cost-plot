@@ -135,6 +135,9 @@ class Model:
     # Local models: decode speed measured on `hardware` (None = RTX3090).
     tok_per_sec: float | None = field(default=None, kw_only=True)
     hardware: LocalHardware | None = field(default=None, kw_only=True)
+    # Not on AA: the point is extrapolated/estimated. Rendered as a hollow
+    # circle, with a matching "Estimated (not on AA)" legend entry.
+    estimated: bool = field(default=False, kw_only=True)
 
     def __post_init__(self) -> None:
         if self.provider_type is ProviderType.LOCAL:
@@ -292,6 +295,7 @@ MODELS = [
         ProviderType.LOCAL,
         aa_tok_per_task=66797,
         tok_per_sec=73,
+        estimated=True,
     ),
     Model(
         "Alibaba",
@@ -370,6 +374,7 @@ MODELS = [
         or_slug="z-ai/glm-5.3-flash-20260826",
         or_session_cost_10_49_turns=0.03686962075,
         or_toks_served=18427117932787,
+        estimated=True,
     ),
     Model(
         "Z AI",
@@ -445,12 +450,13 @@ MODELS = [
         ProviderType.DATACENTER,
         # Assumed identical to Pro's
         aa_tok_per_task=64276,
-        # Pro's AA cost per task breakdown 
-        # -> Pro's AA output/input/cache hit tokens 
+        # Pro's AA cost per task breakdown
+        # -> Pro's AA output/input/cache hit tokens
         # -> nominal Flash pricing
         aa_price_per_task=0.049,
         or_slug="xiaomi/mimo-v2.6-flash-20260921",
         or_toks_served=152403470153,
+        estimated=True,
     ),
     Model(
         "Xiaomi",
@@ -1300,8 +1306,9 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
 
 def _plot_legend(ax, models, loc="lower right", bbox_to_anchor=None):
     """Legend for the publishers present in a plot, plus an entry for every
-    special marker in use (⚡ local electricity, [TRAIN] thief mask,
-    [UNAVAILABLE]). Returns (legend, has_unavailable_entry)."""
+    special marker in use (⚡ local electricity, [TRAIN] thief mask, hollow
+    dot for estimated points, [UNAVAILABLE]).
+    Returns (legend, has_unavailable_entry)."""
     present = [p for p in PUBLISHERS if any(m.publisher == p for m in models)]
     handles = [
         Line2D(
@@ -1345,6 +1352,20 @@ def _plot_legend(ax, models, loc="lower right", bbox_to_anchor=None):
                 label="Trains on your data",
             )
         )
+    if any(m.estimated for m in models):
+        handles.append(
+            Line2D(
+                [0],
+                [0],
+                marker="o",
+                linestyle="",
+                markersize=DOT_SIZE**0.5,
+                markerfacecolor="white",
+                markeredgecolor="black",
+                markeredgewidth=1.5,
+                label="Estimated (not on AA)",
+            )
+        )
     have_unavailable = any(m.not_publicly_available for m in models)
     if have_unavailable:
         handles.append(
@@ -1375,13 +1396,27 @@ def make_plot(spec, models, band, y_lim):
 
     fig, ax = plt.subplots(figsize=(FIG_W, FIG_H), dpi=DPI)
 
+    # Estimated points (not on AA) are drawn hollow (white fill) with the
+    # publisher-colored border, instead of as solid publisher-colored dots.
+    solid = [i for i, m in enumerate(models) if not m.estimated]
+    hollow = [i for i, m in enumerate(models) if m.estimated]
     ax.scatter(
-        xs,
-        ys,
+        [xs[i] for i in solid],
+        [ys[i] for i in solid],
         s=DOT_SIZE,
-        c=colors,
+        c=[colors[i] for i in solid],
         zorder=3,
     )
+    if hollow:
+        ax.scatter(
+            [xs[i] for i in hollow],
+            [ys[i] for i in hollow],
+            s=DOT_SIZE,
+            facecolors="white",
+            edgecolors=[colors[i] for i in hollow],
+            linewidths=1.5,
+            zorder=3,
+        )
 
     # Faint dotted Pareto frontier: max intelligence for each cost, computed
     # over ALL models, not this plot's filtered view. Each plot is a zoom of
