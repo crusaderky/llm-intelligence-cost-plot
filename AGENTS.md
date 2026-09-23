@@ -26,16 +26,25 @@ Follow `.agents/skills/refresh-models/SKILL.md`: it re-fetches the AA and OpenRo
 numbers for every existing model (and prints a ready-to-paste constructor row for a new
 one). `.agents/skills/aa-lookup` is the low-level AA query tool it builds on.
 
-Two constructors, each encoding a different cost provenance (see README for rationale):
+Models are `Model(...)` dataclasses: `publisher`, `name`, `intelligence` and
+`provider_type` (`ProviderType.LOCAL` or `ProviderType.DATACENTER`) are positional,
+every other field is keyword-only. `aa_tok_per_task` is mandatory; `or_slug`,
+`or_session_cost_10_49_turns`, `or_toks_served` and `hardware` are optional.
+`__post_init__` enforces the per-type minimums: `aa_price_per_task` for datacenter
+models, `tok_per_sec` for local ones. The displayed price per task is derived on demand
+by `Model.price_per_task()` (see README for rationale):
 
-- `Model.datacenter(publisher, name, intelligence, or_slug, or_session_cost_10_49_turns, aa_output_tokens_per_task)` — reference cost computed as
-  `OR avg 10-49-turn session cost (across OR coding harnesses) x AA output tokens per task / HOUR_SCALE`. All three inputs are re-fetched from AA/OpenRouter on every refresh.
-- `Model.local(publisher, name, intelligence, tok_per_task, tok_per_sec, hardware=RTX3090)`
-  — electricity cost, normalized to the datacenter scale through the hardcoded
-  GPT-5.6 Luna (max) anchor inside `local()`. Use for sub-35B models;
-  `hardware=STRIX_HALO` for the ~120B class. Requires tok/s measured on local
-  hardware, not from AA; `tok_per_task` is AA's output tokens per task and is
-  re-fetched on every refresh.
+- `ProviderType.DATACENTER` — OR's session cost converted to $/task as
+  `aa_tok_per_task x or_session_cost_10_49_turns / or_tokens_per_session()`, where
+  `or_tokens_per_session()` is the volume-weighted (by `or_toks_served`) mean of
+  `aa_tok_per_task x or_session_cost_10_49_turns / aa_price_per_task`, i.e. the estimate
+  of tokens per 10-49-turn session. Equivalently: AA's cost per task times the model's
+  price-level ratio over the volume-weighted average. A model with no OR session data
+  keeps `aa_price_per_task` unscaled. All the inputs are re-fetched on every refresh.
+- `ProviderType.LOCAL` — electricity to generate `aa_tok_per_task` at `tok_per_sec` on
+  `hardware` (leave unset for RTX3090; `hardware=STRIX_HALO` for the ~120B class), with
+  no datacenter scaling. Use for sub-35B models. Requires tok/s measured on local
+  hardware, not from AA; the `⚡` and hardware suffix is appended automatically.
 
 When OR carries no 10-49-turn session data for a model on any harness (e.g.
 `qwen/qwen3.8-2.4t-a95b`), comment the row out — there is no fallback statistic for

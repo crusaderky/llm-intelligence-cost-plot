@@ -61,11 +61,11 @@ query with the full exact name (as printed by `--list`) for a reliable page matc
 
 - `intelligence` — the page record's sub-unit value (the API-side
   `evaluations.artificial_analysis_intelligence_index` may be rounded).
-- `output_tokens_per_task` — AA's benchmark task size in output tokens; feeds the
-  reference-cost formula (`OR session cost x tokens / HOUR_SCALE`) in
-  `Model.datacenter` and the electricity calculation in `Model.local`.
-- `cost_per_task_total` — no longer plotted, but still needed for the hardcoded
-  GPT-5.6 Luna (max) anchor inside `Model.local` and as a sanity cross-check.
+- `output_tokens_per_task` — AA's benchmark task size in output tokens; feeds
+  `aa_tok_per_task` (the electricity calculation for local models and the OpenRouter
+  rescaling for datacenter models).
+- `cost_per_task_total` — feeds `aa_price_per_task` for datacenter models (AA's
+  sticker price, before the OpenRouter rescaling).
 
 The `.agents/skills/refresh-models` skill automates all of this (AA + OpenRouter)
 and prints old -> new values plus paste-ready constructor rows; prefer it over

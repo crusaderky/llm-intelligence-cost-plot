@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-09-21
+**Last updated:** 2026-09-23
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -49,10 +49,10 @@ user will actively want to buy.
 All intelligence index scores are from ArtificialAnalysis.
 All points are benchmarked at maximum thinking effort.
 
-The X axis shows my own estimation of how much people actually pay to run each model on
-OpenRouter, in relative terms. The absolute amounts are arbitrary and they should be
-only used to compare each other. Later in the document I explain how I calculated these
-numbers.
+The X axis shows the cost of one Artificial Analysis Intelligence Index task, derived
+from AA's benchmark task size and what OpenRouter's users actually pay for a real
+agentic session rather than from the developers' sticker prices. Later in the document
+I explain how I calculated these numbers.
 
 In the first plot we see the current offering with the most intelligent (and expensive)
 models.
@@ -68,7 +68,7 @@ Models marked with a thief mask symbol
 train on your data and you should not use them for anything that you would not
 want to become publicly available on the internet.
 
-<a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/plots/high_intelligence.svg"><img src="plots/high_intelligence.png" alt="Intelligence vs. Reference Cost (High Intelligence)"></a>
+<a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/plots/high_intelligence.svg"><img src="plots/high_intelligence.png" alt="Intelligence vs. Price per Task (High Intelligence)"></a>
 
 The green area at the bottom left is where models become _extremely_ cheap. Let's zoom
 into it and extend the intelligence plot a bit lower, down to what can run today on a
@@ -80,18 +80,26 @@ below), since the model is so small that it makes no sense to serve it from a
 datacenter. When comparing local models against each other, it also offers a scale of
 how long each model takes to complete tasks.
 
-<a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/plots/low_cost.svg"><img src="plots/low_cost.png" alt="Intelligence vs. Reference Cost (Low Cost)"></a>
+<a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/plots/low_cost.svg"><img src="plots/low_cost.png" alt="Intelligence vs. Price per Task (Low Cost)"></a>
 
-Finally, let's merge the two plots together to better visualize the diminishing returns
+Let's merge the two plots together to better visualize the diminishing returns
 in performance/cost. Again, the area that's common to all plots is highlighted in green:
 
-<a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/plots/all_models.svg"><img src="plots/all_models.png" alt="Intelligence vs. Reference Cost (All Models)"></a>
+<a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/plots/all_models.svg"><img src="plots/all_models.png" alt="Intelligence vs. Price per Task (All Models)"></a>
+
+This is how much each datacenter model's real price per task deviates from the price
+ArtificialAnalysis published for it. To the left of zero the OpenRouter reality is
+cheaper than AA's sticker price, to the right it is more expensive. Local models are
+absent as they have no sticker price to compare with.
+
+<a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/plots/price_delta.svg"><img src="plots/price_delta.png" alt="Intelligence vs. Δ from AA's Price per Task"></a>
 
 ## All the differences between AA's plot and mine
 
 - Changed x scale from logarithmic to linear, because people's money is not logarithmic
 - Replaced AA's cost-per-task (the developers' posted prices applied to AA's benchmark
-  token mix) with the reference cost described below
+  token mix) with the real cost of the same task as measured on OpenRouter, described
+  below
 - Changed sub-200-billion-parameter models from datacenter pricing to cost to run locally
   (read below)
 - Extrapolated Ternary-Bonsai-2's intelligence as ~92% of Qwen3.8-27B's, as reported
@@ -99,33 +107,41 @@ in performance/cost. Again, the area that's common to all plots is highlighted i
 
 ## Cost calculation for datacenter models
 
-The **reference cost** for datacenter models chains two observed statistics:
+The **price per task** for datacenter models is built from what OpenRouter's customers
+actually pay, using two observed statistics:
 
 - **OpenRouter's session cost for 10–49 turns** — the median cost of a real agentic
   session of 10–49 turns (the "core" bucket on OpenRouter's session-cost leaderboard),
   averaged over the OpenRouter coding harnesses that carry session data for the model.
+  This is a stable measure of real spending: per-provider list prices are not reliable
+  (degraded or abnormally slow endpoints, discounts and routing keep moving them).
 
-- **ArtificialAnalysis's output tokens per task** — this gives a measure of how verbose
-  each model is.
+- **OpenRouter's weekly tokens served** — how many prompt and completion tokens
+  OpenRouter served for the model over the trailing week, across all its variants. This
+  is the weight with which the model enters the average below.
 
-We then calculate:
+Session cost is dollars per _session_, not dollars per _task_, so it needs a
+tokens-per-session conversion. AA's cost per task and OpenRouter's session cost share
+the model's real price per token, so the ratio of the two estimates that number, and the
+volume-weighted mean over all models is the conversion constant K:
 
 ```text
-reference cost = OR session cost (10-49 turns) × AA output tokens per task / hourly scale
+K = volume-weighted mean of (AA output tokens per task × OR session cost / AA cost per task)
+price per task = AA output tokens per task × OR session cost / K
 ```
 
-Where the hourly scale is a crude constant, identical for all models, which roughly fits
-each model to the cost of running it as an agent for an hour at ~50 tok/s. It is not
-meant to be accurate in absolute terms; it helps ground the $ values to something
-tangible.
-
-In other words: **the reference cost is proportional to how much a session with the same
-median number of turns costs in real life, multiplied by how many turns it will take to
-complete the same task** (using output tokens as a proxy).
+Calibrating K on AA's prices pins the volume-weighted average of
+`price-per-task / AA-cost-per-task` to 1, so the plot keeps AA's overall dollar level
+while its relative shape follows real spending. In other words: **the price is
+proportional to what the model needs to answer one benchmark task at its own verbosity,
+relative to what the average token served through OpenRouter costs.** A model whose real
+price per token is above the volume-weighted average moves right of AA's sticker price;
+a cheaper one moves left. A model with no 10–49-turn session data on OpenRouter keeps
+AA's cost per task, unscaled.
 
 ## Cost calculation for local models
 
-Reference cost for models marked with the lightning-bolt symbol (⚡) was crudely
+Price per task for models marked with the lightning-bolt symbol (⚡) was crudely
 calculated as follows:
 
 - Take Output tokens per task [from
@@ -139,12 +155,6 @@ calculated as follows:
 - Add 20% (finger-in-the-air) for uncached input tokens and waiting for tool calls
 - Hardware is priced at zero, on the basis that both an RTX 3090 PC and a 64GB Strix
   Halo are desirable gaming/work machines anyways.
-
-This electricity figure is comparable with the ArtificialAnalysis cost per task. To
-obtain datacenter reference costs for local models, they are rescaled by a constant
-defined by taking GPT-5.6 Luna's reference cost described in the previous paragraph in
-proportion to its ArtificialAnalysis price per task. Local models price-per-task is
-multiplied by this factor, so they can share an axis with the datacenter models.
 
 Note that there isn't a material difference in electricity costs between different
 hardware platforms: a Strix Halo draws less power than an RTX 3090, but it's slower so
@@ -183,12 +193,12 @@ while the latter can be as cheap as a mobile phone subscription.
 
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
-appreciate how much better Fable 5.1 (intelligence score 53, ~$94/h) is compared to
-GLM-5.3 (intelligence 45, $13/h — ~7x cheaper), most people will have a hard time doing
-so. Going further down, GLM-5.3-Flash (intelligence 42, $1.01 — almost _ninety times_
-cheaper than Fable) is visibly less capable when you give it very sophisticated tasks,
-like one-shotting a whole coding project on its own, but it remains _enough_ for 90% of
-what people actually need. Even the highly specialized engineers and scientists
-mentioned above don't actually need the extra intelligence for a lot of what they do.
-Descending just a little bit further, an enthusiast gamer can run Qwen3.8-27B
-(intelligence 34, $0.14/h in electricity) on a computer they already own.
+appreciate how much better Fable 5.1 (intelligence score 53, $14.18/task) is compared to
+GLM-5.3 (intelligence 45, $2.00/task — 7x cheaper), most people will have a hard time
+doing so. Going further down, GLM-5.3-Flash (intelligence 42, $0.15/task — almost
+_ninety times_ cheaper than Fable) is visibly less capable when you give it very
+sophisticated tasks, like one-shotting a whole coding project on its own, but it remains
+_enough_ for 90% of what people actually need. Even the highly specialized engineers and
+scientists mentioned above don't actually need the extra intelligence for a lot of what
+they do. Descending just a little bit further, an enthusiast gamer can run Qwen3.8-27B
+(intelligence 34, $0.03/task in electricity) on a computer they already own.
