@@ -196,10 +196,11 @@ while the latter can be as cheap as a mobile phone subscription.
 
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
-appreciate how much better Fable 5.1 (intelligence score 53, $14.77/task) is compared to
-GLM-5.3 (intelligence 45, $2.08/task — 7x cheaper), most people will have a hard time
-doing so. Going further down, GLM-5.3-Flash at max effort (intelligence 42, $0.16/task —
-almost _ninety times_ cheaper than Fable) is visibly less capable when you give it very
+appreciate how much better Claude Opus 5.5 at max effort (intelligence score 58,
+$5.98/task) is compared to GLM-5.3 (intelligence 45, $2.11/task — 3x cheaper), most
+people will have a hard time doing so. Going further down, GLM-5.3-Flash at max effort
+(intelligence 42, $0.16/task — almost _forty times_ cheaper than Opus 5.5) is visibly
+less capable when you give it very
 sophisticated tasks, like one-shotting a whole coding project on its own, but it remains
 _enough_ for 90% of what people actually need. Even the highly specialized engineers and
 scientists mentioned above don't actually need the extra intelligence for a lot of what

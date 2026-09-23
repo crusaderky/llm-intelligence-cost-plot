@@ -85,12 +85,9 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "GLM-5.3": ("glm-5-3", "GLM-5.3 (max)", False),
     "Kimi K3": ("kimi-k3", "Kimi K3 (max)", False),
     "Gemini 3.8 Flash": ("gemini-3-8-flash", "Gemini 3.8 Flash (high)", False),
-    "Grok 4.6": ("grok-4-6", "Grok 4.6 (xhigh)", False),
     "Grok 4.7": ("grok-4-7", "Grok 4.7 (xhigh)", False),
     "MiMo-V2.6-Flash": ("", "", False),  # not on AA yet
     "MiMo-V2.6-Pro": ("mimo-v2-6-pro", "MiMo-V2.6-Pro", False),
-    "GPT-5.5 (Apr '26)": ("gpt-5-5", "GPT-5.5 (xhigh)", False),
-    "GPT-5.6 Sol (Jul '26)": ("gpt-5-6-sol", "GPT-5.6 Sol (max)", False),
     "GPT-6 Luna (low)": ("gpt-6-luna-low", "GPT-6 Luna (low)", False),
     "GPT-6 Luna (medium)": ("gpt-6-luna-medium", "GPT-6 Luna (medium)", False),
     "GPT-6 Luna (high)": ("gpt-6-luna-high", "GPT-6 Luna (high)", False),
@@ -107,34 +104,9 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "GPT-6 Astra (xhigh)": ("gpt-6-astra-xhigh", "GPT-6 Astra (xhigh)", False),
     "GPT-6 Astra (max)": ("gpt-6-astra", "GPT-6 Astra (max)", False),
     "Step 5 Preview": ("step-5", "Step 5 Preview", False),
-    "Claude Opus 4.8 (May '26)": (
-        "claude-opus-4-8",
-        "Claude Opus 4.8 (Adaptive Reasoning, Max Effort)",
-        False,
-    ),
-    "Claude Haiku 4.5": (
-        "claude-4-5-haiku-reasoning",
-        "Claude 4.5 Haiku (Reasoning)",
-        False,
-    ),
     "Claude Sonnet 5": (
         "claude-sonnet-5",
         "Claude Sonnet 5 (Adaptive Reasoning, Max Effort)",
-        False,
-    ),
-    "Claude Opus 5 (Jul '26)": (
-        "claude-opus-5",
-        "Claude Opus 5 (Adaptive Reasoning, Max Effort)",
-        False,
-    ),
-    "Claude Fable 5 (Jun '26)": (
-        "claude-fable-5",
-        "Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback)",
-        False,
-    ),
-    "Claude Fable 5.1 (Aug '26)": (
-        "claude-fable-5-1",
-        "Claude Fable 5.1 (Adaptive Reasoning, Max Effort, Default Fallback)",
         False,
     ),
     "Claude Opus 5.5 (low)": (

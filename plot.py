@@ -417,17 +417,6 @@ MODELS = [
     ),
     Model(
         "SpaceXAI",
-        "Grok 4.6",
-        44.1998,
-        ProviderType.DATACENTER,
-        aa_tok_per_task=37608,
-        aa_price_per_task=2.323692124283027,
-        or_slug="x-ai/grok-4.6-20260810",
-        or_session_cost_10_49_turns=1.106407675,
-        or_toks_served=311526744654,
-    ),
-    Model(
-        "SpaceXAI",
         "Grok 4.7",
         46.4465506302286,
         ProviderType.DATACENTER,
@@ -435,9 +424,8 @@ MODELS = [
         aa_price_per_task=3.738325952106939,
         or_slug="x-ai/grok-4.7-20260916",
         or_toks_served=70052675398,
-    ),  # on OpenRouter (2026-09-16) but too new for its session stats: no
-    # 10-49-turn session cost on any OR harness yet, so the price is AA's
-    # cost per task, unscaled
+    ), 
+    # Expected to land on OpenRouter on 2026-10-15
     Model(
         "StepFun",
         "Step 5 Preview",
@@ -445,13 +433,12 @@ MODELS = [
         ProviderType.DATACENTER,
         aa_tok_per_task=63974,
         aa_price_per_task=0.715523357458521,
-    ),  # not on OpenRouter: no permaslug, so the price is AA's cost per task,
-    # unscaled
+    ),  
+    # not on OpenRouter: no permaslug, so the price is AA's cost per task, unscaled
     # Model(
     #     "Xiaomi", "MiMo-V2.6-Flash", 0.0, ProviderType.DATACENTER,
     #     aa_tok_per_task=0.0, or_slug="xiaomi/mimo-v2.6-flash-20260921",
-    # ),  # on OpenRouter (2026-09-21) but too new for its session stats: no
-    #     # 10-49-turn session cost on any OR harness yet; not on AA yet either
+    # ),
     Model(
         "Xiaomi",
         "MiMo-V2.6-Pro",
@@ -461,30 +448,6 @@ MODELS = [
         aa_price_per_task=0.13322318937213493,
         or_slug="xiaomi/mimo-v2.6-pro-20260921",
         or_toks_served=201796558953,
-    ),  # on OpenRouter (2026-09-21) but too new for its session stats: no
-    # 10-49-turn session cost on any OR harness yet, so the price is AA's
-    # cost per task, unscaled
-    Model(
-        "OpenAI",
-        "GPT-5.5 (Apr '26)",
-        38.3556,
-        ProviderType.DATACENTER,
-        aa_tok_per_task=23658,
-        aa_price_per_task=2.6339796841243297,
-        or_slug="openai/gpt-5.5-20260423",
-        or_session_cost_10_49_turns=1.2579325,
-        or_toks_served=59598673999,
-    ),
-    Model(
-        "OpenAI",
-        "GPT-5.6 Sol (Jul '26)",
-        46.9727,
-        ProviderType.DATACENTER,
-        aa_tok_per_task=29309,
-        aa_price_per_task=1.98845538085375,
-        or_slug="openai/gpt-5.6-sol-20260709",
-        or_session_cost_10_49_turns=0.6811685025,
-        or_toks_served=1903617746417,
     ),
     Model(
         "OpenAI",
@@ -535,9 +498,7 @@ MODELS = [
         aa_price_per_task=0.06809498628701058,
         or_slug="openai/gpt-6-luna-20260922",
         or_toks_served=72935760636,
-    ),  # on OpenRouter (2026-09-22) but too new for its session stats: no
-    # 10-49-turn session cost on any OR harness yet, so the price is AA's
-    # cost per task, unscaled
+    ),
     Model(
         "OpenAI",
         "GPT-6 Sol (low)",
@@ -587,9 +548,7 @@ MODELS = [
         aa_price_per_task=1.0564240894076389,
         or_slug="openai/gpt-6-sol-20260922",
         or_toks_served=18699869899,
-    ),  # on OpenRouter (2026-09-22) but too new for its session stats: no
-    # 10-49-turn session cost on any OR harness yet, so the price is AA's
-    # cost per task, unscaled
+    ),
     Model(
         "OpenAI",
         "GPT-6 Astra (low)",
@@ -647,28 +606,6 @@ MODELS = [
     ),
     Model(
         "Anthropic",
-        "Claude Opus 4.8 (May '26)",
-        41.7899,
-        ProviderType.DATACENTER,
-        aa_tok_per_task=70550,
-        aa_price_per_task=4.080976976477826,
-        or_slug="anthropic/claude-4.8-opus-20260528",
-        or_session_cost_10_49_turns=1.8215919999999999,
-        or_toks_served=442269209885,
-    ),
-    Model(
-        "Anthropic",
-        "Claude Haiku 4.5",
-        16.8822,
-        ProviderType.DATACENTER,
-        aa_tok_per_task=18485,
-        aa_price_per_task=0.2077123803588505,
-        or_slug="anthropic/claude-4.5-haiku-20251001",
-        or_session_cost_10_49_turns=0.214323125,
-        or_toks_served=242043591675,
-    ),
-    Model(
-        "Anthropic",
         "Claude Sonnet 5",
         38.1639,
         ProviderType.DATACENTER,
@@ -677,39 +614,6 @@ MODELS = [
         or_slug="anthropic/claude-sonnet-5-20260630",
         or_session_cost_10_49_turns=0.6632285433333334,
         or_toks_served=1490383785036,
-    ),
-    Model(
-        "Anthropic",
-        "Claude Opus 5 (Jul '26)",
-        50.7771,
-        ProviderType.DATACENTER,
-        aa_tok_per_task=72511,
-        aa_price_per_task=5.858396237036018,
-        or_slug="anthropic/claude-opus-5-20260723",
-        or_session_cost_10_49_turns=2.0528957333333335,
-        or_toks_served=1186631518800,
-    ),
-    Model(
-        "Anthropic",
-        "Claude Fable 5 (Jun '26)",
-        49.6258,
-        ProviderType.DATACENTER,
-        aa_tok_per_task=66848,
-        aa_price_per_task=8.745961651687406,
-        or_slug="anthropic/claude-5-fable-20260609",
-        or_session_cost_10_49_turns=4.20338275,
-        or_toks_served=65470766131,
-    ),
-    Model(
-        "Anthropic",
-        "Claude Fable 5.1 (Aug '26)",
-        53.3549,
-        ProviderType.DATACENTER,
-        aa_tok_per_task=78111,
-        aa_price_per_task=7.629706364004841,
-        or_slug="anthropic/claude-fable-5.1-20260831",
-        or_session_cost_10_49_turns=2.99685025,
-        or_toks_served=500274922710,
     ),
     Model(
         "Anthropic",
@@ -760,9 +664,7 @@ MODELS = [
         aa_price_per_task=5.982012019521066,
         or_slug="anthropic/claude-opus-5.5-20260921",
         or_toks_served=27634285008,
-    ),  # on OpenRouter (2026-09-21) but too new for its session stats: no
-    # 10-49-turn session cost on any OR harness yet, so the price is AA's
-    # cost per task, unscaled
+    ),
 ]
 
 
@@ -835,13 +737,15 @@ PLOTS = [
         "Intelligence vs. Price per Task (High Intelligence)",
         lambda m: m.intelligence >= HIGH_INTELLIGENCE_THRESHOLD,
         "high_intelligence",
+        xtick_step=0.2,
+        xtick_format="$%.2f",
         band_side="bottom",
     ),
     PlotSpec(
         "Intelligence vs. Price per Task (Low Cost)",
         lambda m: m.price_per_task() <= LOW_COST_THRESHOLD,
         "low_cost",
-        xtick_step=0.05,
+        xtick_step=0.01,
         xtick_format="$%.2f",
         band_side="top",
     ),
@@ -849,6 +753,8 @@ PLOTS = [
         "Intelligence vs. Price per Task (All Models)",
         lambda _: True,
         "all_models",
+        xtick_step=0.2,
+        xtick_format="$%.2f",
     ),
     PlotSpec(
         "Intelligence vs. Δ from AA's Price per Task",
