@@ -422,7 +422,17 @@ MODELS = [
     ),
     Model(
         "SpaceXAI",
-        "Grok 4.7",
+        "Grok 4.7 (high)",
+        46.3321770885625,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=65901,
+        aa_price_per_task=2.726106691786027,
+        or_slug="x-ai/grok-4.7-20260916",
+        or_toks_served=70052675398,
+    ),
+    Model(
+        "SpaceXAI",
+        "Grok 4.7 (xhigh)",
         46.4465506302286,
         ProviderType.DATACENTER,
         aa_tok_per_task=80561,
@@ -1561,7 +1571,9 @@ def make_bar_plot(spec, models):
 
     With one_per_model, a model's effort variants collapse to a single bar:
     they share a permaslug, and with it the scaling factor behind x, so they
-    would all draw the same bar; the max-effort row stands in for the rest.
+    would all draw the same bar; the max-effort row stands in for the rest,
+    and the bar is labeled with the base name (the effort suffix would
+    single out one variant of a statistic the whole family shares).
     """
     if spec.one_per_model:
         best: dict[str, Model] = {}
@@ -1574,10 +1586,21 @@ def make_bar_plot(spec, models):
     ys = list(range(len(ordered)))
     xs = [spec.x_of(m) for m in ordered]
     colors = [PUBLISHERS[m.publisher] for m in ordered]
+    # Collapsed bars represent the whole permaslug family, not just the
+    # max-effort row that stands in: drop the effort suffix from the label.
+    labels = []
+    for m in ordered:
+        name = m.name
+        if spec.one_per_model:
+            for suffix in (" (low)", " (medium)", " (high)", " (xhigh)", " (max)"):
+                if name.endswith(suffix):
+                    name = name[: -len(suffix)]
+                    break
+        labels.append(name)
 
     fig, ax = plt.subplots(figsize=(FIG_W, FIG_H), dpi=DPI)
     ax.barh(ys, xs, height=0.7, color=colors, zorder=3)
-    ax.set_yticks(ys, [m.name for m in ordered], fontsize=LABEL_SIZE)
+    ax.set_yticks(ys, labels, fontsize=LABEL_SIZE)
     ax.set_ylim(-0.6, len(ordered) - 0.4)
 
     # x axis (set limits before drawing the zero line)

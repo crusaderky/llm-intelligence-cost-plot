@@ -85,7 +85,8 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "GLM-5.3": ("glm-5-3", "GLM-5.3 (max)", False),
     "Kimi K3": ("kimi-k3", "Kimi K3 (max)", False),
     "Gemini 3.8 Flash": ("gemini-3-8-flash", "Gemini 3.8 Flash (high)", False),
-    "Grok 4.7": ("grok-4-7", "Grok 4.7 (xhigh)", False),
+    "Grok 4.7 (high)": ("grok-4-7-high", "Grok 4.7 (high)", False),
+    "Grok 4.7 (xhigh)": ("grok-4-7", "Grok 4.7 (xhigh)", False),
     "MiMo-V2.6-Flash": ("", "", False),  # not on AA yet
     "MiMo-V2.6-Pro": ("mimo-v2-6-pro", "MiMo-V2.6-Pro", False),
     "GPT-6 Luna (low)": ("gpt-6-luna-low", "GPT-6 Luna (low)", False),
