@@ -59,9 +59,9 @@ models.
 
 A good rule of thumb for reading the intelligence axis: a one-point difference is
 unlikely to be noticeable by most, while a 5-point gap is substantial. It's important to
-point out that an intelligence score of 37, which is the rock bottom in this first plot,
-is substantially above what the smartest model in the world could deliver in February
-2026 (Opus 4.6, score 32).
+point out that an intelligence score of 38, which is the rock bottom in this first plot,
+is where the smartest models in the world could deliver in April 2026 (Opus 4.7 and
+GPT-5.5).
 
 Models marked with a thief mask symbol
 (<img src="static/thief_mask.png" alt="[thief mask]" height="15" style="vertical-align: middle">)
