@@ -58,16 +58,9 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "MiniCPM5-2B": ("minicpm5-2b", "MiniCPM5-2B", False),
     "Muse Glimmer": ("muse-glimmer", "Muse Glimmer (high)", False),
     "Qwen3.6-35B-A3B": ("qwen3-6-35b-a3b", "Qwen3.6 35B A3B (Reasoning)", False),
-    "Qwen3.8-27B (Non-reasoning)": (
-        "qwen3-8-27b",
-        "Qwen3.8 27B (Non-reasoning)",
-        False,
-    ),
-    "Qwen3.8-27B (low)": ("qwen3-8-27b", "Qwen3.8 27B (low)", False),
-    "Qwen3.8-27B (medium)": ("qwen3-8-27b", "Qwen3.8 27B (medium)", False),
-    "Qwen3.8-27B (xhigh)": ("qwen3-8-27b", "Qwen3.8 27B (xhigh)", False),
+    "Qwen3.8-27B": ("qwen3-8-27b", "Qwen3.8 27B (xhigh)", False),
     "Ternary-Bonsai-2": ("", "", False),  # not on AA: manual entry
-    "Qwen3.8-Flash-Next": ("qwen3-8-flash-next", "Qwen3.8-Flash-Next", False),
+    "Qwen3.8-Flash": ("qwen3-8-flash-next", "Qwen3.8-Flash-Next", False),
     "K2 Horizon 7B": ("k2-horizon-7b", "K2 Horizon 7B", False),
     "Qwen3.8 Max (0902)": ("qwen3-8-max", "Qwen3.8 Max (0902)", False),
     "DeepSeek V4.1 Flash": (

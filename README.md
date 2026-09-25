@@ -177,11 +177,11 @@ it needs to run longer to complete the same tasks.
 Not including the cost of hardware stops being defensible once you upgrade beyond 64 GB
 RAM, as almost nobody needs that much RAM if not for AI.
 
-Qwen3.8-Flash needs, as a minimum, a 128GB Strix Halo; it is shown on the plot as the
-electricity it costs to run it locally; however this already hides a substantial expense
-for hardware: a 64 GB Strix Halo, which is a very desirable general purpose mini PC,
-costs $2,200; a 128 GB one costs $3,800 and doesn't enable anything other than AI models
-in the ~120B-parameter class.
+Qwen3.8-Flash needs, as a minimum, a 128GB Strix Halo to run locally. It appears twice
+on the plot: once with datacenter pricing and once with the ⚡ symbol for local
+electricity cost. The latter hides a substantial hardware expense: a 64 GB Strix Halo,
+which is a very desirable general purpose mini PC, costs $2,200; a 128 GB one costs
+$3,800 and doesn't enable anything other than AI models in the ~120B-parameter class.
 
 The following models _can_ be run locally, but carry a very steep up-front hardware
 cost:

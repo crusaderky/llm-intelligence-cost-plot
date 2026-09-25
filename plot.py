@@ -255,31 +255,7 @@ MODELS = [
     ),
     Model(
         "Alibaba",
-        "Qwen3.8-27B (Non-reasoning)",
-        20.1502,
-        ProviderType.LOCAL,
-        aa_tok_per_task=29975,
-        tok_per_sec=46,
-    ),
-    Model(
-        "Alibaba",
-        "Qwen3.8-27B (low)",
-        26.2048,
-        ProviderType.LOCAL,
-        aa_tok_per_task=45426,
-        tok_per_sec=46,
-    ),
-    Model(
-        "Alibaba",
-        "Qwen3.8-27B (medium)",
-        27.5508,
-        ProviderType.LOCAL,
-        aa_tok_per_task=51943,
-        tok_per_sec=46,
-    ),
-    Model(
-        "Alibaba",
-        "Qwen3.8-27B (xhigh)",
+        "Qwen3.8-27B",
         33.6963,
         ProviderType.LOCAL,
         aa_tok_per_task=66797,
@@ -299,7 +275,7 @@ MODELS = [
     ),
     Model(
         "Alibaba",
-        "Qwen3.8-Flash-Next",
+        "Qwen3.8-Flash",
         39.8223,
         ProviderType.LOCAL,
         aa_tok_per_task=107885,
@@ -308,6 +284,17 @@ MODELS = [
     ),
     # --- Datacenter models (price per task = AA's cost per task rescaled by
     # OR real-world usage) ---
+    Model(
+        "Alibaba",
+        "Qwen3.8-Flash",
+        39.8223,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=107885,
+        aa_price_per_task=0.3721760025302965,
+        or_slug="qwen/qwen3.8-flash-20260826",
+        or_session_cost_10_49_turns=0.04544454566666667,
+        or_toks_served=487340464187,
+    ),
     Model(
         "Alibaba",
         "Qwen3.8 Max (0902)",
@@ -1026,6 +1013,41 @@ def _overlap_area(a, b):
     return dx * dy if dx > 0 and dy > 0 else 0.0
 
 
+def _segments_cross(a, b):
+    """Whether closed line segments a and b intersect or overlap.
+
+    Leader lines sharing space make dense clusters hard to read, so even an
+    endpoint touch or a collinear overlap counts. Coordinates are display
+    pixels.
+    """
+
+    def orient(p, q, r):
+        val = (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
+        scale = max(1.0, abs(q[0] - p[0]), abs(q[1] - p[1]))
+        if abs(val) <= 1e-9 * scale**2:
+            return 0
+        return 1 if val > 0 else -1
+
+    def on_segment(p, q, r):
+        return (
+            min(p[0], r[0]) - 1e-9 <= q[0] <= max(p[0], r[0]) + 1e-9
+            and min(p[1], r[1]) - 1e-9 <= q[1] <= max(p[1], r[1]) + 1e-9
+        )
+
+    p, q = (a[0], a[1]), (a[2], a[3])
+    r, s = (b[0], b[1]), (b[2], b[3])
+    o1, o2 = orient(p, q, r), orient(p, q, s)
+    o3, o4 = orient(r, s, p), orient(r, s, q)
+    if o1 != o2 and o3 != o4:
+        return True
+    return (
+        (o1 == 0 and on_segment(p, r, q))
+        or (o2 == 0 and on_segment(p, s, q))
+        or (o3 == 0 and on_segment(r, p, s))
+        or (o4 == 0 and on_segment(r, q, s))
+    )
+
+
 def _text_width(ax, renderer, text):
     """Width of text in display pixels at LABEL_SIZE."""
     t = ax.text(0, 0, text, fontsize=LABEL_SIZE)
@@ -1098,10 +1120,10 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
     crowd = [crowding(i) for i in range(len(points))]
     order = sorted(range(len(points)), key=lambda i: (-crowd[i], -points[i][5]))
 
-    def choose(i, obstacles):
+    def choose(i, obstacles, leaders):
         """Pick the best candidate position for label i. Returns
-        (score, bbox, left_x0, vc, icon_cx, right_x0, w_right); the bbox and
-        positions are display pixels."""
+        (score, bbox, left_x0, vc, icon_cx, right_x0, w_right, leader); the
+        bbox, positions and leader segment are display pixels."""
         left, right, icon, _strike, x, y = points[i]
         best = None
         # In a cluster, a label touching its dot is ambiguous no matter what, so
@@ -1170,21 +1192,61 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
             )
             dot_pen = sum(_overlap_area(bb, o) for o in dot_boxes)
             pen = sum(_overlap_area(bb, o) for o in obstacles)
-            score = (spill, dot_pen > 0, dot_pen, pen)
 
+            px, py = disp[i]
+            anchor_x = max(bb[0], min(px, bb[2]))
+            anchor_y = max(bb[1], min(py, bb[3]))
+            dist = math.hypot(anchor_x - px, anchor_y - py)
+            leader = None
+            if crowd[i] or dist > marker_r_px + LEADER_MIN:
+                if dist > 1e-6:
+                    ux, uy = (anchor_x - px) / dist, (anchor_y - py) / dist
+                    start_x = px + ux * marker_r_px
+                    start_y = py + uy * marker_r_px
+                else:
+                    start_x, start_y = px, py
+                leader = (start_x, start_y, anchor_x, anchor_y)
+            crossings = sum(
+                1
+                for other in leaders
+                if leader is not None and _segments_cross(leader, other)
+            )
+            score = (
+                spill,
+                dot_pen > 0,
+                dot_pen,
+                crossings > 0,
+                crossings,
+                pen,
+            )
+
+            result = (
+                score,
+                bb,
+                left_x0,
+                vc,
+                icon_cx,
+                right_x0,
+                w_right,
+                leader,
+            )
             if not any(score):  # collision-free position
-                return (score, bb, left_x0, vc, icon_cx, right_x0, w_right)
+                return result
             if best is None or score < best[0]:
-                best = (score, bb, left_x0, vc, icon_cx, right_x0, w_right)
+                best = result
         return best
 
-    # Round 0: greedy sequential pass (already-placed labels are obstacles).
+    # Round 0: greedy sequential pass (already-placed labels and leader lines
+    # are obstacles).
     placed = [None] * len(points)
     obstacles = list(extra_obstacles)
+    leaders = []
     for i in order:
-        b = choose(i, obstacles)
+        b = choose(i, obstacles, leaders)
         placed[i] = b
         obstacles.append(b[1])
+        if b[7] is not None:
+            leaders.append(b[7])
 
     # Repair rounds: re-place every label, in crowd order, against the latest
     # positions of the others (Gauss-Seidel style). Updating every label
@@ -1194,15 +1256,22 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
     # of rounds (dense clusters may be unsatisfiable).
     for _round in range(40):
         for i in order:
-            obs = list(extra_obstacles) + [
-                placed[j][1] for j in range(len(points)) if j != i
-            ]
-            placed[i] = choose(i, obs)
-        if not any(
+            others = [j for j in range(len(points)) if j != i]
+            obs = list(extra_obstacles) + [placed[j][1] for j in others]
+            other_leaders = [placed[j][7] for j in others if placed[j][7] is not None]
+            placed[i] = choose(i, obs, other_leaders)
+        label_collisions = any(
             _overlap_area(placed[i][1], placed[j][1]) > 4 * PAD_PX * PAD_PX
             for i in range(len(points))
             for j in range(i + 1, len(points))
-        ):
+        )
+        leader_collisions = any(
+            _segments_cross(placed[i][7], placed[j][7])
+            for i in range(len(points))
+            for j in range(i + 1, len(points))
+            if placed[i][7] is not None and placed[j][7] is not None
+        )
+        if not label_collisions and not leader_collisions:
             break
 
     # Diagnostics toggle, set by --verbose in main().
@@ -1225,10 +1294,20 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
                         f"[{points[i][0][:30]}|{points[i][1][:20]}] vs "
                         f"[{points[j][0][:30]}|{points[j][1][:20]}]",
                     )
+                if (
+                    placed[i][7] is not None
+                    and placed[j][7] is not None
+                    and _segments_cross(placed[i][7], placed[j][7])
+                ):
+                    print(
+                        f"LEADER CROSS: "
+                        f"[{points[i][0][:30]}|{points[i][1][:20]}] vs "
+                        f"[{points[j][0][:30]}|{points[j][1][:20]}]"
+                    )
     inv = ax.transData.inverted()
     for i in order:
         left, right, icon, strike, x, y = points[i]
-        _, bb, left_x0, vc, icon_cx, right_x0, _ = placed[i]
+        _, bb, left_x0, vc, icon_cx, right_x0, _, leader = placed[i]
         color = UNAVAILABLE_COLOR if strike else "#1f2328"
         ((tx, ty),) = inv.transform([(left_x0, vc)])
         ax.text(
@@ -1287,21 +1366,12 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
         # Leader line from the dot to the nearest edge of its label. Always
         # drawn for points in a cluster (where proximity alone is ambiguous),
         # and for any label that ended up well away from its dot.
-        px, py = ax.transData.transform((x, y))
-        anchor_x = max(bb[0], min(px, bb[2]))  # closest point on the label bbox
-        anchor_y = max(bb[1], min(py, bb[3]))
-        dist = math.hypot(anchor_x - px, anchor_y - py)
-
-        if crowd[i] or dist > marker_r_px + LEADER_MIN:
-            # start at the edge of the marker, not its centre
-            if dist > 1e-6:
-                ux, uy = (anchor_x - px) / dist, (anchor_y - py) / dist
-                sx_, sy_ = px + ux * marker_r_px, py + uy * marker_r_px
-            else:
-                sx_, sy_ = px, py
+        if leader is not None:
             # Convert back to data coords: pixel-space artists don't survive the
             # SVG renderer's own coordinate space, data coords do.
-            (x0, y0), (x1, y1) = inv.transform([(sx_, sy_), (anchor_x, anchor_y)])
+            (x0, y0), (x1, y1) = inv.transform(
+                [(leader[0], leader[1]), (leader[2], leader[3])]
+            )
             ax.add_line(
                 Line2D(
                     [x0, x1],
