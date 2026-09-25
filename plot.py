@@ -304,7 +304,7 @@ MODELS = [
         aa_price_per_task=5.408509428374016,
         or_slug="qwen/qwen3.8-max-20260902",
         or_session_cost_10_49_turns=0.80500755,
-        or_toks_served=400624673646,
+        or_toks_served=365141283966,
     ),
     Model(
         "DeepSeek",
@@ -315,7 +315,7 @@ MODELS = [
         aa_price_per_task=0.26522527009606844,
         or_slug="deepseek/deepseek-v4.1-flash-20260910",
         or_session_cost_10_49_turns=0.06962802900000001,
-        or_toks_served=17834860326691,
+        or_toks_served=18906130198394,
     ),
     Model(
         "Tencent",
@@ -326,7 +326,7 @@ MODELS = [
         aa_price_per_task=0.07430984031498059,
         or_slug="tencent/hy3-20260706",
         or_session_cost_10_49_turns=0.047079116,
-        or_toks_served=4207353041359,
+        or_toks_served=3557049434396,
     ),
     Model(
         "Meta",
@@ -337,7 +337,7 @@ MODELS = [
         aa_price_per_task=1.6048932100125866,
         or_slug="meta/muse-spark-1.3-20260902",
         or_session_cost_10_49_turns=0.5541186,
-        or_toks_served=273275622851,
+        or_toks_served=390688450824,
     ),
     Model(
         "Meta",
@@ -348,7 +348,7 @@ MODELS = [
         aa_price_per_task=1.6048932100125866,
         or_slug="meta/muse-spark-1.3-contributor-20260902",
         or_session_cost_10_49_turns=0.025736046749999998,
-        or_toks_served=2183144317956,
+        or_toks_served=2001422663192,
     ),
     Model(
         "Z AI",
@@ -360,7 +360,7 @@ MODELS = [
         aa_price_per_task=0.2532595604307378 * 70610 / 138690,
         or_slug="z-ai/glm-5.3-flash-20260826",
         or_session_cost_10_49_turns=0.03686962075,
-        or_toks_served=18427117932787,
+        or_toks_served=19037623490205,
         estimated=True,
     ),
     Model(
@@ -372,7 +372,7 @@ MODELS = [
         aa_price_per_task=0.2532595604307378,
         or_slug="z-ai/glm-5.3-flash-20260826",
         or_session_cost_10_49_turns=0.03686962075,
-        or_toks_served=18427117932787,
+        or_toks_served=19037623490205,
     ),
     Model(
         "Z AI",
@@ -383,7 +383,7 @@ MODELS = [
         aa_price_per_task=2.0056375150449584,
         or_slug="z-ai/glm-5.3-20260816",
         or_session_cost_10_49_turns=0.46428977,
-        or_toks_served=3141624698164,
+        or_toks_served=3203057992634,
     ),
     Model(
         "Moonshot AI",
@@ -394,7 +394,7 @@ MODELS = [
         aa_price_per_task=2.0001323004425493,
         or_slug="moonshotai/kimi-k3-20260715",
         or_session_cost_10_49_turns=0.7604998125,
-        or_toks_served=1454487527071,
+        or_toks_served=1390210091597,
     ),
     Model(
         "Google",
@@ -405,7 +405,7 @@ MODELS = [
         aa_price_per_task=1.2427947606950427,
         or_slug="google/gemini-3.8-flash-20260902",
         or_session_cost_10_49_turns=0.2633476625,
-        or_toks_served=2221665595290,
+        or_toks_served=2127382556981,
     ),
     Model(
         "SpaceXAI",
@@ -415,7 +415,7 @@ MODELS = [
         aa_tok_per_task=65901,
         aa_price_per_task=2.726106691786027,
         or_slug="x-ai/grok-4.7-20260916",
-        or_toks_served=70052675398,
+        or_toks_served=149390340878,
     ),
     Model(
         "SpaceXAI",
@@ -425,7 +425,7 @@ MODELS = [
         aa_tok_per_task=80561,
         aa_price_per_task=3.738325952106939,
         or_slug="x-ai/grok-4.7-20260916",
-        or_toks_served=70052675398,
+        or_toks_served=149390340878,
     ),
     # Expected to land on OpenRouter on 2026-10-15
     Model(
@@ -463,7 +463,7 @@ MODELS = [
         aa_tok_per_task=64276,
         aa_price_per_task=0.13322318937213493,
         or_slug="xiaomi/mimo-v2.6-pro-20260921",
-        or_toks_served=201796558953,
+        or_toks_served=546254778303,
     ),
     Model(
         "OpenAI",
@@ -473,7 +473,7 @@ MODELS = [
         aa_tok_per_task=2054,
         aa_price_per_task=0.004483809259539013,
         or_slug="openai/gpt-6-luna-20260922",
-        or_toks_served=72935760636,
+        or_toks_served=1027801316155,
     ),
     Model(
         "OpenAI",
@@ -483,7 +483,7 @@ MODELS = [
         aa_tok_per_task=11227,
         aa_price_per_task=0.01725359419426588,
         or_slug="openai/gpt-6-luna-20260922",
-        or_toks_served=72935760636,
+        or_toks_served=1027801316155,
     ),
     Model(
         "OpenAI",
@@ -493,7 +493,7 @@ MODELS = [
         aa_tok_per_task=19771,
         aa_price_per_task=0.02861964876935845,
         or_slug="openai/gpt-6-luna-20260922",
-        or_toks_served=72935760636,
+        or_toks_served=1027801316155,
     ),
     Model(
         "OpenAI",
@@ -503,7 +503,7 @@ MODELS = [
         aa_tok_per_task=27189,
         aa_price_per_task=0.041708771594451556,
         or_slug="openai/gpt-6-luna-20260922",
-        or_toks_served=72935760636,
+        or_toks_served=1027801316155,
     ),
     Model(
         "OpenAI",
@@ -513,7 +513,7 @@ MODELS = [
         aa_tok_per_task=50537,
         aa_price_per_task=0.06809498628701058,
         or_slug="openai/gpt-6-luna-20260922",
-        or_toks_served=72935760636,
+        or_toks_served=1027801316155,
     ),
     Model(
         "OpenAI",
@@ -523,7 +523,7 @@ MODELS = [
         aa_tok_per_task=3358,
         aa_price_per_task=0.13224085088798104,
         or_slug="openai/gpt-6-sol-20260922",
-        or_toks_served=18699869899,
+        or_toks_served=348151822517,
     ),
     Model(
         "OpenAI",
@@ -533,7 +533,7 @@ MODELS = [
         aa_tok_per_task=6478,
         aa_price_per_task=0.24820209578663968,
         or_slug="openai/gpt-6-sol-20260922",
-        or_toks_served=18699869899,
+        or_toks_served=348151822517,
     ),
     Model(
         "OpenAI",
@@ -543,7 +543,7 @@ MODELS = [
         aa_tok_per_task=10232,
         aa_price_per_task=0.3746326907148203,
         or_slug="openai/gpt-6-sol-20260922",
-        or_toks_served=18699869899,
+        or_toks_served=348151822517,
     ),
     Model(
         "OpenAI",
@@ -553,7 +553,7 @@ MODELS = [
         aa_tok_per_task=16013,
         aa_price_per_task=0.5318962692390143,
         or_slug="openai/gpt-6-sol-20260922",
-        or_toks_served=18699869899,
+        or_toks_served=348151822517,
     ),
     Model(
         "OpenAI",
@@ -563,7 +563,7 @@ MODELS = [
         aa_tok_per_task=31238,
         aa_price_per_task=1.0564240894076389,
         or_slug="openai/gpt-6-sol-20260922",
-        or_toks_served=18699869899,
+        or_toks_served=348151822517,
     ),
     Model(
         "OpenAI",
@@ -574,7 +574,7 @@ MODELS = [
         aa_price_per_task=0.8175139285656057,
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.9237528,
-        or_toks_served=1849344485783,
+        or_toks_served=1112310313650,
     ),
     Model(
         "OpenAI",
@@ -585,7 +585,7 @@ MODELS = [
         aa_price_per_task=1.5406493220021167,
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.9237528,
-        or_toks_served=1849344485783,
+        or_toks_served=1112310313650,
     ),
     Model(
         "OpenAI",
@@ -596,7 +596,7 @@ MODELS = [
         aa_price_per_task=1.7252530861048456,
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.9237528,
-        or_toks_served=1849344485783,
+        or_toks_served=1112310313650,
     ),
     Model(
         "OpenAI",
@@ -607,7 +607,7 @@ MODELS = [
         aa_price_per_task=2.308795912269076,
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.9237528,
-        or_toks_served=1849344485783,
+        or_toks_served=1112310313650,
     ),
     Model(
         "OpenAI",
@@ -618,7 +618,7 @@ MODELS = [
         aa_price_per_task=3.2575003134834164,
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.9237528,
-        or_toks_served=1849344485783,
+        or_toks_served=1112310313650,
     ),
     Model(
         "Anthropic",
@@ -629,7 +629,7 @@ MODELS = [
         aa_price_per_task=5.091163584815694,
         or_slug="anthropic/claude-sonnet-5-20260630",
         or_session_cost_10_49_turns=0.6632285433333334,
-        or_toks_served=1490383785036,
+        or_toks_served=1455640282139,
     ),
     Model(
         "Anthropic",
@@ -639,7 +639,7 @@ MODELS = [
         aa_tok_per_task=10151,
         aa_price_per_task=0.551180473909146,
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_toks_served=27634285008,
+        or_toks_served=447138405718,
     ),
     Model(
         "Anthropic",
@@ -649,7 +649,7 @@ MODELS = [
         aa_tok_per_task=25745,
         aa_price_per_task=1.3360093438976588,
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_toks_served=27634285008,
+        or_toks_served=447138405718,
     ),
     Model(
         "Anthropic",
@@ -659,7 +659,7 @@ MODELS = [
         aa_tok_per_task=35584,
         aa_price_per_task=1.822504718771704,
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_toks_served=27634285008,
+        or_toks_served=447138405718,
     ),
     Model(
         "Anthropic",
@@ -669,7 +669,7 @@ MODELS = [
         aa_tok_per_task=65667,
         aa_price_per_task=3.459110175822289,
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_toks_served=27634285008,
+        or_toks_served=447138405718,
     ),
     Model(
         "Anthropic",
@@ -679,7 +679,7 @@ MODELS = [
         aa_tok_per_task=119166,
         aa_price_per_task=5.982012019521066,
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_toks_served=27634285008,
+        or_toks_served=447138405718,
     ),
 ]
 
