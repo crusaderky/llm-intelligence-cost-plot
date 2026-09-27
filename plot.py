@@ -292,8 +292,8 @@ MODELS = [
         aa_tok_per_task=107885,
         aa_price_per_task=0.3721760025302965,
         or_slug="qwen/qwen3.8-flash-20260826",
-        or_session_cost_10_49_turns=0.04544454566666667,
-        or_toks_served=487340464187,
+        or_session_cost_10_49_turns=0.04544707466666667,
+        or_toks_served=506821162449,
     ),
     Model(
         "Alibaba",
@@ -304,7 +304,7 @@ MODELS = [
         aa_price_per_task=5.408509428374016,
         or_slug="qwen/qwen3.8-max-20260902",
         or_session_cost_10_49_turns=0.80500755,
-        or_toks_served=365141283966,
+        or_toks_served=272872062491,
     ),
     Model(
         "DeepSeek",
@@ -326,7 +326,37 @@ MODELS = [
         aa_price_per_task=0.07430984031498059,
         or_slug="tencent/hy3-20260706",
         or_session_cost_10_49_turns=0.047079116,
-        or_toks_served=3557049434396,
+        or_toks_served=2794119207670,
+    ),
+    # Guesstimate - not on AA. Intelligence is extrapolated from Tencent's own
+    # agentic-benchmark chart for Hy4 preview
+    # (https://hy.tencent.ai/research/hy4-preview): per benchmark, OLS of the
+    # six comparison models' AA Intelligence Index on their chart score,
+    # inverted at Hy4 preview's score and averaged over the 12 benchmarks
+    # gives 44.3 (leave-one-out over those six models: mean error +0.2, MAE
+    # 2.2). The anchors are the versions the chart ran, not their successors
+    # (Qwen3.8 Max 0803, GPT-5.6 Sol, Claude Opus 5), so the estimate is
+    # "as of the chart". Cross-check: the same fit on Terminal Bench 2.1 with
+    # Hy3 added as a wide-range calibration point lands Hy3 at 26.2 against its
+    # real 25.3, and gives 43.4 for Hy4 preview.
+    # Price per task: OR's median 10-49-turn session cost for the permaslug
+    # averages $0.195 (Hermes Agent $0.174, Claude Code $0.217), between DeepSeek
+    # V4.1 Flash ($0.070/session, $0.40/task) and Gemini 3.8 Flash ($0.263,
+    # $1.21/task). Log-interpolating those two displayed prices at $0.195 gives
+    # $0.946, which at this session cost is 74,628 output tokens per task: that
+    # token count is the guess, and aa_price_per_task carries the resulting price
+    # so the delta plot reads 0%, like the other estimated rows.
+    Model(
+        "Tencent",
+        "Hy4 preview",
+        44.3,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=74628,
+        aa_price_per_task=0.9461563312,
+        or_slug="tencent/hy4-preview-20260827",
+        or_session_cost_10_49_turns=0.19518670999999999,
+        or_toks_served=10611424494392,
+        estimated=True,
     ),
     Model(
         "Meta",
@@ -337,7 +367,7 @@ MODELS = [
         aa_price_per_task=1.6048932100125866,
         or_slug="meta/muse-spark-1.3-20260902",
         or_session_cost_10_49_turns=0.5541186,
-        or_toks_served=390688450824,
+        or_toks_served=540966735379,
     ),
     Model(
         "Meta",
@@ -382,8 +412,8 @@ MODELS = [
         aa_tok_per_task=71128,
         aa_price_per_task=2.0056375150449584,
         or_slug="z-ai/glm-5.3-20260816",
-        or_session_cost_10_49_turns=0.46420027,
-        or_toks_served=2894444631249,
+        or_session_cost_10_49_turns=0.4642003275,
+        or_toks_served=2892473292541,
     ),
     Model(
         "Moonshot AI",
@@ -393,7 +423,7 @@ MODELS = [
         aa_tok_per_task=48455,
         aa_price_per_task=2.0001323004425493,
         or_slug="moonshotai/kimi-k3-20260715",
-        or_session_cost_10_49_turns=0.7603638375,
+        or_session_cost_10_49_turns=0.7603638374999999,
         or_toks_served=1364307055889,
     ),
     Model(
@@ -404,7 +434,7 @@ MODELS = [
         aa_tok_per_task=71003,
         aa_price_per_task=1.2427947606950427,
         or_slug="google/gemini-3.8-flash-20260902",
-        or_session_cost_10_49_turns=0.2633588375,
+        or_session_cost_10_49_turns=0.26335906000000003,
         or_toks_served=2190124463415,
     ),
     Model(
@@ -415,7 +445,7 @@ MODELS = [
         aa_tok_per_task=65901,
         aa_price_per_task=2.726106691786027,
         or_slug="x-ai/grok-4.7-20260916",
-        or_toks_served=149390340878,
+        or_toks_served=327186795444,
     ),
     Model(
         "SpaceXAI",
@@ -425,7 +455,7 @@ MODELS = [
         aa_tok_per_task=80561,
         aa_price_per_task=3.738325952106939,
         or_slug="x-ai/grok-4.7-20260916",
-        or_toks_served=149390340878,
+        or_toks_served=327186795444,
     ),
     # Expected to land on OpenRouter on 2026-10-15
     Model(
@@ -434,18 +464,17 @@ MODELS = [
         43.7343049141614,
         ProviderType.DATACENTER,
         aa_tok_per_task=64144,
-        aa_price_per_task=0.7174882983333333,
+        aa_price_per_task=0.7174901509283937,
     ),
-    # Guesstimate - not on AA yet
     Model(
         "Xiaomi",
         "MiMo-V2.6-Flash",
         37.8843590141754,
         ProviderType.DATACENTER,
         aa_tok_per_task=77637,
-        aa_price_per_task=0.0622,
+        aa_price_per_task=0.0621899731897297,
         or_slug="xiaomi/mimo-v2.6-flash-20260921",
-        or_toks_served=152403470153,
+        or_toks_served=4276276147435,
     ),
     Model(
         "Xiaomi",
@@ -455,7 +484,7 @@ MODELS = [
         aa_tok_per_task=64276,
         aa_price_per_task=0.13322318937213493,
         or_slug="xiaomi/mimo-v2.6-pro-20260921",
-        or_toks_served=546254778303,
+        or_toks_served=913874898530,
     ),
     Model(
         "OpenAI",
@@ -465,7 +494,7 @@ MODELS = [
         aa_tok_per_task=2054,
         aa_price_per_task=0.004483809259539013,
         or_slug="openai/gpt-6-luna-20260922",
-        or_toks_served=1027801316155,
+        or_toks_served=2281999017471,
     ),
     Model(
         "OpenAI",
@@ -475,7 +504,7 @@ MODELS = [
         aa_tok_per_task=11227,
         aa_price_per_task=0.01725359419426588,
         or_slug="openai/gpt-6-luna-20260922",
-        or_toks_served=1027801316155,
+        or_toks_served=2281999017471,
     ),
     Model(
         "OpenAI",
@@ -485,7 +514,7 @@ MODELS = [
         aa_tok_per_task=19771,
         aa_price_per_task=0.02861964876935845,
         or_slug="openai/gpt-6-luna-20260922",
-        or_toks_served=1027801316155,
+        or_toks_served=2281999017471,
     ),
     Model(
         "OpenAI",
@@ -495,7 +524,7 @@ MODELS = [
         aa_tok_per_task=27189,
         aa_price_per_task=0.041708771594451556,
         or_slug="openai/gpt-6-luna-20260922",
-        or_toks_served=1027801316155,
+        or_toks_served=2281999017471,
     ),
     Model(
         "OpenAI",
@@ -505,7 +534,7 @@ MODELS = [
         aa_tok_per_task=50537,
         aa_price_per_task=0.06809498628701058,
         or_slug="openai/gpt-6-luna-20260922",
-        or_toks_served=1027801316155,
+        or_toks_served=2281999017471,
     ),
     Model(
         "OpenAI",
@@ -515,7 +544,7 @@ MODELS = [
         aa_tok_per_task=3358,
         aa_price_per_task=0.13224085088798104,
         or_slug="openai/gpt-6-sol-20260922",
-        or_toks_served=348151822517,
+        or_toks_served=634640353218,
     ),
     Model(
         "OpenAI",
@@ -525,7 +554,7 @@ MODELS = [
         aa_tok_per_task=6478,
         aa_price_per_task=0.24820209578663968,
         or_slug="openai/gpt-6-sol-20260922",
-        or_toks_served=348151822517,
+        or_toks_served=634640353218,
     ),
     Model(
         "OpenAI",
@@ -535,7 +564,7 @@ MODELS = [
         aa_tok_per_task=10232,
         aa_price_per_task=0.3746326907148203,
         or_slug="openai/gpt-6-sol-20260922",
-        or_toks_served=348151822517,
+        or_toks_served=634640353218,
     ),
     Model(
         "OpenAI",
@@ -545,7 +574,7 @@ MODELS = [
         aa_tok_per_task=16013,
         aa_price_per_task=0.5318962692390143,
         or_slug="openai/gpt-6-sol-20260922",
-        or_toks_served=348151822517,
+        or_toks_served=634640353218,
     ),
     Model(
         "OpenAI",
@@ -555,7 +584,7 @@ MODELS = [
         aa_tok_per_task=31238,
         aa_price_per_task=1.0564240894076389,
         or_slug="openai/gpt-6-sol-20260922",
-        or_toks_served=348151822517,
+        or_toks_served=634640353218,
     ),
     Model(
         "OpenAI",
@@ -609,8 +638,8 @@ MODELS = [
         aa_tok_per_task=27206,
         aa_price_per_task=3.2575003134834164,
         or_slug="openai/gpt-6-astra-20260903",
-        or_session_cost_10_49_turns=2.9237528,
-        or_toks_served=1112310313650,
+        or_session_cost_10_49_turns=2.928953,
+        or_toks_served=1054314597890,
     ),
     Model(
         "Anthropic",
@@ -631,7 +660,7 @@ MODELS = [
         aa_tok_per_task=10151,
         aa_price_per_task=0.551180473909146,
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_toks_served=447138405718,
+        or_toks_served=877659397046,
     ),
     Model(
         "Anthropic",
@@ -641,7 +670,7 @@ MODELS = [
         aa_tok_per_task=25745,
         aa_price_per_task=1.3360093438976588,
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_toks_served=447138405718,
+        or_toks_served=877659397046,
     ),
     Model(
         "Anthropic",
@@ -651,7 +680,7 @@ MODELS = [
         aa_tok_per_task=35584,
         aa_price_per_task=1.822504718771704,
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_toks_served=447138405718,
+        or_toks_served=877659397046,
     ),
     Model(
         "Anthropic",
@@ -661,7 +690,7 @@ MODELS = [
         aa_tok_per_task=65667,
         aa_price_per_task=3.459110175822289,
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_toks_served=447138405718,
+        or_toks_served=877659397046,
     ),
     Model(
         "Anthropic",
@@ -671,7 +700,7 @@ MODELS = [
         aa_tok_per_task=119166,
         aa_price_per_task=5.982012019521066,
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_toks_served=447138405718,
+        or_toks_served=877659397046,
     ),
 ]
 

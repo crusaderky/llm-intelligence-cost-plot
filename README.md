@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-09-25
+**Last updated:** 2026-09-27
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -111,6 +111,19 @@ absent as they have no sticker price to compare with.
   different effort levels
 - Extrapolated Ternary-Bonsai-2's intelligence as ~92% of Qwen3.8-27B's, as reported
   by [ByteShape](https://byteshape.com/blogs/Qwen3.8-27B/)
+- Extrapolated Hy4 preview, which ArtificialAnalysis has not measured yet, from
+  [Tencent's own agentic-benchmark
+  chart](https://hy.tencent.ai/research/hy4-preview). Its intelligence (44.3) comes
+  from mapping each of the chart's twelve benchmarks onto the AA Intelligence Index:
+  for every benchmark, the six models the chart compares against that AA has measured
+  (Qwen3.8 Max, DeepSeek V4 Pro 0813, GPT-5.6 Sol, GLM-5.3, Kimi K3, Claude Opus 5)
+  are regressed against their AA scores, the line is inverted at Hy4 preview's chart
+  score, and the twelve inversions are averaged. Hiding each comparison model in turn
+  and predicting it back gives a mean error of +0.2 and an MAE of 2.2 points. Its
+  $0.94 price per task comes from OpenRouter, which does serve it: its median
+  10–49-turn session costs $0.195, between DeepSeek V4.1 Flash ($0.070 per session,
+  $0.40 per task) and Gemini 3.8 Flash ($0.263, $1.21), and log-interpolating those
+  two prices lands at $0.95.
 
 ## Cost calculation for datacenter models
 
@@ -187,7 +200,7 @@ cost:
 | 192 GB | Gorgon Halo | T.B.A. ~$7,000 | MiMo-v2.6-Flash |
 | 256 GB | 2x DGX Spark<br>Mac Studio M5 Ultra 256 GB | $10,200<br>$11,300 | GLM-5.3-Flash |
 | 280 GB | 3x DGX Spark (384 GB) | $15,300 | DeepSeek-V4.1-Flash |
-| 512 GB | 4x DGX Spark + QFP28 switch<br>2x Mac Studio M5 Ultra 256 GB<br>Mac studio M5 Ultra 512 GB | $21,200<br>$22,600<br>T.B.A. | GLM-5.3 |
+| 512 GB | 4x DGX Spark + QFP28 switch<br>2x Mac Studio M5 Ultra 256 GB<br>Mac studio M5 Ultra 512 GB | $21,200<br>$22,600<br>T.B.A. | GLM-5.3<br>Hy4 preview |
 | 640 GB | 5x DGX Spark + 2x QFP28 switch | $27,200 | MiMo-v2.6-Pro |
 | 2 TB | 2x TensTorrent Galaxy Blackhole | $320,000 | Kimi K3 |
 

@@ -69,6 +69,7 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
         False,
     ),
     "Hy3": ("hy3", "Hy3", False),
+    "Hy4 preview": ("", "", False),  # not on AA yet: manual entry
     "Muse Spark 1.3": ("muse-spark-1-3", "Muse Spark 1.3 (max)", False),
     # (high) is extrapolated from the (max) record: intelligence x
     # 28.01/28.99, tokens and price x 70610/138690 (ratios from Z.ai's coding
@@ -80,7 +81,7 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "Gemini 3.8 Flash": ("gemini-3-8-flash", "Gemini 3.8 Flash (high)", False),
     "Grok 4.7 (high)": ("grok-4-7-high", "Grok 4.7 (high)", False),
     "Grok 4.7 (xhigh)": ("grok-4-7", "Grok 4.7 (xhigh)", False),
-    "MiMo-V2.6-Flash": ("", "", False),  # not on AA yet
+    "MiMo-V2.6-Flash": ("mimo-v2-6-flash", "MiMo-V2.6-Flash", False),
     "MiMo-V2.6-Pro": ("mimo-v2-6-pro", "MiMo-V2.6-Pro", False),
     "GPT-6 Luna (low)": ("gpt-6-luna-low", "GPT-6 Luna (low)", False),
     "GPT-6 Luna (medium)": ("gpt-6-luna-medium", "GPT-6 Luna (medium)", False),
