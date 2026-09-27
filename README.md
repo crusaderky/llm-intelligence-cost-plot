@@ -191,11 +191,14 @@ electricity cost. The latter hides a substantial hardware expense: a 64 GB Strix
 which is a very desirable general purpose mini PC, costs $2,200; a 128 GB one costs
 $3,800 and doesn't enable anything other than AI models in the ~120B-parameter class.
 
-The following models _can_ be run locally, but carry a very steep up-front hardware
-cost:
+The following models _can_ be run locally, but their up-front hardware cost grows very
+rapidly:
 
 | RAM requirements | Hardware | Price | Models |
 | --- | --- | --- | --- |
+| 4 GB | Mobile phone | ~$250 | MiniCPM5-2B |
+| 12 GB | PC with RTX 3080 Ti | ~1,500 (used) | Ternary-Bonsai-2 |
+| 24 GB | PC with RTX 3090 | ~2,300 (used) | Qwen-3.8-27B |
 | 96 GB | Strix Halo 128 GB<br>DGX Spark (128 GB)<br>Mac Studio M5 Max 128 GB<br>Mac Studio M5 Ultra 96 GB<br>MacBook Pro M5 Max 128 GB<br>PC with RTX 6000 Pro | $3,800<br>$5,000<br>$5,100<br>$5,400<br>$7,000<br>~$16,000 | Qwen3.8-Flash<br> |
 | 192 GB | Gorgon Halo | T.B.A. ~$7,000 | MiMo-v2.6-Flash |
 | 256 GB | 2x DGX Spark<br>Mac Studio M5 Ultra 256 GB | $10,200<br>$11,300 | GLM-5.3-Flash |
@@ -203,6 +206,17 @@ cost:
 | 512 GB | 4x DGX Spark + QFP28 switch<br>2x Mac Studio M5 Ultra 256 GB<br>Mac studio M5 Ultra 512 GB | $21,200<br>$22,600<br>T.B.A. | GLM-5.3<br>Hy4 preview |
 | 640 GB | 5x DGX Spark + 2x QFP28 switch | $27,200 | MiMo-v2.6-Pro |
 | 2 TB | 2x TensTorrent Galaxy Blackhole | $320,000 | Kimi K3 |
+
+The same models on a hardware-cost axis instead of a per-task one. Each point
+sits at the cheapest rig in the table above that can run the model, so the
+electricity prices on the other plots — fractions of a cent a task — vanish next
+to the machine. The curve is over almost immediately: $250 of hardware buys
+more intelligence than $27,000 does, and Kimi K3 is off the right edge of the
+plot entirely, needing $320,000 of hardware for less intelligence than
+MiMo-V2.6-Pro delivers for $27,200. The x axis breaks before it, so the left
+panel is $0-$30,000 and the right panel holds Kimi K3 alone, on its own scale.
+
+<a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/plots/local_hardware.svg"><img src="plots/local_hardware.png" alt="Intelligence vs. Hardware Price (Larger Local Models)"></a>
 
 ## Conclusion
 

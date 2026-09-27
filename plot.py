@@ -65,7 +65,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 from matplotlib.path import Path as MplPath
-from matplotlib.ticker import FormatStrFormatter, MultipleLocator
+from matplotlib.ticker import FormatStrFormatter, MultipleLocator, StrMethodFormatter
 
 # Publisher colors, replicated from artificialanalysis.ai
 PUBLISHERS = {
@@ -135,6 +135,12 @@ class Model:
     # Local models: decode speed measured on `hardware` (None = RTX3090).
     tok_per_sec: float | None = field(default=None, kw_only=True)
     hardware: LocalHardware | None = field(default=None, kw_only=True)
+    # One-off USD price of the cheapest hardware that can run the model
+    # locally, from the README's "Larger local models" table. Independent of
+    # the per-task price (which is electricity only): this is the machine, not
+    # the power bill. None = no table entry, so the model is left off the
+    # hardware-cost plot.
+    hardware_cost: float | None = field(default=None, kw_only=True)
     # Not on AA: the point is extrapolated/estimated. Rendered as a hollow
     # circle, with a matching "Estimated (not on AA)" legend entry.
     estimated: bool = field(default=False, kw_only=True)
@@ -219,6 +225,9 @@ MODELS = [
     #   or_toks_served (GET /api/frontend/v1/rankings/models?view=week:
     #   prompt + completion tokens served in the trailing week, all variants).
     # - local: tok_per_sec measured on real hardware.
+    # - hardware_cost: one-off price of the cheapest rig in the README's
+    #   "Larger local models" table that fits the model; set only for the
+    #   models that table names.
     # See .agents/skills/refresh-models for how to re-fetch these numbers.
     # --- Local models (price per task = electricity) ---
     Model(
@@ -228,6 +237,7 @@ MODELS = [
         ProviderType.LOCAL,
         aa_tok_per_task=21834,
         tok_per_sec=180,
+        hardware_cost=250,
     ),
     Model(
         "Alibaba",
@@ -236,6 +246,7 @@ MODELS = [
         ProviderType.LOCAL,
         aa_tok_per_task=34594,
         tok_per_sec=150,
+        hardware_cost=1500,
     ),
     Model(
         "Meta",
@@ -244,6 +255,7 @@ MODELS = [
         ProviderType.LOCAL,
         aa_tok_per_task=13925,
         tok_per_sec=124,
+        hardware_cost=2300,
     ),
     Model(
         "Institute of Foundation Models",
@@ -252,6 +264,7 @@ MODELS = [
         ProviderType.LOCAL,
         aa_tok_per_task=72163,
         tok_per_sec=100,
+        hardware_cost=1500,
     ),
     Model(
         "Alibaba",
@@ -260,6 +273,7 @@ MODELS = [
         ProviderType.LOCAL,
         aa_tok_per_task=66797,
         tok_per_sec=46,
+        hardware_cost=2300,
     ),
     # Not on AA: intelligence = 0.9165 x Qwen3.8-27B, the 91.65% of BF16 that
     # ByteShape measured for this ternary quant (see README note); tokens per
@@ -271,6 +285,7 @@ MODELS = [
         ProviderType.LOCAL,
         aa_tok_per_task=66797,
         tok_per_sec=73,
+        hardware_cost=1500,
         estimated=True,
     ),
     Model(
@@ -280,6 +295,7 @@ MODELS = [
         ProviderType.LOCAL,
         aa_tok_per_task=107885,
         tok_per_sec=25,
+        hardware_cost=3800,
         hardware=STRIX_HALO,
     ),
     # --- Datacenter models (price per task = AA's cost per task rescaled by
@@ -312,6 +328,7 @@ MODELS = [
         39.4562,
         ProviderType.DATACENTER,
         aa_tok_per_task=88574,
+        hardware_cost=15300,
         aa_price_per_task=0.26522527009606844,
         or_slug="deepseek/deepseek-v4.1-flash-20260910",
         or_session_cost_10_49_turns=0.0696403575,
@@ -356,6 +373,7 @@ MODELS = [
         or_slug="tencent/hy4-preview-20260827",
         or_session_cost_10_49_turns=0.19518670999999999,
         or_toks_served=10611424494392,
+        hardware_cost=21200,
         estimated=True,
     ),
     Model(
@@ -403,6 +421,7 @@ MODELS = [
         or_slug="z-ai/glm-5.3-flash-20260826",
         or_session_cost_10_49_turns=0.036869266,
         or_toks_served=17818682492886,
+        hardware_cost=10200,
     ),
     Model(
         "Z AI",
@@ -411,6 +430,7 @@ MODELS = [
         ProviderType.DATACENTER,
         aa_tok_per_task=71128,
         aa_price_per_task=2.0056375150449584,
+        hardware_cost=21200,
         or_slug="z-ai/glm-5.3-20260816",
         or_session_cost_10_49_turns=0.4642003275,
         or_toks_served=2892473292541,
@@ -422,6 +442,7 @@ MODELS = [
         ProviderType.DATACENTER,
         aa_tok_per_task=48455,
         aa_price_per_task=2.0001323004425493,
+        hardware_cost=320_000,
         or_slug="moonshotai/kimi-k3-20260715",
         or_session_cost_10_49_turns=0.7603638374999999,
         or_toks_served=1364307055889,
@@ -473,6 +494,7 @@ MODELS = [
         ProviderType.DATACENTER,
         aa_tok_per_task=77637,
         aa_price_per_task=0.0621899731897297,
+        hardware_cost=7000,
         or_slug="xiaomi/mimo-v2.6-flash-20260921",
         or_toks_served=4276276147435,
     ),
@@ -483,6 +505,7 @@ MODELS = [
         ProviderType.DATACENTER,
         aa_tok_per_task=64276,
         aa_price_per_task=0.13322318937213493,
+        hardware_cost=27200,
         or_slug="xiaomi/mimo-v2.6-pro-20260921",
         or_toks_served=913874898530,
     ),
@@ -766,9 +789,11 @@ class PlotSpec(NamedTuple):
     bar: bool = False  # draw horizontal bars (sorted by intelligence) not dots
     one_per_model: bool = False  # collapse a model's effort variants to one
     # bar (they share a permaslug, and with it the x statistic)
+    x_break: float | None = None  # split the x axis here: points at or above
+    # the break go into a second panel (see make_hardware_plot)
 
 
-# The four plots to generate.
+# The plots to generate.
 PLOTS = [
     PlotSpec(
         "Intelligence vs. Price per Task (High Intelligence)",
@@ -807,6 +832,20 @@ PLOTS = [
         x_min=-100,
         bar=True,
         one_per_model=True,
+    ),
+    # Larger local models: x is the one-off hardware bill, not a per-task
+    # price. Kimi K3 needs 2 TB of RAM ($320,000, twelve times the next most
+    # expensive rig), so x_break splits the axis and gives it a panel of its
+    # own instead of squashing the other ten models into the leftmost 8%.
+    PlotSpec(
+        "Intelligence vs. Hardware price",
+        lambda m: m.hardware_cost is not None,
+        "local_hardware",
+        x_of=lambda m: m.hardware_cost,
+        x_label="Hardware price, one-off (USD)",
+        xtick_step=2_000,
+        band=False,
+        x_break=28_000,
     ),
 ]
 
@@ -1490,57 +1529,29 @@ def _plot_legend(ax, models, loc="lower right", bbox_to_anchor=None):
     return legend, have_unavailable
 
 
-def make_plot(spec, models, band, y_lim):
-    xs = [spec.x_of(m) for m in models]
-    ys = [m.intelligence for m in models]
-    colors = [PUBLISHERS[m.publisher] for m in models]
+def pareto_frontier(models, x_of):
+    """The Pareto staircase: running max of intelligence over ascending x,
+    as two parallel lists ready for ax.plot.
 
-    fig, ax = plt.subplots(figsize=(FIG_W, FIG_H), dpi=DPI)
-
-    # Estimated points (not on AA) are drawn hollow (white fill) with the
-    # publisher-colored border, instead of as solid publisher-colored dots.
-    solid = [i for i, m in enumerate(models) if not m.estimated]
-    hollow = [i for i, m in enumerate(models) if m.estimated]
-    ax.scatter(
-        [xs[i] for i in solid],
-        [ys[i] for i in solid],
-        s=DOT_SIZE,
-        c=[colors[i] for i in solid],
-        zorder=3,
+    Computed over ALL models, not one plot's filtered view. Each plot is a
+    zoom of the same frontier; the axes clip the line, so on the zoomed plots
+    it runs off the edge ("continues"), while on the all-models plot it ends at
+    the frontier's true last step. Models that train on your data ([TRAIN] in
+    the name) are excluded: they are the same offers at providers that train
+    on your data, not separate models. Models that are not publicly available
+    ([UNAVAILABLE]) are excluded too: their cost is an estimate, not a real
+    offer. Models the x statistic cannot place are skipped.
+    """
+    pts = sorted(
+        (
+            (x, m.intelligence)
+            for m in models
+            if not m.trains_on_your_data
+            and not m.not_publicly_available
+            and (x := x_of(m)) is not None
+        ),
+        key=lambda p: (p[0], -p[1]),
     )
-    if hollow:
-        ax.scatter(
-            [xs[i] for i in hollow],
-            [ys[i] for i in hollow],
-            s=DOT_SIZE,
-            facecolors="white",
-            edgecolors=[colors[i] for i in hollow],
-            linewidths=1.5,
-            zorder=3,
-        )
-
-    # Faint dotted Pareto frontier: max intelligence for each cost, computed
-    # over ALL models, not this plot's filtered view. Each plot is a zoom of
-    # the same frontier; the axes clip the line, so on the zoomed plots it
-    # runs off the edge ("continues"), while on the all-models plot it ends
-    # at the frontier's true last step. Models that train on your data
-    # ([TRAIN] in the name) are excluded: they are the same offers at
-    # providers that train on your data, not separate models. Models that are
-    # not publicly available ([UNAVAILABLE]) are excluded too: their cost is
-    # an estimate, not a real offer. The delta plot's x axis is not a price,
-    # so it gets no frontier (spec.frontier is False).
-    pts = []
-    if spec.frontier:
-        pts = sorted(
-            (
-                (x, m.intelligence)
-                for m in MODELS
-                if not m.trains_on_your_data
-                and not m.not_publicly_available
-                and (x := spec.x_of(m)) is not None
-            ),
-            key=lambda p: (p[0], -p[1]),
-        )
     frontier_x, frontier_y = [], []
     best_int = -float("inf")
     for x, y in pts:
@@ -1548,6 +1559,46 @@ def make_plot(spec, models, band, y_lim):
             best_int = y
             frontier_x.append(x)
             frontier_y.append(y)
+    return frontier_x, frontier_y
+
+
+def _scatter_points(ax, models, x_of):
+    """Draw the models as publisher-colored dots on ax. Estimated points
+    (not on AA) are hollow (white fill) with the publisher-colored border,
+    instead of solid."""
+    solid = [i for i, m in enumerate(models) if not m.estimated]
+    hollow = [i for i, m in enumerate(models) if m.estimated]
+    ax.scatter(
+        [x_of(models[i]) for i in solid],
+        [models[i].intelligence for i in solid],
+        s=DOT_SIZE,
+        c=[PUBLISHERS[models[i].publisher] for i in solid],
+        zorder=3,
+    )
+    if hollow:
+        ax.scatter(
+            [x_of(models[i]) for i in hollow],
+            [models[i].intelligence for i in hollow],
+            s=DOT_SIZE,
+            facecolors="white",
+            edgecolors=[PUBLISHERS[models[i].publisher] for i in hollow],
+            linewidths=1.5,
+            zorder=3,
+        )
+
+
+def make_plot(spec, models, band, y_lim):
+    xs = [spec.x_of(m) for m in models]
+
+    fig, ax = plt.subplots(figsize=(FIG_W, FIG_H), dpi=DPI)
+
+    _scatter_points(ax, models, spec.x_of)
+
+    # Faint dotted Pareto frontier. The delta plot's x axis is not a price,
+    # so it gets no frontier (spec.frontier is False).
+    frontier_x, frontier_y = (
+        pareto_frontier(MODELS, spec.x_of) if spec.frontier else ([], [])
+    )
     if len(frontier_x) > 1:
         ax.plot(
             frontier_x,
@@ -1640,6 +1691,170 @@ def make_plot(spec, models, band, y_lim):
         marker_r_px,
         extra_obstacles=(legend_box,),
     )
+
+    os.makedirs("plots", exist_ok=True)
+    # Drop the <dc:date> timestamp so regenerating with unchanged data is a
+    # no-op for git.
+    fig.savefig(
+        f"plots/{spec.stem}.svg",
+        format="svg",
+        bbox_inches="tight",
+        metadata={"Date": None},
+    )
+    fig.savefig(f"plots/{spec.stem}.png", format="png", bbox_inches="tight")
+    plt.close(fig)
+
+
+BREAK_SLASH_PX = 9  # half-length of the diagonal break slashes, in pixels
+BREAK_WSPACE = 0.06  # gap between the two panels, as a fraction of their width
+RIGHT_PANEL_RATIO = 4.5  # width ratio left:right -- Kimi K3 gets a narrow panel
+
+
+def make_hardware_plot(spec, models, y_lim):
+    """Hardware price vs intelligence, on a broken x axis.
+
+    The per-task price plots treat hardware as free, which is defensible only
+    for machines nobody buys for AI alone. The larger local models break that
+    assumption: the cheapest rig that runs them is $250 to $27,200, and Kimi
+    K3 needs 2 TB of RAM at $320,000 -- twelve times the next most expensive
+    model, and 1,280x the cheapest. On a single linear axis Kimi K3 would
+    stretch the scale so far that every other model piles up in the leftmost
+    few percent and no label could be placed, so the points at or above
+    spec.x_break get their own panel, with a white gap and break slashes
+    between the two.
+    """
+    assert spec.x_break is not None
+    left = [m for m in models if m.hardware_cost < spec.x_break]
+    right = [m for m in models if m.hardware_cost >= spec.x_break]
+    if not left or not right:
+        raise ValueError(
+            f"{spec.stem}: x_break={spec.x_break} needs models on both sides"
+        )
+
+    fig, (ax_l, ax_r) = plt.subplots(
+        1,
+        2,
+        figsize=(FIG_W, FIG_H),
+        dpi=DPI,
+        sharey=True,
+        gridspec_kw={"width_ratios": [RIGHT_PANEL_RATIO, 1]},
+    )
+
+    # Faint dotted Pareto frontier over the unbroken prices only: Kimi K3 sits
+    # left of nothing, it is dominated by MiMo-V2.6-Pro (more intelligence for
+    # 12x less hardware), so the staircase ends in the left panel and the
+    # right panel gets a bare dot.
+    if spec.frontier:
+        frontier_x, frontier_y = pareto_frontier(left, spec.x_of)
+        if len(frontier_x) > 1:
+            ax_l.plot(
+                frontier_x,
+                frontier_y,
+                linestyle=":",
+                color="#7a7f8a",
+                linewidth=1.2,
+                alpha=0.9,
+                zorder=2,
+            )
+
+    _scatter_points(ax_l, left, spec.x_of)
+    _scatter_points(ax_r, right, spec.x_of)
+
+    # Axes limits, set before placing labels (placement works in pixels).
+    left_hi = max(m.hardware_cost for m in left)
+    ax_l.set_xlim(0, math.ceil(left_hi * 1.06 / spec.xtick_step) * spec.xtick_step)
+    r_lo = min(m.hardware_cost for m in right)
+    r_hi = max(m.hardware_cost for m in right)
+    r_pad = 0.18 * (r_hi - r_lo) if r_hi > r_lo else 0.18 * r_hi
+    ax_r.set_xlim(r_lo - r_pad, r_hi + r_pad)
+    y_lo, y_hi = y_lim
+    ax_l.set_ylim(y_lo, y_hi)
+    ax_l.yaxis.set_major_locator(MultipleLocator(1))
+
+    # Thousands separators: the right panel's prices are six figures.
+    money = StrMethodFormatter("${x:,.0f}")
+    ax_l.xaxis.set_major_locator(MultipleLocator(spec.xtick_step))
+    ax_l.xaxis.set_major_formatter(money)
+    # The right panel is a fraction of the figure wide, so it gets one tick
+    # per model instead of a $20k step: six-figure labels would collide.
+    ax_r.set_xticks(sorted({m.hardware_cost for m in right}))
+    ax_r.xaxis.set_major_formatter(money)
+
+    ax_l.set_xlabel(spec.x_label, fontsize=15, fontweight="bold", labelpad=12)
+    ax_l.set_ylabel(
+        "Artificial Analysis Intelligence Index",
+        fontsize=15,
+        fontweight="bold",
+        labelpad=12,
+    )
+    ax_l.set_title(spec.title, fontsize=20, fontweight="bold", loc="left", pad=18)
+    # The right panel's own price is on its x axis, so the only thing to say
+    # about it is that its x scale is a different one.
+    ax_r.set_title(
+        "x-axis break:\nnot to scale",
+        fontsize=13,
+        color="#5b6270",
+        loc="left",
+        pad=18,
+    )
+
+    for ax in (ax_l, ax_r):
+        ax.grid(True, color="#e6e8ec", linewidth=1, zorder=0)
+        ax.set_axisbelow(True)
+        for side in ("top", "right"):
+            ax.spines[side].set_visible(False)
+        ax.tick_params(labelsize=12, colors="#5b6270")
+
+    # Legend: one entry per publisher actually present in this plot.
+    legend, have_unavailable = _plot_legend(ax_l, models, loc="lower right")
+    fig.tight_layout()
+    # The gap between the panels, after tight_layout rather than in
+    # gridspec_kw: tight_layout gives up ("Axes that are not compatible with
+    # tight_layout") on a GridSpec whose params were set at construction.
+    fig.subplots_adjust(wspace=BREAK_WSPACE)
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    if have_unavailable:
+        for text in legend.get_texts():
+            if text.get_text() == "Not publicly available":
+                _strike_text(ax_l, text, renderer, zorder=6)  # above the legend frame
+                break
+
+    # Break slashes: short diagonals across the bottom spine where the two
+    # panels meet. They live in display pixels (via the axes' inverted
+    # transform) because a square step in axes fractions would come out
+    # nearly horizontal on a 20-inch-wide panel.
+    for ax, x_edge in ((ax_l, 1.0), (ax_r, 0.0)):
+        bb = ax.get_window_extent(renderer)
+        dx = BREAK_SLASH_PX / bb.width
+        dy = BREAK_SLASH_PX / bb.height
+        ax.add_line(
+            Line2D(
+                [x_edge - dx, x_edge + dx],
+                [-dy, dy],
+                transform=ax.transAxes,
+                lw=1.4,
+                color="#5b6270",
+                zorder=6,
+                clip_on=False,
+            )
+        )
+
+    marker_r_px = (DOT_SIZE**0.5) / 2 / 72 * DPI + 2
+    for ax, panel in ((ax_l, left), (ax_r, right)):
+        place_labels(
+            ax,
+            fig,
+            [
+                (left_, right_, icon, strike, spec.x_of(m), m.intelligence)
+                for m in panel
+                for left_, icon, right_, strike in [_split_icon(m.name)]
+            ],
+            marker_r_px,
+            extra_obstacles=(_pad(legend.get_window_extent(renderer)),)
+            if ax is ax_l
+            else (),
+        )
 
     os.makedirs("plots", exist_ok=True)
     # Drop the <dc:date> timestamp so regenerating with unchanged data is a
@@ -1870,6 +2085,9 @@ def main(argv=None):
             y_lo = band[0]
         elif spec.band_side == "top":
             y_hi = band[1]
+        if spec.x_break is not None:  # two panels, not one
+            make_hardware_plot(spec, models, (y_lo, y_hi))
+            continue
         make_plot(spec, models, band if spec.band else None, (y_lo, y_hi))
 
 
