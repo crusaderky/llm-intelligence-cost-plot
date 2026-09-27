@@ -440,20 +440,12 @@ MODELS = [
     Model(
         "Xiaomi",
         "MiMo-V2.6-Flash",
-        # Intelligence = MiMo-V2.6-Pro's AA index times the geometric mean of the
-        # flash/pro benchmark score ratios Xiaomi published at
-        # https://mimo.xiaomi.com/mimo-v2-6
-        39.22,
+        37.8843590141754,
         ProviderType.DATACENTER,
-        # Assumed identical to Pro's
-        aa_tok_per_task=64276,
-        # Pro's AA cost per task breakdown
-        # -> Pro's AA output/input/cache hit tokens
-        # -> nominal Flash pricing
-        aa_price_per_task=0.049,
+        aa_tok_per_task=77637,
+        aa_price_per_task=0.0622,
         or_slug="xiaomi/mimo-v2.6-flash-20260921",
         or_toks_served=152403470153,
-        estimated=True,
     ),
     Model(
         "Xiaomi",
