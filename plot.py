@@ -494,7 +494,7 @@ MODELS = [
         ProviderType.DATACENTER,
         aa_tok_per_task=77637,
         aa_price_per_task=0.0621899731897297,
-        hardware_cost=7000,
+        hardware_cost=6800,
         or_slug="xiaomi/mimo-v2.6-flash-20260921",
         or_toks_served=4276276147435,
     ),

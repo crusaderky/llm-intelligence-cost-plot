@@ -200,7 +200,7 @@ rapidly:
 | 12 GB | PC with RTX 3080 Ti | ~1,500 (used) | Ternary-Bonsai-2 |
 | 24 GB | PC with RTX 3090 | ~2,300 (used) | Qwen-3.8-27B |
 | 96 GB | Strix Halo 128 GB<br>DGX Spark (128 GB)<br>Mac Studio M5 Max 128 GB<br>Mac Studio M5 Ultra 96 GB<br>MacBook Pro M5 Max 128 GB<br>PC with RTX 6000 Pro | $3,800<br>$5,000<br>$5,100<br>$5,400<br>$7,000<br>~$16,000 | Qwen3.8-Flash<br> |
-| 192 GB | Gorgon Halo | T.B.A. ~$7,000 | MiMo-v2.6-Flash |
+| 192 GB | Gorgon Halo | 6,800 | MiMo-v2.6-Flash |
 | 256 GB | 2x DGX Spark<br>Mac Studio M5 Ultra 256 GB | $10,200<br>$11,300 | GLM-5.3-Flash |
 | 280 GB | 3x DGX Spark (384 GB) | $15,300 | DeepSeek-V4.1-Flash |
 | 512 GB | 4x DGX Spark + QFP28 switch<br>2x Mac Studio M5 Ultra 256 GB<br>Mac studio M5 Ultra 512 GB | $21,200<br>$22,600<br>T.B.A. | GLM-5.3<br>Hy4 preview |
