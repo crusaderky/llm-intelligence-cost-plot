@@ -99,9 +99,29 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "GPT-6 Astra (xhigh)": ("gpt-6-astra-xhigh", "GPT-6 Astra (xhigh)", False),
     "GPT-6 Astra (max)": ("gpt-6-astra", "GPT-6 Astra (max)", False),
     "Step 5 Preview": ("step-5", "Step 5 Preview", False),
-    "Claude Sonnet 5": (
-        "claude-sonnet-5",
-        "Claude Sonnet 5 (Adaptive Reasoning, Max Effort)",
+    "Claude Sonnet 5.5 (low)": (
+        "claude-sonnet-5-5-low",
+        "Claude Sonnet 5.5 (Adaptive Reasoning, Low Effort, Default Fallback)",
+        False,
+    ),
+    "Claude Sonnet 5.5 (medium)": (
+        "claude-sonnet-5-5-medium",
+        "Claude Sonnet 5.5 (Adaptive Reasoning, Medium Effort, Default Fallback)",
+        False,
+    ),
+    "Claude Sonnet 5.5 (high)": (
+        "claude-sonnet-5-5-high",
+        "Claude Sonnet 5.5 (Adaptive Reasoning, High Effort, Default Fallback)",
+        False,
+    ),
+    "Claude Sonnet 5.5 (xhigh)": (
+        "claude-sonnet-5-5-xhigh",
+        "Claude Sonnet 5.5 (Adaptive Reasoning, Xhigh Effort, Default Fallback)",
+        False,
+    ),
+    "Claude Sonnet 5.5 (max)": (
+        "claude-sonnet-5-5",
+        "Claude Sonnet 5.5 (Adaptive Reasoning, Max Effort, Default Fallback)",
         False,
     ),
     "Claude Opus 5.5 (low)": (

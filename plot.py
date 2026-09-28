@@ -666,14 +666,48 @@ MODELS = [
     ),
     Model(
         "Anthropic",
-        "Claude Sonnet 5",
-        38.1639,
+        "Claude Sonnet 5.5 (low)",
+        35.8430309275022,
         ProviderType.DATACENTER,
-        aa_tok_per_task=117787,
-        aa_price_per_task=5.091163584815694,
-        or_slug="anthropic/claude-sonnet-5-20260630",
-        or_session_cost_10_49_turns=0.6628359833333334,
-        or_toks_served=1450554872708,
+        aa_tok_per_task=13894,
+        aa_price_per_task=0.41439222745942095,
+        or_slug="anthropic/claude-sonnet-5.5-20260928",
+    ),
+    Model(
+        "Anthropic",
+        "Claude Sonnet 5.5 (medium)",
+        40.7386909594307,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=19488,
+        aa_price_per_task=0.5861822401191022,
+        or_slug="anthropic/claude-sonnet-5.5-20260928",
+    ),
+    Model(
+        "Anthropic",
+        "Claude Sonnet 5.5 (high)",
+        46.7356921799024,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=34467,
+        aa_price_per_task=1.079758672715514,
+        or_slug="anthropic/claude-sonnet-5.5-20260928",
+    ),
+    Model(
+        "Anthropic",
+        "Claude Sonnet 5.5 (xhigh)",
+        51.8522867021152,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=73724,
+        aa_price_per_task=2.742576603824205,
+        or_slug="anthropic/claude-sonnet-5.5-20260928",
+    ),
+    Model(
+        "Anthropic",
+        "Claude Sonnet 5.5 (max)",
+        55.9779549012591,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=192838,
+        aa_price_per_task=7.602633532969859,
+        or_slug="anthropic/claude-sonnet-5.5-20260928",
     ),
     Model(
         "Anthropic",
@@ -754,7 +788,7 @@ def or_tokens_per_session() -> float:
 
 
 # Bottom of the high-intelligence plot
-HIGH_INTELLIGENCE_THRESHOLD = 38
+HIGH_INTELLIGENCE_THRESHOLD = 39
 # Right edge of the green band: the cheap cluster tops out at ~$0.15/task on
 # the new scale, and the next most expensive model sits at ~$1.4.
 LOW_COST_THRESHOLD = 0.2
