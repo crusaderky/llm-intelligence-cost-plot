@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-09-27
+**Last updated:** 2026-09-29
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -112,18 +112,11 @@ absent as they have no sticker price to compare with.
 - Extrapolated Ternary-Bonsai-2's intelligence as ~92% of Qwen3.8-27B's, as reported
   by [ByteShape](https://byteshape.com/blogs/Qwen3.8-27B/)
 - Extrapolated Hy4 preview, which ArtificialAnalysis has not measured yet, from
-  [Tencent's own agentic-benchmark
-  chart](https://hy.tencent.ai/research/hy4-preview). Its intelligence (44.3) comes
-  from mapping each of the chart's twelve benchmarks onto the AA Intelligence Index:
-  for every benchmark, the six models the chart compares against that AA has measured
-  (Qwen3.8 Max, DeepSeek V4 Pro 0813, GPT-5.6 Sol, GLM-5.3, Kimi K3, Claude Opus 5)
-  are regressed against their AA scores, the line is inverted at Hy4 preview's chart
-  score, and the twelve inversions are averaged. Hiding each comparison model in turn
-  and predicting it back gives a mean error of +0.2 and an MAE of 2.2 points. Its
-  $0.94 price per task comes from OpenRouter, which does serve it: its median
-  10–49-turn session costs $0.195, between DeepSeek V4.1 Flash ($0.070 per session,
-  $0.40 per task) and Gemini 3.8 Flash ($0.263, $1.21), and log-interpolating those
-  two prices lands at $0.95.
+  [Tencent's own agentic-benchmark chart](https://hy.tencent.ai/research/hy4-preview).
+  Its intelligence score was calculated by mapping the delta on the _self-published_
+  benchmarks onto the AA Intelligence Index of the models it is compared against. Price
+  per task and tokens per task are also guesstimated by comparing OpenRouter's session
+  costs to nearby peers.
 
 ## Cost calculation for datacenter models
 
@@ -229,12 +222,12 @@ while the latter can be as cheap as a mobile phone subscription.
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
 appreciate how much better Claude Opus 5.5 at max effort (intelligence score 58,
-$5.98/task) is compared to GLM-5.3 (intelligence 45, $2.15/task — 3x cheaper), most
+$9.31/task) is compared to GLM-5.3 (intelligence 45, $1.84/task — 5x cheaper), most
 people will have a hard time doing so. Going further down, GLM-5.3-Flash at max effort
-(intelligence 42, $0.16/task — almost _forty times_ cheaper than Opus 5.5) is visibly
-less capable when you give it very
-sophisticated tasks, like one-shotting a whole coding project on its own, but it remains
-_enough_ for 90% of what people actually need. Even the highly specialized engineers and
-scientists mentioned above don't actually need the extra intelligence for a lot of what
-they do. Descending just a little bit further, an enthusiast gamer can run Qwen3.8-27B
-(intelligence 34, $0.03/task in electricity) on a computer they already own.
+(intelligence 42, $0.15/task — over _sixty times_ cheaper than Opus 5.5) is visibly less
+capable when you give it very sophisticated tasks, like one-shotting a whole coding
+project on its own, but it remains _enough_ for 90% of what people actually need. Even
+the highly specialized engineers and scientists mentioned above don't actually need the
+extra intelligence for a lot of what they do. Descending just a little bit further, an
+enthusiast gamer can run Qwen3.8-27B (intelligence 34, $0.03/task in electricity) on a
+computer they already own.

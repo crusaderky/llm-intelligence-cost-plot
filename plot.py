@@ -308,8 +308,8 @@ MODELS = [
         aa_tok_per_task=107885,
         aa_price_per_task=0.3721760025302965,
         or_slug="qwen/qwen3.8-flash-20260826",
-        or_session_cost_10_49_turns=0.04544707466666667,
-        or_toks_served=506821162449,
+        or_session_cost_10_49_turns=0.041318938,
+        or_toks_served=508737761020,
     ),
     Model(
         "Alibaba",
@@ -319,8 +319,8 @@ MODELS = [
         aa_tok_per_task=107730,
         aa_price_per_task=5.408509428374016,
         or_slug="qwen/qwen3.8-max-20260902",
-        or_session_cost_10_49_turns=0.80500755,
-        or_toks_served=272872062491,
+        or_session_cost_10_49_turns=0.76834275,
+        or_toks_served=262117224377,
     ),
     Model(
         "DeepSeek",
@@ -331,8 +331,8 @@ MODELS = [
         hardware_cost=15300,
         aa_price_per_task=0.26522527009606844,
         or_slug="deepseek/deepseek-v4.1-flash-20260910",
-        or_session_cost_10_49_turns=0.0696403575,
-        or_toks_served=18627674708040,
+        or_session_cost_10_49_turns=0.058374017,
+        or_toks_served=19577400514417,
     ),
     Model(
         "Tencent",
@@ -340,10 +340,10 @@ MODELS = [
         25.2973,
         ProviderType.DATACENTER,
         aa_tok_per_task=46161,
-        aa_price_per_task=0.07430984031498059,
+        aa_price_per_task=0.07179763081859954,
         or_slug="tencent/hy3-20260706",
-        or_session_cost_10_49_turns=0.047079116,
-        or_toks_served=2794119207670,
+        or_session_cost_10_49_turns=0.04743342,
+        or_toks_served=2568933723991,
     ),
     # Guesstimate - not on AA. Intelligence is extrapolated from Tencent's own
     # agentic-benchmark chart for Hy4 preview
@@ -356,8 +356,9 @@ MODELS = [
     # "as of the chart". Cross-check: the same fit on Terminal Bench 2.1 with
     # Hy3 added as a wide-range calibration point lands Hy3 at 26.2 against its
     # real 25.3, and gives 43.4 for Hy4 preview.
-    # Price per task: OR's median 10-49-turn session cost for the permaslug
-    # averages $0.195 (Hermes Agent $0.174, Claude Code $0.217), between DeepSeek
+    # Price per task: at guesstimate time, OR's median 10-49-turn session cost
+    # for the permaslug averaged $0.195 (Hermes Agent $0.174, Claude Code
+    # $0.217), between DeepSeek
     # V4.1 Flash ($0.070/session, $0.40/task) and Gemini 3.8 Flash ($0.263,
     # $1.21/task). Log-interpolating those two displayed prices at $0.195 gives
     # $0.946, which at this session cost is 74,628 output tokens per task: that
@@ -371,8 +372,8 @@ MODELS = [
         aa_tok_per_task=74628,
         aa_price_per_task=0.9461563312,
         or_slug="tencent/hy4-preview-20260827",
-        or_session_cost_10_49_turns=0.19518670999999999,
-        or_toks_served=10611424494392,
+        or_session_cost_10_49_turns=0.21746505,
+        or_toks_served=9642024295349,
         hardware_cost=21200,
         estimated=True,
     ),
@@ -384,8 +385,8 @@ MODELS = [
         aa_tok_per_task=60200,
         aa_price_per_task=1.6048932100125866,
         or_slug="meta/muse-spark-1.3-20260902",
-        or_session_cost_10_49_turns=0.5541186,
-        or_toks_served=540966735379,
+        or_session_cost_10_49_turns=0.50941202,
+        or_toks_served=559986099985,
     ),
     Model(
         "Meta",
@@ -395,8 +396,8 @@ MODELS = [
         aa_tok_per_task=60200,
         aa_price_per_task=1.6048932100125866,
         or_slug="meta/muse-spark-1.3-contributor-20260902",
-        or_session_cost_10_49_turns=0.02570796125,
-        or_toks_served=1763404454141,
+        or_session_cost_10_49_turns=0.026903109124999998,
+        or_toks_served=1670770467899,
     ),
     Model(
         "Z AI",
@@ -407,8 +408,8 @@ MODELS = [
         aa_tok_per_task=round(68673 * 70610 / 138690),
         aa_price_per_task=0.2532595604307378 * 70610 / 138690,
         or_slug="z-ai/glm-5.3-flash-20260826",
-        or_session_cost_10_49_turns=0.036869266,
-        or_toks_served=17818682492886,
+        or_session_cost_10_49_turns=0.039687436,
+        or_toks_served=16322643849905,
         estimated=True,
     ),
     Model(
@@ -419,8 +420,8 @@ MODELS = [
         aa_tok_per_task=68673,
         aa_price_per_task=0.2532595604307378,
         or_slug="z-ai/glm-5.3-flash-20260826",
-        or_session_cost_10_49_turns=0.036869266,
-        or_toks_served=17818682492886,
+        or_session_cost_10_49_turns=0.039687436,
+        or_toks_served=16322643849905,
         hardware_cost=10200,
     ),
     Model(
@@ -432,8 +433,8 @@ MODELS = [
         aa_price_per_task=2.0056375150449584,
         hardware_cost=21200,
         or_slug="z-ai/glm-5.3-20260816",
-        or_session_cost_10_49_turns=0.4642003275,
-        or_toks_served=2892473292541,
+        or_session_cost_10_49_turns=0.46688659250000003,
+        or_toks_served=2798878156520,
     ),
     Model(
         "Moonshot AI",
@@ -444,8 +445,8 @@ MODELS = [
         aa_price_per_task=2.0001323004425493,
         hardware_cost=320_000,
         or_slug="moonshotai/kimi-k3-20260715",
-        or_session_cost_10_49_turns=0.7603638374999999,
-        or_toks_served=1364307055889,
+        or_session_cost_10_49_turns=0.7484240675,
+        or_toks_served=1394330682340,
     ),
     Model(
         "Google",
@@ -455,8 +456,8 @@ MODELS = [
         aa_tok_per_task=71003,
         aa_price_per_task=1.2427947606950427,
         or_slug="google/gemini-3.8-flash-20260902",
-        or_session_cost_10_49_turns=0.26335906000000003,
-        or_toks_served=2190124463415,
+        or_session_cost_10_49_turns=0.27267587249999997,
+        or_toks_served=2158560409059,
     ),
     Model(
         "SpaceXAI",
@@ -466,7 +467,8 @@ MODELS = [
         aa_tok_per_task=65901,
         aa_price_per_task=2.726106691786027,
         or_slug="x-ai/grok-4.7-20260916",
-        or_toks_served=327186795444,
+        or_session_cost_10_49_turns=0.90376115,
+        or_toks_served=369611657525,
     ),
     Model(
         "SpaceXAI",
@@ -476,7 +478,8 @@ MODELS = [
         aa_tok_per_task=80561,
         aa_price_per_task=3.738325952106939,
         or_slug="x-ai/grok-4.7-20260916",
-        or_toks_served=327186795444,
+        or_session_cost_10_49_turns=0.90376115,
+        or_toks_served=369611657525,
     ),
     # Expected to land on OpenRouter on 2026-10-15
     Model(
@@ -496,7 +499,8 @@ MODELS = [
         aa_price_per_task=0.0621899731897297,
         hardware_cost=6800,
         or_slug="xiaomi/mimo-v2.6-flash-20260921",
-        or_toks_served=4276276147435,
+        or_session_cost_10_49_turns=0.0332888025,
+        or_toks_served=5505234830438,
     ),
     Model(
         "Xiaomi",
@@ -507,7 +511,8 @@ MODELS = [
         aa_price_per_task=0.13322318937213493,
         hardware_cost=27200,
         or_slug="xiaomi/mimo-v2.6-pro-20260921",
-        or_toks_served=913874898530,
+        or_session_cost_10_49_turns=0.10763974166666666,
+        or_toks_served=1073173479373,
     ),
     Model(
         "OpenAI",
@@ -517,7 +522,8 @@ MODELS = [
         aa_tok_per_task=2054,
         aa_price_per_task=0.004483809259539013,
         or_slug="openai/gpt-6-luna-20260922",
-        or_toks_served=2281999017471,
+        or_session_cost_10_49_turns=0.029949736249999998,
+        or_toks_served=2890798429896,
     ),
     Model(
         "OpenAI",
@@ -527,7 +533,8 @@ MODELS = [
         aa_tok_per_task=11227,
         aa_price_per_task=0.01725359419426588,
         or_slug="openai/gpt-6-luna-20260922",
-        or_toks_served=2281999017471,
+        or_session_cost_10_49_turns=0.029949736249999998,
+        or_toks_served=2890798429896,
     ),
     Model(
         "OpenAI",
@@ -537,7 +544,8 @@ MODELS = [
         aa_tok_per_task=19771,
         aa_price_per_task=0.02861964876935845,
         or_slug="openai/gpt-6-luna-20260922",
-        or_toks_served=2281999017471,
+        or_session_cost_10_49_turns=0.029949736249999998,
+        or_toks_served=2890798429896,
     ),
     Model(
         "OpenAI",
@@ -547,7 +555,8 @@ MODELS = [
         aa_tok_per_task=27189,
         aa_price_per_task=0.041708771594451556,
         or_slug="openai/gpt-6-luna-20260922",
-        or_toks_served=2281999017471,
+        or_session_cost_10_49_turns=0.029949736249999998,
+        or_toks_served=2890798429896,
     ),
     Model(
         "OpenAI",
@@ -557,7 +566,8 @@ MODELS = [
         aa_tok_per_task=50537,
         aa_price_per_task=0.06809498628701058,
         or_slug="openai/gpt-6-luna-20260922",
-        or_toks_served=2281999017471,
+        or_session_cost_10_49_turns=0.029949736249999998,
+        or_toks_served=2890798429896,
     ),
     Model(
         "OpenAI",
@@ -567,7 +577,8 @@ MODELS = [
         aa_tok_per_task=3358,
         aa_price_per_task=0.13224085088798104,
         or_slug="openai/gpt-6-sol-20260922",
-        or_toks_served=634640353218,
+        or_session_cost_10_49_turns=0.504886465,
+        or_toks_served=774420759837,
     ),
     Model(
         "OpenAI",
@@ -577,7 +588,8 @@ MODELS = [
         aa_tok_per_task=6478,
         aa_price_per_task=0.24820209578663968,
         or_slug="openai/gpt-6-sol-20260922",
-        or_toks_served=634640353218,
+        or_session_cost_10_49_turns=0.504886465,
+        or_toks_served=774420759837,
     ),
     Model(
         "OpenAI",
@@ -587,7 +599,8 @@ MODELS = [
         aa_tok_per_task=10232,
         aa_price_per_task=0.3746326907148203,
         or_slug="openai/gpt-6-sol-20260922",
-        or_toks_served=634640353218,
+        or_session_cost_10_49_turns=0.504886465,
+        or_toks_served=774420759837,
     ),
     Model(
         "OpenAI",
@@ -597,7 +610,8 @@ MODELS = [
         aa_tok_per_task=16013,
         aa_price_per_task=0.5318962692390143,
         or_slug="openai/gpt-6-sol-20260922",
-        or_toks_served=634640353218,
+        or_session_cost_10_49_turns=0.504886465,
+        or_toks_served=774420759837,
     ),
     Model(
         "OpenAI",
@@ -607,7 +621,8 @@ MODELS = [
         aa_tok_per_task=31238,
         aa_price_per_task=1.0564240894076389,
         or_slug="openai/gpt-6-sol-20260922",
-        or_toks_served=634640353218,
+        or_session_cost_10_49_turns=0.504886465,
+        or_toks_served=774420759837,
     ),
     Model(
         "OpenAI",
@@ -617,8 +632,8 @@ MODELS = [
         aa_tok_per_task=4433,
         aa_price_per_task=0.8175139285656057,
         or_slug="openai/gpt-6-astra-20260903",
-        or_session_cost_10_49_turns=2.928953,
-        or_toks_served=1054314597890,
+        or_session_cost_10_49_turns=2.871786025,
+        or_toks_served=1033385906361,
     ),
     Model(
         "OpenAI",
@@ -628,8 +643,8 @@ MODELS = [
         aa_tok_per_task=9590,
         aa_price_per_task=1.5406493220021167,
         or_slug="openai/gpt-6-astra-20260903",
-        or_session_cost_10_49_turns=2.928953,
-        or_toks_served=1054314597890,
+        or_session_cost_10_49_turns=2.871786025,
+        or_toks_served=1033385906361,
     ),
     Model(
         "OpenAI",
@@ -639,8 +654,8 @@ MODELS = [
         aa_tok_per_task=11813,
         aa_price_per_task=1.7252530861048456,
         or_slug="openai/gpt-6-astra-20260903",
-        or_session_cost_10_49_turns=2.928953,
-        or_toks_served=1054314597890,
+        or_session_cost_10_49_turns=2.871786025,
+        or_toks_served=1033385906361,
     ),
     Model(
         "OpenAI",
@@ -650,8 +665,8 @@ MODELS = [
         aa_tok_per_task=16901,
         aa_price_per_task=2.308795912269076,
         or_slug="openai/gpt-6-astra-20260903",
-        or_session_cost_10_49_turns=2.928953,
-        or_toks_served=1054314597890,
+        or_session_cost_10_49_turns=2.871786025,
+        or_toks_served=1033385906361,
     ),
     Model(
         "OpenAI",
@@ -661,8 +676,8 @@ MODELS = [
         aa_tok_per_task=27206,
         aa_price_per_task=3.2575003134834164,
         or_slug="openai/gpt-6-astra-20260903",
-        or_session_cost_10_49_turns=2.928953,
-        or_toks_served=1054314597890,
+        or_session_cost_10_49_turns=2.871786025,
+        or_toks_served=1033385906361,
     ),
     Model(
         "Anthropic",
@@ -717,7 +732,8 @@ MODELS = [
         aa_tok_per_task=10151,
         aa_price_per_task=0.551180473909146,
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_toks_served=877659397046,
+        or_session_cost_10_49_turns=1.4083729666666667,
+        or_toks_served=1082491271317,
     ),
     Model(
         "Anthropic",
@@ -727,7 +743,8 @@ MODELS = [
         aa_tok_per_task=25745,
         aa_price_per_task=1.3360093438976588,
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_toks_served=877659397046,
+        or_session_cost_10_49_turns=1.4083729666666667,
+        or_toks_served=1082491271317,
     ),
     Model(
         "Anthropic",
@@ -737,7 +754,8 @@ MODELS = [
         aa_tok_per_task=35584,
         aa_price_per_task=1.822504718771704,
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_toks_served=877659397046,
+        or_session_cost_10_49_turns=1.4083729666666667,
+        or_toks_served=1082491271317,
     ),
     Model(
         "Anthropic",
@@ -747,7 +765,8 @@ MODELS = [
         aa_tok_per_task=65667,
         aa_price_per_task=3.459110175822289,
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_toks_served=877659397046,
+        or_session_cost_10_49_turns=1.4083729666666667,
+        or_toks_served=1082491271317,
     ),
     Model(
         "Anthropic",
@@ -757,7 +776,8 @@ MODELS = [
         aa_tok_per_task=119166,
         aa_price_per_task=5.982012019521066,
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_toks_served=877659397046,
+        or_session_cost_10_49_turns=1.4083729666666667,
+        or_toks_served=1082491271317,
     ),
 ]
 
@@ -833,7 +853,7 @@ PLOTS = [
         "Intelligence vs. Price per Task (High Intelligence)",
         lambda m: m.intelligence >= HIGH_INTELLIGENCE_THRESHOLD,
         "high_intelligence",
-        xtick_step=0.2,
+        xtick_step=0.5,
         xtick_format="$%.2f",
         band_side="bottom",
     ),
@@ -849,11 +869,11 @@ PLOTS = [
         "Intelligence vs. Price per Task (All Models)",
         lambda _: True,
         "all_models",
-        xtick_step=0.2,
+        xtick_step=0.5,
         xtick_format="$%.2f",
     ),
     PlotSpec(
-        "Intelligence vs. Δ from AA's Price per Task",
+        "Δ from AA's Price per Task",
         lambda m: m.price_delta() is not None,
         "price_delta",
         x_of=Model.price_delta,
@@ -980,6 +1000,54 @@ CANDIDATES = [
     (-10, -122, "right", "top"),
     (0, 136, "center", "bottom"),
     (0, -136, "center", "top"),
+    # Wide horizontal slots: jump the whole left-edge dot/label pile instead
+    # of threading it.
+    (40, 0, "left", "center"),
+    (-40, 0, "right", "center"),
+    (54, 0, "left", "center"),
+    (-54, 0, "right", "center"),
+    (54, 23, "left", "bottom"),
+    (54, -23, "left", "top"),
+    (-54, 23, "right", "bottom"),
+    (-54, -23, "right", "top"),
+    # Taller queues still: when the mid-height bands (other models' labels)
+    # are full, the label has to climb to empty plot space.
+    (0, 150, "center", "bottom"),
+    (0, -150, "center", "top"),
+    (10, 149, "left", "bottom"),
+    (10, -149, "left", "top"),
+    (-10, 150, "right", "bottom"),
+    (-10, -150, "right", "top"),
+    (0, 164, "center", "bottom"),
+    (0, -164, "center", "top"),
+    (10, 163, "left", "bottom"),
+    (10, -163, "left", "top"),
+    (-10, 164, "right", "bottom"),
+    (-10, -164, "right", "top"),
+    (0, 178, "center", "bottom"),
+    (0, -178, "center", "top"),
+    (10, 177, "left", "bottom"),
+    (10, -177, "left", "top"),
+    (-10, 178, "right", "bottom"),
+    (-10, -178, "right", "top"),
+    (0, 192, "center", "bottom"),
+    (0, -192, "center", "top"),
+    (10, 191, "left", "bottom"),
+    (10, -191, "left", "top"),
+    (-10, 192, "right", "bottom"),
+    (-10, -192, "right", "top"),
+    (0, 206, "center", "bottom"),
+    (0, -206, "center", "top"),
+    (10, 205, "left", "bottom"),
+    (10, -205, "left", "top"),
+    (-10, 206, "right", "bottom"),
+    (-10, -206, "right", "top"),
+    (70, 0, "left", "center"),
+    (-70, 0, "right", "center"),
+    (70, 23, "left", "bottom"),
+    (70, -23, "left", "top"),
+    (-70, 23, "right", "bottom"),
+    (-70, -23, "right", "top"),
 ]
 
 
@@ -1190,6 +1258,8 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
     axes_box = _pad(ax.get_window_extent(renderer), 0)
+    if os.environ.get("LBLDBG"):
+        print(f"=== PLACE {ax.get_title(loc='left') or ax.get_title()} n={len(points)}")
 
     # Dots are sacred: a label is never allowed to sit on top of a marker
     # unless every candidate position is worse (see scoring below).
@@ -1275,7 +1345,10 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
             bb = _pad(raw)
 
             # Rank: spilling outside the axes is worst, then touching a marker,
-            # then how much of it, then overlap with the legend/other labels.
+            # then how much of it, then leader-line crossings, then overlap
+            # with the legend/other labels. Text wins over leader lines only
+            # after crossings are exhausted: dotted leaders crossing are
+            # readable, overlapping text is not.
             # Spilling is judged on the unpadded extent -- the pad only guards
             # collisions between labels, text may approach the frame closely.
             spill = (
@@ -1313,6 +1386,13 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
                 crossings,
                 pen,
             )
+            _dbg = os.environ.get("LBLDBG", "")
+            if _dbg and _dbg in left:
+                print(
+                    f"DBG {left[:30]!r} dx={dx} dy={dy} {ha}/{va} "
+                    f"spill={int(spill)} dot={dot_pen:.0f} pen={pen:.0f} "
+                    f"cross={crossings}"
+                )
 
             result = (
                 score,
@@ -1342,6 +1422,29 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
         if b[7] is not None:
             leaders.append(b[7])
 
+    def _total_cost(state):
+        """(leader crossings, unpadded label-overlap area) of a full layout,
+        in the same priority order as choose()'s score."""
+        area = 0.0
+        crosses = 0
+        for i in range(len(points)):
+            for j in range(i + 1, len(points)):
+                a = tuple(v + PAD_PX * s_ for v, s_ in zip(state[i][1], (1, 1, -1, -1)))
+                b2 = tuple(
+                    v + PAD_PX * s_ for v, s_ in zip(state[j][1], (1, 1, -1, -1))
+                )
+                area += _overlap_area(a, b2)
+                if (
+                    state[i][7] is not None
+                    and state[j][7] is not None
+                    and _segments_cross(state[i][7], state[j][7])
+                ):
+                    crosses += 1
+        return (crosses, area)
+
+    best_state = [b for b in placed]
+    best_cost = _total_cost(best_state)
+
     # Repair rounds: re-place every label, in crowd order, against the latest
     # positions of the others (Gauss-Seidel style). Updating every label
     # against a stale snapshot instead can end with two labels sitting on top
@@ -1367,6 +1470,15 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
         )
         if not label_collisions and not leader_collisions:
             break
+        cost = _total_cost(placed)
+        if cost < best_cost:
+            best_cost = cost
+            best_state = [b for b in placed]
+    else:
+        # Gave up without converging (dense cluster): keep the best state seen
+        # across all rounds, not whatever the last oscillating round produced.
+        if best_cost < _total_cost(placed):
+            placed = best_state
 
     # Diagnostics toggle, set by --verbose in main().
     if VERBOSE:
@@ -1375,6 +1487,7 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
         # each side; that is not a real collision.
         for i in range(len(points)):
             for j in range(i + 1, len(points)):
+                title = ax.get_title(loc="left") or ax.get_title() or "?"
                 a = tuple(
                     v + PAD_PX * s_ for v, s_ in zip(placed[i][1], (1, 1, -1, -1))
                 )
@@ -1384,7 +1497,7 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
                 ov = _overlap_area(a, b)
                 if ov > 1:
                     print(
-                        f"OVERLAP {ov:.0f}px^2: "
+                        f"OVERLAP {ov:.0f}px^2 [{title}]: "
                         f"[{points[i][0][:30]}|{points[i][1][:20]}] vs "
                         f"[{points[j][0][:30]}|{points[j][1][:20]}]",
                     )
@@ -1394,7 +1507,7 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
                     and _segments_cross(placed[i][7], placed[j][7])
                 ):
                     print(
-                        f"LEADER CROSS: "
+                        f"LEADER CROSS [{title}]: "
                         f"[{points[i][0][:30]}|{points[i][1][:20]}] vs "
                         f"[{points[j][0][:30]}|{points[j][1][:20]}]"
                     )
