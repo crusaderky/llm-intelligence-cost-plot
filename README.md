@@ -106,9 +106,9 @@ absent as they have no sticker price to compare with.
   measured on OpenRouter, described below
 - Changed sub-200-billion-parameter models from datacenter pricing to cost to run locally
   (read below)
-- Extrapolated points for GLM-5.3-Flash at high reasoning effort, by crossing AA scores
-  at max effort with [Z.ai's coding scores](https://z.ai/blog/glm-5.3-flash) at
-  different effort levels
+- Extrapolated GLM-5.3-Flash at high reasoning effort, by crossing AA scores at max
+  effort with [Z.ai's coding scores](https://z.ai/blog/glm-5.3-flash) at different
+  effort levels
 - Extrapolated Ternary-Bonsai-2's intelligence as ~92% of Qwen3.8-27B's, as reported
   by [ByteShape](https://byteshape.com/blogs/Qwen3.8-27B/)
 - Extrapolated Hy4 preview, which ArtificialAnalysis has not measured yet, from
@@ -117,6 +117,8 @@ absent as they have no sticker price to compare with.
   benchmarks onto the AA Intelligence Index of the models it is compared against. Price
   per task and tokens per task are also guesstimated by comparing OpenRouter's session
   costs to nearby peers.
+- Extrapolated [Occamy-1.0](https://huggingface.co/Accio-Lab/occamy-1.0), in the same
+  way as Hy4.
 
 ## Cost calculation for datacenter models
 
@@ -190,7 +192,7 @@ rapidly:
 | RAM requirements | Hardware | Price | Models |
 | --- | --- | --- | --- |
 | 4 GB | Mobile phone | ~$250 | MiniCPM5-2B |
-| 12 GB | PC with RTX 3080 Ti | ~1,500 (used) | Ternary-Bonsai-2 |
+| 12 GB | PC with RTX 3080 Ti | ~1,500 (used) | Ternary-Bonsai-2<br>Occamy-1.0 |
 | 24 GB | PC with RTX 3090 | ~2,300 (used) | Qwen-3.8-27B |
 | 96 GB | Strix Halo 128 GB<br>DGX Spark (128 GB)<br>Mac Studio M5 Max 128 GB<br>Mac Studio M5 Ultra 96 GB<br>MacBook Pro M5 Max 128 GB<br>PC with RTX 6000 Pro | $3,800<br>$5,000<br>$5,100<br>$5,400<br>$7,000<br>~$16,000 | Qwen3.8-Flash<br> |
 | 192 GB | Gorgon Halo | 6,800 | MiMo-v2.6-Flash |

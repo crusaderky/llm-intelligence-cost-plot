@@ -248,6 +248,19 @@ MODELS = [
         tok_per_sec=150,
         hardware_cost=1500,
     ),
+    # Not on AA: intelligence = linear interpolation of median of self-published
+    # benchmark scores vs. known intelligence index scores.
+    # Tokens per task pixel-peeped from self-published cost per task plot
+    Model(
+        "Accio",
+        "Occamy-1.0",
+        29.7,
+        ProviderType.LOCAL,
+        aa_tok_per_task=34594 * 1.23,
+        tok_per_sec=134,
+        hardware_cost=1500,
+        estimated=True,
+    ),
     Model(
         "Meta",
         "Muse Glimmer",
