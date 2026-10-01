@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-09-29
+**Last updated:** 2026-10-01
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -35,9 +35,9 @@ official pricing from the model developers' own API offering. Posted prices are
 routinely undercut by what customers actually pay: input cache hit rates fluctuate
 substantially over time, some providers sell the exact same weights much cheaper, and
 open-weights models in particular can be rented for a fraction of the list price.
-[OpenRouter](https://openrouter.ai) publishes the posted prices of every provider and —
-more interestingly — the average price its customers _actually_ paid for each model,
-which is what my plots are built on.
+[OpenRouter](https://openrouter.ai) publishes, for every provider that serves a model,
+what its customers _actually_ pay per input and per output token; this is is what my
+plots are built on.
 
 The third and final issue is that local models — those that can fit on consumer hardware
 — appear on the plot at their datacenter pricing, which is always very expensive in
@@ -50,8 +50,8 @@ All intelligence index scores are from ArtificialAnalysis. All points are
 benchmarked at maximum thinking effort where not explicitly stated otherwise.
 
 The X axis shows the cost of one Artificial Analysis Intelligence Index task, derived
-from AA's benchmark task size and what OpenRouter's users actually pay for a real
-agentic session rather than from the developers' sticker prices. Later in the document
+from AA's benchmark task size and the prices OpenRouter's users actually pay for the
+same tokens, rather than from the developers' sticker prices. Later in the document
 I explain how I calculated these numbers.
 
 In the first plot we see the current offering with the most intelligent (and expensive)
@@ -116,60 +116,72 @@ absent as they have no sticker price to compare with.
 - Extrapolated Hy4 preview, which ArtificialAnalysis has not measured yet, from
   [Tencent's own agentic-benchmark chart](https://hy.tencent.ai/research/hy4-preview).
   Its intelligence score was calculated by mapping the delta on the _self-published_
-  benchmarks onto the AA Intelligence Index of the models it is compared against. Price
-  per task and tokens per task are also guesstimated by comparing OpenRouter's session
-  costs to nearby peers.
+  benchmarks onto the AA Intelligence Index of the models it is compared against.
 - Extrapolated [Occamy-1.0](https://huggingface.co/Accio-Lab/occamy-1.0), in the same
   way as Hy4.
 
 ## Cost calculation for datacenter models
 
-The **price per task** for datacenter models is built from what OpenRouter's customers
-actually pay, using two observed statistics:
+The **price per task** is AA's own benchmark task, priced at what OpenRouter's
+customers actually pay for the same tokens. Two steps: work out what the task
+spends in tokens, then price those tokens.
 
-- **OpenRouter's session cost for 10–49 turns** — the median cost of a real agentic
-  session of 10–49 turns (the "core" bucket on OpenRouter's session-cost leaderboard),
-  averaged over the OpenRouter coding harnesses that carry session data for the model.
-  This is a stable measure of real spending: per-provider list prices are not reliable
-  (degraded or abnormally slow endpoints, discounts and routing keep moving them).
-
-- **OpenRouter's weekly tokens served** — how many prompt and completion tokens
-  OpenRouter served for the model over the trailing week, across all its variants. This
-  is the weight with which the model enters the average below.
-
-Session cost is dollars per _session_, not dollars per _task_, so it needs a
-tokens-per-session conversion. AA's cost per task and OpenRouter's session cost share
-the model's real price per token, so the ratio of the two estimates that number, and the
-volume-weighted mean over all models is the conversion constant K:
+**Step 1 — the task's token mix.** AA publishes the cost of one Intelligence Index task
+split by token type — uncached input (including cache writes), cache reads, and output
+(reasoning plus the final answer) — and the sticker price per token that each stream
+was billed at. Dividing one by the other recovers how many tokens of each kind the
+task burns:
 
 ```text
-K = volume-weighted mean of (AA output tokens per task × OR session cost / AA cost per task)
-price per task = AA output tokens per task × OR session cost / K
+input tokens  = AA $/task[input] + AA $/task[cached input], each divided by its own sticker price
+output tokens = AA $/task[output] / AA sticker output price
 ```
 
-Calibrating K on AA's prices pins the volume-weighted average of
-`price-per-task / AA-cost-per-task` to 1, so the plot keeps AA's overall dollar level
-while its relative shape follows real spending. In other words: **the price is
-proportional to what the model needs to answer one benchmark task at its own verbosity,
-relative to what the average token served through OpenRouter costs.** A model whose real
-price per token is above the volume-weighted average moves right of AA's sticker price;
-a cheaper one moves left. A model with no 10–49-turn session data on OpenRouter keeps
-AA's cost per task, unscaled.
+An agentic task caches aggressively, so most input tokens are cache hits. Opus 5.5 at
+max effort, for example, spends 12.1M cached input tokens against 294k uncached ones.
+
+**Step 2 — OpenRouter's real prices.** The spot price of the cheapest provider is far
+too volatile to plot (it moves wildly within hours), so I use a rolling average over the
+last week instead. For each day, and for each provider serving the model that day,
+OpenRouter's _effective_ price — what that provider's traffic actually pays per input
+and per output token, after its cache discounts — is reduced to the first quintile
+across providers, and the median across the days of the week gives the model's price.
+Finally:
+
+```text
+price per task = (input tokens × OR effective input price + output tokens × OR effective output price) / 1e6
+```
+
+Note that OR's effective input price is itself already net of that provider's cache hit
+rate, so it is applied to the whole input side rather than to cache hits alone. The
+result is a real, absolute price for the same task AA benchmarks: **what you pay on
+OpenRouter for the tokens that AA's task actually consumes.**.
+
+A model OR carries no price history for, or one AA publishes no breakdown for, keeps
+AA's own cost per task.
 
 ## Cost calculation for local models
 
 Price per task for models marked with the lightning-bolt symbol (⚡) was crudely
 calculated as follows:
 
-- Take Output tokens per task [from
-  artificialanalysis.ai](https://artificialanalysis.ai/#intelligence-comparison-tabs)
+- Take the tokens AA's benchmark task uses: always the output tokens per task [from
+  artificialanalysis.ai](https://artificialanalysis.ai/#intelligence-comparison-tabs),
+  plus the uncached input tokens from the same breakdown the datacenter models use.
+  Cache hits are free on your own machine, so they are excluded.
+- AA publishes no breakdown for a few of these models (MiniCPM5-2B, K2 Horizon 7B,
+  Occamy-1.0, Ternary-Bonsai-2). For those, the uncached input tokens are estimated as
+  3.78× the output tokens, which is the median of that ratio over the 34 models AA
+  does break down. It is a crude guess: the real ratio is about 2 for a max-effort
+  task and about 13 for a low-effort one.
 - Crudely observe decode speed (tok/s) on local hardware. Most measurements were taken
   on the same RTX 3090 video card from 2020, which today is relatively affordable at
-  ~$1,400 (used).
+  ~$1,400 (used). Prefill speed is not published or measured anywhere, so it is
+  guesstimated at 10× the decode speed; on these task sizes that makes prefill a minor
+  addition to the runtime.
 - Measure delta between peak and idle energy draw on said hardware
 - Price electricity at $0.2049/kWh, which is the US residential electricity price,
   weighted average by population, as of May 2026.
-- Add 20% (finger-in-the-air) for uncached input tokens and waiting for tool calls
 - Hardware is priced at zero, on the basis that both an RTX 3090 PC and a 64GB Strix
   Halo are desirable gaming/work machines anyways.
 
@@ -194,10 +206,10 @@ rapidly:
 | RAM requirements | Hardware | Price | Models |
 | --- | --- | --- | --- |
 | 4 GB | Mobile phone | ~$250 | MiniCPM5-2B |
-| 12 GB | PC with RTX 3080 Ti | ~1,500 (used) | Ternary-Bonsai-2<br>Occamy-1.0 |
-| 24 GB | PC with RTX 3090 | ~2,300 (used) | Qwen-3.8-27B |
+| 12 GB | PC with RTX 3080 Ti | ~$1,500 (used) | Ternary-Bonsai-2<br>Occamy-1.0 |
+| 24 GB | PC with RTX 3090 | ~$2,300 (used) | Qwen-3.8-27B |
 | 96 GB | Strix Halo 128 GB<br>DGX Spark (128 GB)<br>Mac Studio M5 Max 128 GB<br>Mac Studio M5 Ultra 96 GB<br>MacBook Pro M5 Max 128 GB<br>PC with RTX 6000 Pro | $3,800<br>$5,000<br>$5,100<br>$5,400<br>$7,000<br>~$16,000 | Qwen3.8-Flash<br> |
-| 192 GB | Gorgon Halo | 6,800 | MiMo-v2.6-Flash |
+| 192 GB | Gorgon Halo | $6,800 | MiMo-v2.6-Flash |
 | 256 GB | 2x DGX Spark<br>Mac Studio M5 Ultra 256 GB | $10,200<br>$11,300 | GLM-5.3-Flash |
 | 280 GB | 3x DGX Spark (384 GB) | $15,300 | DeepSeek-V4.1-Flash |
 | 512 GB | 4x DGX Spark + QFP28 switch<br>2x Mac Studio M5 Ultra 256 GB<br>Mac studio M5 Ultra 512 GB | $21,200<br>$22,600<br>T.B.A. | GLM-5.3<br>Hy4 preview |
@@ -226,12 +238,12 @@ while the latter can be as cheap as a mobile phone subscription.
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
 appreciate how much better Claude Opus 5.5 at max effort (intelligence score 58,
-$9.31/task) is compared to GPT Sol-6.1 at high effort (intelligence 51, $0.39/task — 24x
+$11.13/task) is compared to GPT Sol-6.1 at xhigh effort (intelligence 51, $0.39/task — 28x
 cheaper), most people will have a hard time doing so. Going further down, GLM-5.3-Flash
-at high effort (intelligence 40, $0.13/task — over _seventy times_ cheaper than Opus
+at high effort (intelligence 40, $0.18/task — over _sixty times_ cheaper than Opus
 5.5) is visibly less capable when you give it very sophisticated tasks, like
 one-shotting a whole coding project on its own, but it remains _enough_ for 90% of what
 people actually need. Even the highly specialized engineers and scientists mentioned
 above don't actually need the extra intelligence for a lot of what they do. Descending
 just a little bit further, an enthusiast gamer can run Qwen3.8-27B (intelligence 34,
-$0.03/task in electricity) on a computer they already own.
+$0.06/task in electricity) on a computer they already own.

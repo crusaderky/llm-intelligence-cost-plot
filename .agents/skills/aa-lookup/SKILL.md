@@ -20,14 +20,28 @@ payload. The script therefore:
 1. Fetches the model page (one per base slug, cached 6h) and extracts the full record:
    Intelligence Index (sub-unit precision), cost per task with a token-type breakdown
    (input / nonCacheInput / cacheRead / cacheWrite / output / reasoning / answer, at
-   sub-cent precision), cache hit/write prices, and output tokens per task.
+   sub-cent precision), the sticker price per 1M tokens for each stream (input /
+   cache read / cache write / output), and output tokens per task.
+
+Record names drift (AA renames effort variants, e.g. `Kimi K3 (max)` → `Kimi K3 (Max)`,
+and retires records entirely). `get_page_record` matches exactly, then
+case-insensitively, then by name stem plus effort tag, and stamps the name it actually
+matched as `_matched_name`; `aa-query` prints a note when that differs from the queried
+name. Refresh tooling uses `pick_record` the same way.
 
 - `evaluations.artificial_analysis_intelligence_index` — API-side (may be rounded);
   the page record's `intelligence` is the sub-unit value to use.
 - `intelligenceIndexCostPerTask.cost` — per-task cost breakdown. `output` includes
-  reasoning + answer; `input` = nonCacheInput + cacheRead + cacheWrite.
+  reasoning + answer; `input` = nonCacheInput + cacheRead + cacheWrite, so plot.py's
+  `PricedTokens(input_, output, cached_input)` is
+  `(nonCacheInput + cacheWrite, output, cacheRead)`.
 - `intelligenceIndexOutputTokensPerTask.output` — total output tokens per task
-  (reasoning + answer); use for local-electricity cost calculations.
+  (reasoning + answer).
+- `price1mInputTokens` / `price1mOutputTokens` / `cacheHitPrice` (keyed
+  `price_1m_input`, `price_1m_output`, `price_1m_cache_hit`) — the sticker prices, per
+  1M tokens, that the breakdown was billed at. Cost ÷ price recovers the token counts
+  of each stream; a missing `cacheHitPrice` means the model is treated as never hitting
+  a cache.
 
 Docs: https://artificialanalysis.ai/api-reference
 Endpoint: `GET https://artificialanalysis.ai/api/v2/data/llms/models` (all models,
@@ -62,10 +76,17 @@ query with the full exact name (as printed by `--list`) for a reliable page matc
 - `intelligence` — the page record's sub-unit value (the API-side
   `evaluations.artificial_analysis_intelligence_index` may be rounded).
 - `output_tokens_per_task` — AA's benchmark task size in output tokens; feeds
-  `aa_tok_per_task` (the electricity calculation for local models and the OpenRouter
-  rescaling for datacenter models).
-- `cost_per_task_total` — feeds `aa_price_per_task` for datacenter models (AA's
-  sticker price, before the OpenRouter rescaling).
+  `aa_tok_per_task`.
+- `cost_per_task_*` — feeds `aa_cost_per_task=PricedTokens(input_, output,
+  cached_input)`, the per-task cost split by token type.
+- `price_1m_input` / `price_1m_output` / `price_1m_cache_hit` — feeds
+  `aa_sticker_price=PricedTokens(...)`, the same three streams in USD per 1M tokens.
+  Together with the split they give the task's token mix, which is what the OpenRouter
+  prices are applied to. A missing `price_1m_cache_hit` becomes `cached_input = 0.0`,
+  which reads as "AA reports no cache reads for this model".
+- `cost_per_task_total` — the total the split sums to; when AA publishes no split at
+  all, store it as a bare float in `aa_cost_per_task`. Either way it is the fallback
+  price and the delta plot's baseline.
 
 The `.agents/skills/refresh-models` skill automates all of this (AA + OpenRouter)
 and prints old -> new values plus paste-ready constructor rows; prefer it over

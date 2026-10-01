@@ -12,26 +12,42 @@ The figures are deliberately very wide so the cost gap between the cheap
 models and the frontier models is dramatic.
 
 The "price per task" is the cost of one Artificial Analysis Intelligence
-Index task. Datacenter models are priced from what OpenRouter's customers
-actually pay: the median cost of a real agentic session of 10-49 turns (the
-"core" bucket on OR's session-cost leaderboard, averaged over the coding
-harnesses that carry the model), converted to a per-task figure by a
-tokens-per-session constant K:
+Index task, priced the way each class of model actually gets served.
 
-    K = volume-weighted mean of (AA tokens/task x OR session $ / AA $/task)
-    price per task = AA tokens/task x OR session $ / K
+Datacenter models are priced from what OpenRouter's customers pay for the
+same token mix AA benchmarks. AA publishes the task's cost per task split by
+token type -- uncached input (including cache writes), cache reads, and
+output (reasoning + answer) -- together with the sticker price per token each
+stream was billed at; dividing one by the other recovers how many tokens of
+each kind the task uses:
 
-AA's cost per task and OR's session cost share the model's real $/token, so
-their ratio estimates how many tokens a session burns; calibrating K on AA's
-prices pins the volume-weighted average of price-per-task/AA-price to 1. The
-plot thus keeps AA's overall dollar level while taking its relative shape
-from real spending: a model pricier than OpenRouter's average token plots
-above AA's sticker price, and vice versa. A datacenter model with no OR
-session data falls back to AA's cost per task, unscaled.
+    input tokens  = AA $/task[input] / AA sticker[$/token, input]
+                  + AA $/task[cached input] / AA sticker[$/token, cached input]
+    output tokens = AA $/task[output] / AA sticker[$/token, output]
 
-Local (electricity-powered) models have no sticker price: their price per
-task is the electricity needed to generate AA's output tokens per task on
-consumer hardware.
+Both AA figures are stored as PricedTokens(input_, output, cached_input) — the
+cost one in USD per task, the sticker one in USD per 1M tokens. A model AA
+publishes no breakdown for stores the bare total as a float instead of the
+split.
+
+OpenRouter's prices for those tokens come from the trailing week rather than
+the volatile spot quote: for every provider and every day, the first quintile
+of the effective price across providers, then the median of those across days
+(see .agents/skills/refresh-models). That gives one synthetic OR price pair
+per model, in $/M tokens:
+
+    price per task = (input tokens x OR input $/M
+                      + output tokens x OR output $/M) / 1e6
+
+OR's effective input price is itself cache-hit-discounted, so it is applied
+to the whole input side. A model OR carries no price chart for, or one AA
+publishes no breakdown for, falls back to AA's posted cost per task.
+
+Local (electricity-powered) models have no sticker price: their price per task
+is the electricity needed to run the task on consumer hardware, counting AA's
+uncached input tokens through prefill and its output tokens through decode.
+Cache reads cost the local rig nothing and are left out. Models AA does not
+break down get an estimated input token count (LOCAL_INPUT_TOKEN_RATIO).
 
 Dots are colored by publisher (colors replicated from artificialanalysis.ai)
 and a legend lists only the publishers present in each plot.
@@ -100,6 +116,45 @@ class LocalHardware(NamedTuple):
 RTX3090 = LocalHardware("RTX 3090", 350, 43)
 STRIX_HALO = LocalHardware("Strix Halo 128GB", 170, 11)
 
+# Residential electricity, weighted by population, May 2026 (USD/KWh)
+# https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a
+US_ELECTRICITY_PRICE = 0.2049
+
+
+class PricedTokens(NamedTuple):
+    """The three token streams a benchmark task is billed on.
+
+    Doubles as AA's cost-per-task breakdown (USD per task), as the sticker
+    price those streams were billed at (USD per 1M tokens), and -- after a
+    division -- as the task's token counts. Field order is the de-facto
+    standard one; `input_` carries the trailing underscore so it does not
+    shadow the builtin.
+
+    A cached_input of 0.0 means "no cache": either AA reports no cache reads at
+    all, or it publishes no cache-read price for the model, and the task burned
+    no cached tokens.
+    """
+
+    input_: float  # uncached input tokens, cache writes included
+    output: float  # reasoning + final answer tokens
+    cached_input: float  # cache reads (cache hits)
+
+
+class LocalSpeed(NamedTuple):
+    """Throughput of a local model on its rig, in tokens/second."""
+
+    prefill: float  # input tokens/s
+    decode: float  # output tokens/s
+
+
+# AA publishes no cost-per-task breakdown for some local models, so their
+# uncached input token count is estimated as this multiple of the output token
+# count. 3.78 is the median of (uncached input tokens / output tokens) over the
+# 34 models AA does break down; the real ratio climbs steeply as output tokens
+# fall (2.1 at max effort, 12.9 on a low-effort record), so this is a coarse
+# middle guess, not a per-model fit.
+LOCAL_INPUT_TOKEN_RATIO = 3.78
+
 
 class ProviderType(Enum):
     """How a model's price per task is obtained."""
@@ -115,25 +170,38 @@ class Model:
     The cost is not computed at construction time: the raw inputs are stored
     and price_per_task() derives the displayed figure on demand. The
     constructor does validate the inputs each provider type needs: LOCAL
-    models must have a measured tok_per_sec, DATACENTER models must have
-    AA's aa_price_per_task.
+    models must have a measured local_speed, DATACENTER models must have
+    AA's aa_cost_per_task.
     """
 
     publisher: str
     name: str
     intelligence: float
     provider_type: ProviderType
-    # AA benchmark task size (also the tok_per_task input of the electricity
-    # cost).
+    # AA's output tokens per benchmark task (also the task size the local
+    # electricity cost is computed from).
     aa_tok_per_task: float = field(kw_only=True)
-    # Datacenter models: AA's posted-price cost of one task, plus the
-    # OpenRouter numbers.
-    aa_price_per_task: float | None = field(default=None, kw_only=True)
+    # Datacenter models: what one AA task costs, and how it splits. A
+    # PricedTokens (USD per task) is AA's split by token type; a bare float is
+    # the total only, for the models AA publishes no breakdown for. The split,
+    # divided by aa_sticker_price, is what turns AA's dollar breakdown into
+    # token counts (see the module docstring); the total is the fallback price
+    # and the delta plot's baseline.
+    aa_cost_per_task: PricedTokens | float | None = field(default=None, kw_only=True)
+    aa_sticker_price: PricedTokens | None = field(default=None, kw_only=True)
     or_slug: str | None = field(default=None, kw_only=True)
+    # Recorded for reference only: neither figure prices the plot any more.
+    # or_session_cost_10_49_turns is OR's median cost of a real 10-49-turn
+    # coding session, or_toks_served the trailing-week volume behind it.
     or_session_cost_10_49_turns: float | None = field(default=None, kw_only=True)
     or_toks_served: int | None = field(default=None, kw_only=True)
-    # Local models: decode speed measured on `hardware` (None = RTX3090).
-    tok_per_sec: float | None = field(default=None, kw_only=True)
+    # Datacenter models: OR's synthetic effective prices in $/M tokens, the
+    # first quintile of provider prices per day, median across the days of the
+    # trailing week (see .agents/skills/refresh-models).
+    or_eff_input_price: float | None = field(default=None, kw_only=True)
+    or_eff_output_price: float | None = field(default=None, kw_only=True)
+    # Local models: measured throughput on `hardware` (None = RTX3090).
+    local_speed: LocalSpeed | None = field(default=None, kw_only=True)
     hardware: LocalHardware | None = field(default=None, kw_only=True)
     # One-off USD price of the cheapest hardware that can run the model
     # locally, from the README's "Larger local models" table. Independent of
@@ -154,77 +222,137 @@ class Model:
 
     def __post_init__(self) -> None:
         if self.provider_type is ProviderType.LOCAL:
-            if self.tok_per_sec is None:
-                raise ValueError(f"{self.name}: local model needs tok_per_sec")
+            if self.local_speed is None:
+                raise ValueError(f"{self.name}: local model needs local_speed")
             # The ⚡ marker (ICON_PATHS["bolt"]) and the hardware name are
             # spliced into the label here, unlike the trains_on_your_data and
             # available flags, which are drawn as glyphs at render time.
             if self.hardware is None:
                 self.hardware = RTX3090
             self.name = f"{self.name} ({self.hardware.name} ⚡)"
-        elif self.aa_price_per_task is None:
-            raise ValueError(f"{self.name}: datacenter model needs aa_price_per_task")
+        elif self.aa_cost_per_task is None:
+            raise ValueError(f"{self.name}: datacenter model needs aa_cost_per_task")
+
+    def aa_total_cost_per_task(self) -> float:
+        """AA's posted cost of one task, whether or not it is split by type."""
+        assert self.aa_cost_per_task is not None
+        if isinstance(self.aa_cost_per_task, PricedTokens):
+            return sum(self.aa_cost_per_task)
+        return self.aa_cost_per_task
+
+    def aa_token_counts(self) -> PricedTokens | None:
+        """The task's tokens per stream, or None if AA publishes no split.
+
+        AA's cost-per-task split divided by the sticker price of each stream
+        (both in PricedTokens), in tokens. A 0.0 cache price means AA reports no
+        cache reads for the model, so the task burned no cached tokens.
+        """
+        if not isinstance(self.aa_cost_per_task, PricedTokens):
+            return None
+        if self.aa_sticker_price is None:
+            return None
+        cost, sticker = self.aa_cost_per_task, self.aa_sticker_price
+        assert min(cost.input_, cost.output, sticker.input_, sticker.output) > 0, (
+            f"{self.name}: every price we divide by must be non-zero"
+        )
+        assert min(cost.cached_input, sticker.cached_input) >= 0, (
+            f"{self.name}: cache prices cannot be negative"
+        )
+        return PricedTokens(
+            input_=cost.input_ / sticker.input_ * 1e6,
+            output=cost.output / sticker.output * 1e6,
+            cached_input=(
+                cost.cached_input / sticker.cached_input * 1e6
+                if sticker.cached_input
+                else 0.0
+            ),
+        )
+
+    def local_token_counts(self) -> PricedTokens:
+        """The task's tokens per stream, for the electricity cost.
+
+        Cached input is deliberately zeroed: on a local rig a cache read is
+        free, it only costs the electricity to decode the answer. Models AA
+        does not break down fall back to LOCAL_INPUT_TOKEN_RATIO x the output
+        token count for the uncached input. The output leg is always AA's
+        published aa_tok_per_task rather than the split's, which is the same
+        figure before AA's rounding.
+        """
+        counts = self.aa_token_counts()
+        input_ = (
+            self.aa_tok_per_task * LOCAL_INPUT_TOKEN_RATIO
+            if counts is None
+            else counts.input_
+        )
+        return PricedTokens(
+            input_=input_, output=self.aa_tok_per_task, cached_input=0.0
+        )
 
     def price_per_task(self) -> float:
         """Displayed USD cost of one AA Intelligence Index task.
 
-        Datacenter models: OR's median 10-49-turn session cost converted to
-        a per-task figure by or_tokens_per_session() -- equivalently, AA's
-        cost per task times the model's price-level ratio (verbosity x
-        session cost / AA cost per task) over the volume-weighted average; a
-        model with no OR session data keeps AA's figure unscaled.
+        Datacenter models: AA's token mix for the task (uncached + cached
+        input, output) priced at OR's synthetic effective input/output prices
+        from the trailing week. A model with no OR price, or no AA breakdown to
+        get the token mix from, keeps AA's posted cost per task.
 
-        Local models: the electricity to generate AA's output tokens per
-        task on `hardware`.
+        Local models: the electricity to run the task's uncached input tokens
+        through prefill and its output tokens through decode on `hardware`.
         """
         if self.provider_type is ProviderType.LOCAL:
-            assert self.tok_per_sec is not None
+            assert self.local_speed is not None
             assert self.hardware is not None
-            # Weighted by population, May 2026 (USD/KWh)
-            # https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a
-            US_ELECTRICITY_PRICE = 0.2049
-            sec_per_task = self.aa_tok_per_task / self.tok_per_sec
+            tokens = self.local_token_counts()
+            sec_per_task = (
+                tokens.input_ / self.local_speed.prefill
+                + tokens.output / self.local_speed.decode
+            )
             power_draw = self.hardware.peak_power_draw - self.hardware.idle_power_draw
             kwh_per_task = power_draw * sec_per_task / 3_600_000
-            # Finger-in-the-air overhead to account for prefill
-            PREFILL_OVERHEAD = 1.2
-            return kwh_per_task * US_ELECTRICITY_PRICE * PREFILL_OVERHEAD
+            return kwh_per_task * US_ELECTRICITY_PRICE
 
-        else:
-            assert self.aa_price_per_task is not None
-            if self.or_session_cost_10_49_turns is None:
-                return self.aa_price_per_task
-            # AA's cost per task cancels out of AA $/task x ratio / K; it is
-            # kept in the ratio because that is the price-level statistic:
-            # the model's real $/token relative to the volume-weighted mean.
-            ratio = (
-                self.aa_tok_per_task
-                * self.or_session_cost_10_49_turns
-                / self.aa_price_per_task
-            )
-            return self.aa_price_per_task * ratio / or_tokens_per_session()
+        tokens = self.aa_token_counts()
+        if (
+            tokens is None
+            or self.or_eff_input_price is None
+            or self.or_eff_output_price is None
+        ):
+            return self.aa_total_cost_per_task()
+        return (
+            (tokens.input_ + tokens.cached_input) * self.or_eff_input_price
+            + tokens.output * self.or_eff_output_price
+        ) / 1e6
 
-    def price_delta(self) -> float | None:
+    def price_delta(self) -> float:
         """Percentage change of the displayed price per task from AA's
-        published price; None for local models, which have no published
-        price to compare with.
+        published price. Datacenter rows only: a local model's electricity
+        cost has no AA price to be a delta against.
         """
-        if self.aa_price_per_task is None:
-            return None
-        return 100 * (self.price_per_task() / self.aa_price_per_task - 1)
+        assert self.provider_type is ProviderType.DATACENTER
+        return 100 * (self.price_per_task() / self.aa_total_cost_per_task() - 1)
 
 
 MODELS = [
     # Price per task is derived by Model.price_per_task(). Stored inputs:
-    # - intelligence + aa_tok_per_task: artificialanalysis.ai (AA Data API +
-    #   model page flight payloads, sub-unit precision).
-    # - datacenter: aa_price_per_task (AA's posted-price cost of one task),
-    #   or_slug / or_session_cost_10_49_turns (openrouter.ai, GET
+    # - intelligence + aa_tok_per_task + aa_cost_per_task + aa_sticker_price:
+    #   artificialanalysis.ai (AA model page flight payloads, sub-unit /
+    #   sub-cent precision). aa_cost_per_task is AA's cost of one task, either
+    #   split by token type (a PricedTokens, whose three streams sum to the
+    #   total) or as the bare total (a float, for the models AA publishes no
+    #   breakdown for); aa_sticker_price is those same three streams in USD per
+    #   1M tokens.
+    # - datacenter: or_slug + or_eff_input_price / or_eff_output_price
+    #   (openrouter.ai, GET /api/frontend/v1/stats/effective-pricing: first
+    #   quintile of the providers' effective prices each day, median across
+    #   the days of the trailing week, $/M tokens).
+    #   or_session_cost_10_49_turns (GET
     #   /api/frontend/v1/rankings/session-cost: median 10-49-turn session
     #   cost, averaged across the coding harnesses that carry the model) and
     #   or_toks_served (GET /api/frontend/v1/rankings/models?view=week:
-    #   prompt + completion tokens served in the trailing week, all variants).
-    # - local: tok_per_sec measured on real hardware.
+    #   prompt + completion tokens served in the trailing week, all variants)
+    #   are recorded for reference; neither prices the plot.
+    # - local: local_speed, both rates on real hardware. The prefill rate is a
+    #   guesstimate at 10x the decode rate until it gets measured.
     # - hardware_cost: one-off price of the cheapest rig in the README's
     #   "Larger local models" table that fits the model; set only for the
     #   models that table names.
@@ -236,7 +364,7 @@ MODELS = [
         12.4634,
         ProviderType.LOCAL,
         aa_tok_per_task=21834,
-        tok_per_sec=180,
+        local_speed=LocalSpeed(prefill=7460, decode=200),
         hardware_cost=250,
     ),
     Model(
@@ -245,7 +373,11 @@ MODELS = [
         18.2290,
         ProviderType.LOCAL,
         aa_tok_per_task=34594,
-        tok_per_sec=150,
+        aa_cost_per_task=PricedTokens(0.3972175434327144, 0.07783591281841616, 0.0),
+        # AA reports no cache reads for this model and publishes no cache-read
+        # price; 0.0 in the cached slot of both splits means "never caches"
+        aa_sticker_price=PricedTokens(0.375, 2.25, 0.0),
+        local_speed=LocalSpeed(prefill=2215, decode=150),
         hardware_cost=1500,
     ),
     # Not on AA: intelligence = linear interpolation of median of self-published
@@ -257,7 +389,7 @@ MODELS = [
         29.7,
         ProviderType.LOCAL,
         aa_tok_per_task=34594 * 1.23,
-        tok_per_sec=134,
+        local_speed=LocalSpeed(prefill=2345, decode=134),
         hardware_cost=1500,
         estimated=True,
     ),
@@ -267,7 +399,11 @@ MODELS = [
         17.4754,
         ProviderType.LOCAL,
         aa_tok_per_task=13925,
-        tok_per_sec=124,
+        aa_cost_per_task=PricedTokens(
+            0.013893052794893865, 0.0187990159196835, 0.024014277935722587
+        ),
+        aa_sticker_price=PricedTokens(0.32499999999999996, 1.35, 0.04),
+        local_speed=LocalSpeed(prefill=938, decode=124),
         hardware_cost=2300,
     ),
     Model(
@@ -276,7 +412,7 @@ MODELS = [
         20.5959,
         ProviderType.LOCAL,
         aa_tok_per_task=72163,
-        tok_per_sec=100,
+        local_speed=LocalSpeed(prefill=3430, decode=104),
         hardware_cost=1500,
     ),
     Model(
@@ -285,7 +421,11 @@ MODELS = [
         33.6963,
         ProviderType.LOCAL,
         aa_tok_per_task=66797,
-        tok_per_sec=46,
+        aa_cost_per_task=PricedTokens(
+            0.432331423090756, 0.20039241455380952, 0.3745911160120289
+        ),
+        aa_sticker_price=PricedTokens(0.5, 3.0, 0.1),
+        local_speed=LocalSpeed(prefill=963, decode=57),
         hardware_cost=2300,
     ),
     # Not on AA: intelligence = 0.9165 x Qwen3.8-27B, the 91.65% of BF16 that
@@ -297,7 +437,7 @@ MODELS = [
         30.8827,
         ProviderType.LOCAL,
         aa_tok_per_task=66797,
-        tok_per_sec=73,
+        local_speed=LocalSpeed(prefill=963, decode=73),
         hardware_cost=1500,
         estimated=True,
     ),
@@ -307,22 +447,32 @@ MODELS = [
         39.8223,
         ProviderType.LOCAL,
         aa_tok_per_task=107885,
-        tok_per_sec=25,
+        aa_cost_per_task=PricedTokens(
+            0.04967406603399954, 0.05070581107333271, 0.2717961254229642
+        ),
+        aa_sticker_price=PricedTokens(0.15, 0.47, 0.016),
+        # https://github.com/peonist-ai/halogen-flash-server
+        local_speed=LocalSpeed(prefill=1584, decode=55),
         hardware_cost=3800,
         hardware=STRIX_HALO,
     ),
-    # --- Datacenter models (price per task = AA's cost per task rescaled by
-    # OR real-world usage) ---
+    # --- Datacenter models (price per task = AA's token mix priced at OR's
+    # effective input/output prices) ---
     Model(
         "Alibaba",
         "Qwen3.8-Flash",
         39.8223,
         ProviderType.DATACENTER,
         aa_tok_per_task=107885,
-        aa_price_per_task=0.3721760025302965,
+        aa_cost_per_task=PricedTokens(
+            0.04967406603399954, 0.05070581107333271, 0.2717961254229642
+        ),
+        aa_sticker_price=PricedTokens(0.15, 0.47, 0.016),
         or_slug="qwen/qwen3.8-flash-20260826",
-        or_session_cost_10_49_turns=0.041318938,
-        or_toks_served=508737761020,
+        or_session_cost_10_49_turns=0.045219097333333326,
+        or_toks_served=508711706393,
+        or_eff_input_price=0.03644,
+        or_eff_output_price=0.4696,
     ),
     Model(
         "Alibaba",
@@ -330,10 +480,15 @@ MODELS = [
         45.4152,
         ProviderType.DATACENTER,
         aa_tok_per_task=107730,
-        aa_price_per_task=5.408509428374016,
+        aa_cost_per_task=PricedTokens(
+            1.7983995678147318, 0.6463813839388131, 2.9637284766204717
+        ),
+        aa_sticker_price=PricedTokens(2.0, 6.0, 0.25),
         or_slug="qwen/qwen3.8-max-20260902",
         or_session_cost_10_49_turns=0.76834275,
-        or_toks_served=262117224377,
+        or_toks_served=241332154546,
+        or_eff_input_price=0.4044,
+        or_eff_output_price=6.0,
     ),
     Model(
         "DeepSeek",
@@ -342,10 +497,15 @@ MODELS = [
         ProviderType.DATACENTER,
         aa_tok_per_task=88574,
         hardware_cost=15300,
-        aa_price_per_task=0.26522527009606844,
+        aa_cost_per_task=PricedTokens(
+            0.10051303480135712, 0.10628879819362691, 0.058423437101084455
+        ),
+        aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
         or_slug="deepseek/deepseek-v4.1-flash-20260910",
-        or_session_cost_10_49_turns=0.058374017,
-        or_toks_served=19577400514417,
+        or_session_cost_10_49_turns=0.058345011,
+        or_toks_served=22711810402576,
+        or_eff_input_price=0.01775,
+        or_eff_output_price=0.5127,
     ),
     Model(
         "Tencent",
@@ -353,10 +513,15 @@ MODELS = [
         25.2973,
         ProviderType.DATACENTER,
         aa_tok_per_task=46161,
-        aa_price_per_task=0.07179763081859954,
+        aa_cost_per_task=PricedTokens(
+            0.011163402706883093, 0.02561934946572233, 0.03501487864599409
+        ),
+        aa_sticker_price=PricedTokens(0.136, 0.5549999999999999, 0.034),
         or_slug="tencent/hy3-20260706",
         or_session_cost_10_49_turns=0.04743342,
-        or_toks_served=2568933723991,
+        or_toks_served=2392572066775,
+        or_eff_input_price=0.04681,
+        or_eff_output_price=0.5296,
     ),
     # Guesstimate - not on AA. Intelligence is extrapolated from Tencent's own
     # agentic-benchmark chart for Hy4 preview
@@ -369,24 +534,28 @@ MODELS = [
     # "as of the chart". Cross-check: the same fit on Terminal Bench 2.1 with
     # Hy3 added as a wide-range calibration point lands Hy3 at 26.2 against its
     # real 25.3, and gives 43.4 for Hy4 preview.
-    # Price per task: at guesstimate time, OR's median 10-49-turn session cost
-    # for the permaslug averaged $0.195 (Hermes Agent $0.174, Claude Code
-    # $0.217), between DeepSeek
-    # V4.1 Flash ($0.070/session, $0.40/task) and Gemini 3.8 Flash ($0.263,
-    # $1.21/task). Log-interpolating those two displayed prices at $0.195 gives
-    # $0.946, which at this session cost is 74,628 output tokens per task: that
-    # token count is the guess, and aa_price_per_task carries the resulting price
-    # so the delta plot reads 0%, like the other estimated rows.
+    # Price per task: no AA breakdown exists for a model AA has not measured,
+    # so there is no token mix to reprice; aa_cost_per_task carries the
+    # guesstimate below and the delta plot reads 0%, like the other estimated
+    # rows. The OR figures are recorded but unused for the same reason. The
+    # guess itself: OR's median 10-49-turn session cost for the permaslug
+    # averaged $0.195 (Hermes Agent $0.174, Claude Code $0.217), between
+    # DeepSeek V4.1 Flash ($0.070/session, $0.40/task) and Gemini 3.8 Flash
+    # ($0.263, $1.21/task). Log-interpolating those two displayed prices at
+    # $0.195 gives $0.946, which at that session cost is 74,628 output tokens
+    # per task: that token count is the guess.
     Model(
         "Tencent",
         "Hy4 preview",
         44.3,
         ProviderType.DATACENTER,
         aa_tok_per_task=74628,
-        aa_price_per_task=0.9461563312,
+        aa_cost_per_task=0.9461563312,
         or_slug="tencent/hy4-preview-20260827",
-        or_session_cost_10_49_turns=0.21746505,
-        or_toks_served=9642024295349,
+        or_session_cost_10_49_turns=0.21568037,
+        or_toks_served=7483445110726,
+        or_eff_input_price=0.07637364127197355,
+        or_eff_output_price=2.500449440012165,
         hardware_cost=21200,
         estimated=True,
     ),
@@ -396,10 +565,15 @@ MODELS = [
         48.0923,
         ProviderType.DATACENTER,
         aa_tok_per_task=60200,
-        aa_price_per_task=1.6048932100125866,
+        aa_cost_per_task=PricedTokens(
+            0.5058916529996315, 0.25585066991648475, 0.8431508870964701
+        ),
+        aa_sticker_price=PricedTokens(1.25, 4.25, 0.15),
         or_slug="meta/muse-spark-1.3-20260902",
         or_session_cost_10_49_turns=0.50941202,
-        or_toks_served=559986099985,
+        or_toks_served=466486859323,
+        or_eff_input_price=0.3368,
+        or_eff_output_price=4.25,
     ),
     Model(
         "Meta",
@@ -407,10 +581,15 @@ MODELS = [
         48.0923,
         ProviderType.DATACENTER,
         aa_tok_per_task=60200,
-        aa_price_per_task=1.6048932100125866,
+        aa_cost_per_task=PricedTokens(
+            0.5058916529996315, 0.25585066991648475, 0.8431508870964701
+        ),
+        aa_sticker_price=PricedTokens(1.25, 4.25, 0.15),
         or_slug="meta/muse-spark-1.3-contributor-20260902",
-        or_session_cost_10_49_turns=0.026903109124999998,
-        or_toks_served=1670770467899,
+        or_session_cost_10_49_turns=0.026889327375,
+        or_toks_served=1490822960778,
+        or_eff_input_price=0.02641,
+        or_eff_output_price=0.1997,
         trains_on_your_data=True,
     ),
     Model(
@@ -420,10 +599,19 @@ MODELS = [
         41.8075 * 28.01 / 28.99,
         ProviderType.DATACENTER,
         aa_tok_per_task=round(68673 * 70610 / 138690),
-        aa_price_per_task=0.2532595604307378 * 70610 / 138690,
+        # the token split scales with the token count; the sticker prices are
+        # the model's list prices and do not
+        aa_cost_per_task=PricedTokens(
+            0.0217437763348598 * 70610 / 138690,
+            0.034336576028258216 * 70610 / 138690,
+            0.19717920806761985 * 70610 / 138690,
+        ),
+        aa_sticker_price=PricedTokens(0.15, 0.5, 0.026),
         or_slug="z-ai/glm-5.3-flash-20260826",
-        or_session_cost_10_49_turns=0.039687436,
-        or_toks_served=16322643849905,
+        or_session_cost_10_49_turns=0.039667699,
+        or_toks_served=10640449608045,
+        or_eff_input_price=0.041656773770215316,
+        or_eff_output_price=0.42437039556042544,
         estimated=True,
     ),
     Model(
@@ -432,10 +620,15 @@ MODELS = [
         41.8075,
         ProviderType.DATACENTER,
         aa_tok_per_task=68673,
-        aa_price_per_task=0.2532595604307378,
+        aa_cost_per_task=PricedTokens(
+            0.0217437763348598, 0.034336576028258216, 0.19717920806761985
+        ),
+        aa_sticker_price=PricedTokens(0.15, 0.5, 0.026),
         or_slug="z-ai/glm-5.3-flash-20260826",
-        or_session_cost_10_49_turns=0.039687436,
-        or_toks_served=16322643849905,
+        or_session_cost_10_49_turns=0.039667699,
+        or_toks_served=10640449608045,
+        or_eff_input_price=0.0416,
+        or_eff_output_price=0.4244,
         hardware_cost=10200,
     ),
     Model(
@@ -444,11 +637,16 @@ MODELS = [
         44.7774,
         ProviderType.DATACENTER,
         aa_tok_per_task=71128,
-        aa_price_per_task=2.0056375150449584,
+        aa_cost_per_task=PricedTokens(
+            0.17082790879500323, 0.3129615000082585, 1.5218481062416964
+        ),
+        aa_sticker_price=PricedTokens(1.4, 4.4, 0.26),
         hardware_cost=21200,
         or_slug="z-ai/glm-5.3-20260816",
-        or_session_cost_10_49_turns=0.46688659250000003,
-        or_toks_served=2798878156520,
+        or_session_cost_10_49_turns=0.4667711225,
+        or_toks_served=2742791905468,
+        or_eff_input_price=0.2052,
+        or_eff_output_price=2.676,
     ),
     Model(
         "Moonshot AI",
@@ -456,11 +654,16 @@ MODELS = [
         43.5938,
         ProviderType.DATACENTER,
         aa_tok_per_task=48455,
-        aa_price_per_task=2.0001323004425493,
+        aa_cost_per_task=PricedTokens(
+            0.47145748156727935, 0.7268284815216798, 0.8018463373535905
+        ),
+        aa_sticker_price=PricedTokens(3.0, 15.0, 0.3),
         hardware_cost=320_000,
         or_slug="moonshotai/kimi-k3-20260715",
-        or_session_cost_10_49_turns=0.7484240675,
-        or_toks_served=1394330682340,
+        or_session_cost_10_49_turns=0.7484920825,
+        or_toks_served=1563281846165,
+        or_eff_input_price=0.4698,
+        or_eff_output_price=11.83,
     ),
     Model(
         "Google",
@@ -468,10 +671,15 @@ MODELS = [
         40.9262,
         ProviderType.DATACENTER,
         aa_tok_per_task=71003,
-        aa_price_per_task=1.2427947606950427,
+        aa_cost_per_task=PricedTokens(
+            0.5700656958516558, 0.2662596260114765, 0.40646943883191045
+        ),
+        aa_sticker_price=PricedTokens(0.75, 3.75, 0.075),
         or_slug="google/gemini-3.8-flash-20260902",
-        or_session_cost_10_49_turns=0.27267587249999997,
-        or_toks_served=2158560409059,
+        or_session_cost_10_49_turns=0.27268573,
+        or_toks_served=2109386042551,
+        or_eff_input_price=0.2022,
+        or_eff_output_price=1.912,
     ),
     # AA badges it "Not publicly available" (released 2026-09-30, no provider serves
     # it), and OpenRouter has no permaslug for it, so there is no session cost to
@@ -482,7 +690,10 @@ MODELS = [
         52.5605655745982,
         ProviderType.DATACENTER,
         aa_tok_per_task=61558,
-        aa_price_per_task=1.990322379299008,
+        aa_cost_per_task=PricedTokens(
+            1.0554022379429868, 0.6155762620764799, 0.3193438792795405
+        ),
+        aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         available=False,
     ),
     Model(
@@ -491,10 +702,15 @@ MODELS = [
         46.3321770885625,
         ProviderType.DATACENTER,
         aa_tok_per_task=65901,
-        aa_price_per_task=2.726106691786027,
+        aa_cost_per_task=PricedTokens(
+            1.2506133482768427, 0.3954088064888365, 1.0800845370203476
+        ),
+        aa_sticker_price=PricedTokens(2.0, 6.0, 0.5),
         or_slug="x-ai/grok-4.7-20260916",
         or_session_cost_10_49_turns=0.90376115,
-        or_toks_served=369611657525,
+        or_toks_served=399474296804,
+        or_eff_input_price=0.7052,
+        or_eff_output_price=3.083,
     ),
     Model(
         "SpaceXAI",
@@ -502,10 +718,15 @@ MODELS = [
         46.4465506302286,
         ProviderType.DATACENTER,
         aa_tok_per_task=80561,
-        aa_price_per_task=3.738325952106939,
+        aa_cost_per_task=PricedTokens(
+            1.722124090890538, 0.4833681883711849, 1.5328336728452165
+        ),
+        aa_sticker_price=PricedTokens(2.0, 6.0, 0.5),
         or_slug="x-ai/grok-4.7-20260916",
         or_session_cost_10_49_turns=0.90376115,
-        or_toks_served=369611657525,
+        or_toks_served=399474296804,
+        or_eff_input_price=0.7052,
+        or_eff_output_price=3.083,
     ),
     # Expected to land on OpenRouter on 2026-10-15
     Model(
@@ -514,7 +735,10 @@ MODELS = [
         43.7343049141614,
         ProviderType.DATACENTER,
         aa_tok_per_task=64144,
-        aa_price_per_task=0.7174901509283937,
+        aa_cost_per_task=PricedTokens(
+            0.23538385680255072, 0.1731895812858314, 0.30891671284001165
+        ),
+        aa_sticker_price=PricedTokens(1.0, 2.7, 0.05),
         available=False,
     ),
     Model(
@@ -523,11 +747,16 @@ MODELS = [
         37.8843590141754,
         ProviderType.DATACENTER,
         aa_tok_per_task=77637,
-        aa_price_per_task=0.0621899731897297,
+        aa_cost_per_task=PricedTokens(
+            0.022533601185366535, 0.02173824097089166, 0.017918131033471504
+        ),
+        aa_sticker_price=PricedTokens(0.14, 0.28, 0.0028),
         hardware_cost=6800,
         or_slug="xiaomi/mimo-v2.6-flash-20260921",
-        or_session_cost_10_49_turns=0.0332888025,
-        or_toks_served=5505234830438,
+        or_session_cost_10_49_turns=0.0333002585,
+        or_toks_served=9102332455655,
+        or_eff_input_price=0.02106,
+        or_eff_output_price=0.2791,
     ),
     Model(
         "Xiaomi",
@@ -535,66 +764,96 @@ MODELS = [
         46.3242065310383,
         ProviderType.DATACENTER,
         aa_tok_per_task=64276,
-        aa_price_per_task=0.13322318937213493,
+        aa_cost_per_task=PricedTokens(
+            0.057833820951334845, 0.055919859445151064, 0.01946950897564899
+        ),
+        aa_sticker_price=PricedTokens(0.435, 0.87, 0.0036),
         hardware_cost=27200,
         or_slug="xiaomi/mimo-v2.6-pro-20260921",
         or_session_cost_10_49_turns=0.10763974166666666,
-        or_toks_served=1073173479373,
+        or_toks_served=1254603803670,
+        or_eff_input_price=0.03468,
+        or_eff_output_price=0.8695,
     ),
     Model(
         "OpenAI",
         "GPT-6 Luna (low)",
-        20.9225480080866,
+        21.5261980080866,
         ProviderType.DATACENTER,
-        aa_tok_per_task=2054,
-        aa_price_per_task=0.004483809259539013,
+        aa_tok_per_task=2086,
+        aa_cost_per_task=PricedTokens(
+            0.0030098746835280866, 0.0010429532866733373, 0.0004622873857188762
+        ),
+        aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="openai/gpt-6-luna-20260922",
-        or_session_cost_10_49_turns=0.029949736249999998,
-        or_toks_served=2890798429896,
+        or_session_cost_10_49_turns=0.029956872,
+        or_toks_served=5130680873240,
+        or_eff_input_price=0.01937,
+        or_eff_output_price=0.3519,
     ),
     Model(
         "OpenAI",
         "GPT-6 Luna (medium)",
-        29.4619523515762,
+        29.9251773515762,
         ProviderType.DATACENTER,
-        aa_tok_per_task=11227,
-        aa_price_per_task=0.01725359419426588,
+        aa_tok_per_task=11456,
+        aa_cost_per_task=PricedTokens(
+            0.005698203226871066, 0.005728227888056104, 0.006050474952908773
+        ),
+        aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="openai/gpt-6-luna-20260922",
-        or_session_cost_10_49_turns=0.029949736249999998,
-        or_toks_served=2890798429896,
+        or_session_cost_10_49_turns=0.029956872,
+        or_toks_served=5130680873240,
+        or_eff_input_price=0.01937,
+        or_eff_output_price=0.3519,
     ),
     Model(
         "OpenAI",
         "GPT-6 Luna (high)",
-        32.1482304150837,
+        32.9282054150837,
         ProviderType.DATACENTER,
-        aa_tok_per_task=19771,
-        aa_price_per_task=0.02861964876935845,
+        aa_tok_per_task=19693,
+        aa_cost_per_task=PricedTokens(
+            0.007806171580684527, 0.00984636067750162, 0.011371302262915588
+        ),
+        aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="openai/gpt-6-luna-20260922",
-        or_session_cost_10_49_turns=0.029949736249999998,
-        or_toks_served=2890798429896,
+        or_session_cost_10_49_turns=0.029956872,
+        or_toks_served=5130680873240,
+        or_eff_input_price=0.01937,
+        or_eff_output_price=0.3519,
     ),
     Model(
         "OpenAI",
         "GPT-6 Luna (xhigh)",
-        33.8845820217785,
+        34.5587320217785,
         ProviderType.DATACENTER,
-        aa_tok_per_task=27189,
-        aa_price_per_task=0.041708771594451556,
+        aa_tok_per_task=27487,
+        aa_cost_per_task=PricedTokens(
+            0.009569620806657932, 0.013743548062472534, 0.018870379054820634
+        ),
+        aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="openai/gpt-6-luna-20260922",
-        or_session_cost_10_49_turns=0.029949736249999998,
-        or_toks_served=2890798429896,
+        or_session_cost_10_49_turns=0.029956872,
+        or_toks_served=5130680873240,
+        or_eff_input_price=0.01937,
+        or_eff_output_price=0.3519,
     ),
     Model(
         "OpenAI",
         "GPT-6 Luna (max)",
-        37.2559686869738,
+        38.1245186869738,
         ProviderType.DATACENTER,
-        aa_tok_per_task=50537,
-        aa_price_per_task=0.06809498628701058,
+        aa_tok_per_task=49956,
+        aa_cost_per_task=PricedTokens(
+            0.013791726628584668, 0.024977997942542858, 0.028884493149051504
+        ),
+        aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="openai/gpt-6-luna-20260922",
-        or_session_cost_10_49_turns=0.029949736249999998,
-        or_toks_served=2890798429896,
+        or_session_cost_10_49_turns=0.029956872,
+        or_toks_served=5130680873240,
+        or_eff_input_price=0.01937,
+        or_eff_output_price=0.3519,
     ),
     # Not on OR: no 10-49-turn session data — falls back to AA's cost per task.
     Model(
@@ -603,7 +862,10 @@ MODELS = [
         42.0835618555848,
         ProviderType.DATACENTER,
         aa_tok_per_task=3977,
-        aa_price_per_task=0.13075190869859377,
+        aa_cost_per_task=PricedTokens(
+            0.07543296949664269, 0.03976700974677209, 0.015551929455178966
+        ),
+        aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
     ),
     Model(
         "OpenAI",
@@ -611,7 +873,10 @@ MODELS = [
         47.7833271274065,
         ProviderType.DATACENTER,
         aa_tok_per_task=8070,
-        aa_price_per_task=0.21370088267875537,
+        aa_cost_per_task=PricedTokens(
+            0.1014432139069315, 0.08069842557491673, 0.03155924319690711
+        ),
+        aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
     ),
     Model(
         "OpenAI",
@@ -619,7 +884,10 @@ MODELS = [
         50.2377777519769,
         ProviderType.DATACENTER,
         aa_tok_per_task=13192,
-        aa_price_per_task=0.31914442375664703,
+        aa_cost_per_task=PricedTokens(
+            0.1331377332970313, 0.1319187021982128, 0.054087988261402986
+        ),
+        aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
     ),
     Model(
         "OpenAI",
@@ -627,7 +895,10 @@ MODELS = [
         51.0377679093761,
         ProviderType.DATACENTER,
         aa_tok_per_task=17619,
-        aa_price_per_task=0.39286117158850653,
+        aa_cost_per_task=PricedTokens(
+            0.1484522739101359, 0.17618833790384872, 0.06822055977452197
+        ),
+        aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
     ),
     Model(
         "OpenAI",
@@ -635,7 +906,10 @@ MODELS = [
         51.8332597011541,
         ProviderType.DATACENTER,
         aa_tok_per_task=38128,
-        aa_price_per_task=0.7241670655535033,
+        aa_cost_per_task=PricedTokens(
+            0.21968205039306782, 0.3812842891443378, 0.12320072601609774
+        ),
+        aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
     ),
     Model(
         "OpenAI",
@@ -643,10 +917,15 @@ MODELS = [
         45.7819243120341,
         ProviderType.DATACENTER,
         aa_tok_per_task=4433,
-        aa_price_per_task=0.8175139285656057,
+        aa_cost_per_task=PricedTokens(
+            0.41051399628740154, 0.22163743983553194, 0.18536249244267217
+        ),
+        aa_sticker_price=PricedTokens(10.0, 50.0, 1.0),
         or_slug="openai/gpt-6-astra-20260903",
-        or_session_cost_10_49_turns=2.871786025,
-        or_toks_served=1033385906361,
+        or_session_cost_10_49_turns=2.8708335,
+        or_toks_served=906957480360,
+        or_eff_input_price=1.357,
+        or_eff_output_price=35.37,
     ),
     Model(
         "OpenAI",
@@ -654,10 +933,15 @@ MODELS = [
         49.5704363034369,
         ProviderType.DATACENTER,
         aa_tok_per_task=9590,
-        aa_price_per_task=1.5406493220021167,
+        aa_cost_per_task=PricedTokens(
+            0.58072415872659, 0.4794800326827803, 0.4804451305927465
+        ),
+        aa_sticker_price=PricedTokens(10.0, 50.0, 1.0),
         or_slug="openai/gpt-6-astra-20260903",
-        or_session_cost_10_49_turns=2.871786025,
-        or_toks_served=1033385906361,
+        or_session_cost_10_49_turns=2.8708335,
+        or_toks_served=906957480360,
+        or_eff_input_price=1.357,
+        or_eff_output_price=35.37,
     ),
     Model(
         "OpenAI",
@@ -665,10 +949,15 @@ MODELS = [
         50.9191471636152,
         ProviderType.DATACENTER,
         aa_tok_per_task=11813,
-        aa_price_per_task=1.7252530861048456,
+        aa_cost_per_task=PricedTokens(
+            0.6308785923021938, 0.5906404999280142, 0.5037339938746381
+        ),
+        aa_sticker_price=PricedTokens(10.0, 50.0, 1.0),
         or_slug="openai/gpt-6-astra-20260903",
-        or_session_cost_10_49_turns=2.871786025,
-        or_toks_served=1033385906361,
+        or_session_cost_10_49_turns=2.8708335,
+        or_toks_served=906957480360,
+        or_eff_input_price=1.357,
+        or_eff_output_price=35.37,
     ),
     Model(
         "OpenAI",
@@ -676,10 +965,15 @@ MODELS = [
         52.3863277108782,
         ProviderType.DATACENTER,
         aa_tok_per_task=16901,
-        aa_price_per_task=2.308795912269076,
+        aa_cost_per_task=PricedTokens(
+            0.7400314633137893, 0.8450590482946302, 0.7237054006606568
+        ),
+        aa_sticker_price=PricedTokens(10.0, 50.0, 1.0),
         or_slug="openai/gpt-6-astra-20260903",
-        or_session_cost_10_49_turns=2.871786025,
-        or_toks_served=1033385906361,
+        or_session_cost_10_49_turns=2.8708335,
+        or_toks_served=906957480360,
+        or_eff_input_price=1.357,
+        or_eff_output_price=35.37,
     ),
     Model(
         "OpenAI",
@@ -687,19 +981,15 @@ MODELS = [
         52.6737,
         ProviderType.DATACENTER,
         aa_tok_per_task=27206,
-        aa_price_per_task=3.2575003134834164,
+        aa_cost_per_task=PricedTokens(
+            0.9159346921901674, 1.3602752458235075, 0.9812903754697416
+        ),
+        aa_sticker_price=PricedTokens(10.0, 50.0, 1.0),
         or_slug="openai/gpt-6-astra-20260903",
-        or_session_cost_10_49_turns=2.871786025,
-        or_toks_served=1033385906361,
-    ),
-    Model(
-        "Anthropic",
-        "Claude Sonnet 5.5 (low)",
-        35.8430309275022,
-        ProviderType.DATACENTER,
-        aa_tok_per_task=13894,
-        aa_price_per_task=0.41439222745942095,
-        or_slug="anthropic/claude-sonnet-5.5-20260928",
+        or_session_cost_10_49_turns=2.8708335,
+        or_toks_served=906957480360,
+        or_eff_input_price=1.357,
+        or_eff_output_price=35.37,
     ),
     Model(
         "Anthropic",
@@ -707,8 +997,14 @@ MODELS = [
         40.7386909594307,
         ProviderType.DATACENTER,
         aa_tok_per_task=19488,
-        aa_price_per_task=0.5861822401191022,
+        aa_cost_per_task=PricedTokens(
+            0.17103384559119494, 0.19488335802899007, 0.22026503649891727
+        ),
+        aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
+        or_toks_served=251180050863,
+        or_eff_input_price=0.5396,
+        or_eff_output_price=10.0,
     ),
     Model(
         "Anthropic",
@@ -716,8 +1012,14 @@ MODELS = [
         46.7356921799024,
         ProviderType.DATACENTER,
         aa_tok_per_task=34467,
-        aa_price_per_task=1.079758672715514,
+        aa_cost_per_task=PricedTokens(
+            0.26819095938977744, 0.34467167925515074, 0.46689603407058566
+        ),
+        aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
+        or_toks_served=251180050863,
+        or_eff_input_price=0.5396,
+        or_eff_output_price=10.0,
     ),
     Model(
         "Anthropic",
@@ -725,17 +1027,29 @@ MODELS = [
         51.8522867021152,
         ProviderType.DATACENTER,
         aa_tok_per_task=73724,
-        aa_price_per_task=2.742576603824205,
+        aa_cost_per_task=PricedTokens(
+            0.5289330611609605, 0.7372438302563433, 1.476399712406901
+        ),
+        aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
+        or_toks_served=251180050863,
+        or_eff_input_price=0.5396,
+        or_eff_output_price=10.0,
     ),
     Model(
         "Anthropic",
         "Claude Sonnet 5.5 (max)",
         55.9779549012591,
         ProviderType.DATACENTER,
-        aa_tok_per_task=192838,
-        aa_price_per_task=7.602633532969859,
+        aa_tok_per_task=193527,
+        aa_cost_per_task=PricedTokens(
+            1.265889654779412, 1.9352686965568107, 4.419484669750206
+        ),
+        aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
+        or_toks_served=251180050863,
+        or_eff_input_price=0.5396,
+        or_eff_output_price=10.0,
     ),
     Model(
         "Anthropic",
@@ -743,10 +1057,15 @@ MODELS = [
         42.3077781466168,
         ProviderType.DATACENTER,
         aa_tok_per_task=10151,
-        aa_price_per_task=0.551180473909146,
+        aa_cost_per_task=PricedTokens(
+            0.22820591953284136, 0.2030255255124665, 0.1199490288638381
+        ),
+        aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_session_cost_10_49_turns=1.4083729666666667,
-        or_toks_served=1082491271317,
+        or_session_cost_10_49_turns=1.4099249333333332,
+        or_toks_served=1935216775671,
+        or_eff_input_price=0.7045,
+        or_eff_output_price=20.0,
     ),
     Model(
         "Anthropic",
@@ -754,10 +1073,15 @@ MODELS = [
         51.2434931792768,
         ProviderType.DATACENTER,
         aa_tok_per_task=25745,
-        aa_price_per_task=1.3360093438976588,
+        aa_cost_per_task=PricedTokens(
+            0.4115624102397983, 0.5149057379088234, 0.4095411957490367
+        ),
+        aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_session_cost_10_49_turns=1.4083729666666667,
-        or_toks_served=1082491271317,
+        or_session_cost_10_49_turns=1.4099249333333332,
+        or_toks_served=1935216775671,
+        or_eff_input_price=0.7045,
+        or_eff_output_price=20.0,
     ),
     Model(
         "Anthropic",
@@ -765,10 +1089,15 @@ MODELS = [
         53.5831959822067,
         ProviderType.DATACENTER,
         aa_tok_per_task=35584,
-        aa_price_per_task=1.822504718771704,
+        aa_cost_per_task=PricedTokens(
+            0.5066628428356482, 0.711681177559682, 0.6041606983763739
+        ),
+        aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_session_cost_10_49_turns=1.4083729666666667,
-        or_toks_served=1082491271317,
+        or_session_cost_10_49_turns=1.4099249333333332,
+        or_toks_served=1935216775671,
+        or_eff_input_price=0.7045,
+        or_eff_output_price=20.0,
     ),
     Model(
         "Anthropic",
@@ -776,10 +1105,15 @@ MODELS = [
         55.9873505840139,
         ProviderType.DATACENTER,
         aa_tok_per_task=65667,
-        aa_price_per_task=3.459110175822289,
+        aa_cost_per_task=PricedTokens(
+            0.7764090415678275, 1.3133479013199578, 1.369353232934504
+        ),
+        aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_session_cost_10_49_turns=1.4083729666666667,
-        or_toks_served=1082491271317,
+        or_session_cost_10_49_turns=1.4099249333333332,
+        or_toks_served=1935216775671,
+        or_eff_input_price=0.7045,
+        or_eff_output_price=20.0,
     ),
     Model(
         "Anthropic",
@@ -787,51 +1121,31 @@ MODELS = [
         57.6223698102963,
         ProviderType.DATACENTER,
         aa_tok_per_task=119166,
-        aa_price_per_task=5.982012019521066,
+        aa_cost_per_task=PricedTokens(
+            1.1744624066957075, 2.383320315146325, 2.4242292976790343
+        ),
+        aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_session_cost_10_49_turns=1.4083729666666667,
-        or_toks_served=1082491271317,
+        or_session_cost_10_49_turns=1.4099249333333332,
+        or_toks_served=1935216775671,
+        or_eff_input_price=0.7045,
+        or_eff_output_price=20.0,
     ),
 ]
-
-
-def or_tokens_per_session() -> float:
-    """Volume-weighted estimate of the tokens OpenRouter serves per
-    10-49-turn session.
-
-    AA's cost per task and OR's session cost share the model's real $/token,
-    so `AA tokens/task x OR session $ / AA $/task` estimates the tokens a
-    session burns. The volume-weighted mean of that ratio (weighted by
-    or_toks_served) is the K that converts OR's $/session into $/task:
-    calibrating it on AA's prices makes the volume-weighted mean of
-    price-per-task/AA-price equal 1. Models missing either OR figure do not
-    contribute.
-    """
-    weighted = [
-        (
-            m.or_toks_served,
-            m.aa_tok_per_task * m.or_session_cost_10_49_turns / m.aa_price_per_task,
-        )
-        for m in MODELS
-        if m.or_toks_served is not None and m.or_session_cost_10_49_turns is not None
-    ]
-    if not weighted:
-        raise ValueError("No model has OpenRouter session data")
-    return sum(w * v for w, v in weighted) / sum(w for w, _ in weighted)
 
 
 # Bottom of the high-intelligence plot
 HIGH_INTELLIGENCE_THRESHOLD = 39
 # Right edge of the green band: the cheap cluster tops out at ~$0.15/task on
 # the new scale, and the next most expensive model sits at ~$1.4.
-LOW_COST_THRESHOLD = 0.2
+LOW_COST_THRESHOLD = 0.5
 
 
 class PlotSpec(NamedTuple):
     """One filtered view.
 
-    x_of(m) is the x coordinate, or None for models the view cannot place
-    (local models on the delta plot). band_side is the plot edge that
+    x_of(m) is the x coordinate, or None for models the view cannot place.
+    band_side is the plot edge that
     coincides with the green band's edge ("bottom" for the high-intelligence
     plot, "top" for the low-cost one, None otherwise); band=False drops the
     green band entirely, frontier=False drops the Pareto frontier, and
@@ -855,7 +1169,7 @@ class PlotSpec(NamedTuple):
     x_min: float = -math.inf  # hard lower bound on a signed x axis
     bar: bool = False  # draw horizontal bars (sorted by intelligence) not dots
     one_per_model: bool = False  # collapse a model's effort variants to one
-    # bar (they share a permaslug, and with it the x statistic)
+    # bar (the rows OR carries no price for would all draw the same empty bar)
     x_break: float | None = None  # split the x axis here: points at or above
     # the break go into a second panel (see make_hardware_plot)
 
@@ -887,7 +1201,7 @@ PLOTS = [
     ),
     PlotSpec(
         "Δ from AA's Price per Task",
-        lambda m: m.price_delta() is not None,
+        lambda m: m.provider_type is ProviderType.DATACENTER,
         "price_delta",
         x_of=Model.price_delta,
         x_label="Δ from AA's price per task (%)",
@@ -2039,10 +2353,14 @@ def make_bar_plot(spec, models):
     icons just right of the label text (see the icon pass after the draw).
 
     With one_per_model, a model's effort variants collapse to a single bar:
-    they share a permaslug, and with it the scaling factor behind x, so they
-    would all draw the same bar; the max-effort row stands in for the rest,
-    and the bar is labeled with the base name (the effort suffix would
-    single out one variant of a statistic the whole family shares).
+    one permaslug carries every effort level, and the rows OR carries no price
+    for would otherwise all draw the same empty bar. The max-effort row (the
+    highest intelligence) stands in, and the bar keeps that row's effort suffix
+    in its label -- the variants no longer share x. Before OpenRouter's
+    effective prices were priced directly, every variant of a permaslug shared
+    one Δ (a ratio of two AA figures scaled by a single OR statistic); now each
+    effort level burns a different mix of input and output tokens, so the
+    families split: Sonnet 5.5 is +42% at (medium) and +86% at (max).
     """
     if spec.one_per_model:
         best: dict[str, Model] = {}
@@ -2055,21 +2373,14 @@ def make_bar_plot(spec, models):
     ys = list(range(len(ordered)))
     xs = [spec.x_of(m) for m in ordered]
     colors = [PUBLISHERS[m.publisher] for m in ordered]
-    # Collapsed bars represent the whole permaslug family, not just the
-    # max-effort row that stands in: drop the effort suffix from the label.
-    # The tick labels are plain strings, so a label's glyphs (thief mask,
-    # ⚡) cannot be embedded: strip them from the text and record the row, the
+    # The tick labels are plain strings, so a label's glyphs (thief mask, ⚡)
+    # cannot be embedded: strip them from the text and record the row, the
     # matching icon is drawn next to the label after the figure is rendered
     # (below).
     labels = []
     icon_rows = []
     for i, m in enumerate(ordered):
         name = m.name
-        if spec.one_per_model:
-            for suffix in (" (low)", " (medium)", " (high)", " (xhigh)", " (max)"):
-                if name.endswith(suffix):
-                    name = name[: -len(suffix)]
-                    break
         left, icon, right, _strike = _split_icon(m, name)
         labels.append((left + " " + right).strip())
         if icon is not None:
@@ -2175,25 +2486,28 @@ def _pad_cell(text: str, width: int, right: bool = False) -> str:
 def report_prices() -> None:
     """Print one aligned row per model: AA's sticker price per task, the
     displayed price per task, and how the two compare."""
-    print(f"OpenRouter tokens/session (K): {or_tokens_per_session():.0f}\n")
-    rows: list[tuple[str, str, str, str]] = []
+    rows: list[tuple[str, str, str, str, str]] = []
     for m in MODELS:
         price = m.price_per_task()
         if m.provider_type is ProviderType.LOCAL:
-            rows.append((m.name, "-", f"{price:.4f}", "electricity"))
-        elif m.or_session_cost_10_49_turns is None:
-            rows.append((m.name, f"{price:.4f}", f"{price:.4f}", "unscaled"))
-        else:
-            rows.append(
-                (
-                    m.name,
-                    f"{m.aa_price_per_task:.4f}",
-                    f"{price:.4f}",
-                    f"{price / m.aa_price_per_task - 1:+.1%}",
-                )
+            rows.append((m.name, "-", f"{price:.4f}", "electricity", "-"))
+            continue
+        aa_total = m.aa_total_cost_per_task()
+        tokens = m.aa_token_counts()
+        if tokens is None or m.or_eff_input_price is None:
+            rows.append((m.name, f"{aa_total:.4f}", f"{price:.4f}", "+0.0%", "-"))
+            continue
+        rows.append(
+            (
+                m.name,
+                f"{aa_total:.4f}",
+                f"{price:.4f}",
+                f"{price / aa_total - 1:+.1%}",
+                f"{m.or_eff_input_price:.3f}/{m.or_eff_output_price:.3f}",
             )
-    headers = ("model", "AA $/task", "price/task", "vs AA")
-    right = (False, True, True, True)
+        )
+    headers = ("model", "AA $/task", "price/task", "vs AA", "OR $/M in/out")
+    right = (False, True, True, True, True)
     widths = [
         max(_display_width(header), *(_display_width(row[i]) for row in rows))
         for i, header in enumerate(headers)

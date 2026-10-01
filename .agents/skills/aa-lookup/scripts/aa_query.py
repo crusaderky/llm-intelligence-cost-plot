@@ -264,8 +264,66 @@ def base_slug_candidates(slug: str) -> list[str]:
     return cands
 
 
+def _paren_tags(name: str) -> set[str]:
+    """The words inside a record name's parentheses, lowercased.
+
+    Splitting on spaces, commas and dashes keeps "xhigh" and "non-reasoning"
+    whole, so a wanted "(High)" never matches a record's "(Xhigh)".
+    """
+    if "(" not in name:
+        return set()
+    return {
+        w for w in re.split(r"[\s,\-]+", name[name.rfind("(") + 1 : -1].lower()) if w
+    }
+
+
+def pick_record(records: dict[str, dict], wanted: str) -> dict | None:
+    """The page record for `wanted`, tolerating AA's naming drift.
+
+    Tries the exact display name, then a case-insensitive match, then the
+    records whose name starts with the same stem (the part before the
+    parentheses), disambiguated by how many of the wanted name's effort tags
+    they repeat. Returns None when nothing matches uniquely, and stamps the
+    name it actually matched as "_matched_name" so callers can spot a lookup
+    whose stored name no longer matches AA.
+    """
+    if wanted in records:
+        rec = records[wanted]
+        rec["_matched_name"] = wanted
+        return rec
+    lowered = {k.lower(): k for k in records}
+    if wanted.lower() in lowered:
+        key = lowered[wanted.lower()]
+        rec = records[key]
+        rec["_matched_name"] = key
+        return rec
+    stem = wanted.split(" (")[0].lower()
+    same_stem = {k: v for k, v in records.items() if k.lower().startswith(stem)}
+    if len(same_stem) == 1:
+        key, rec = next(iter(same_stem.items()))
+        rec["_matched_name"] = key
+        return rec
+    tags = _paren_tags(wanted)
+    # Score = tags the record shares with the wanted name, less tags it adds of
+    # its own, so "(Max)" beats "(Non-reasoning)" for a wanted "(Reasoning,
+    # Max Effort)" and "(High)" beats "(Xhigh)" for a wanted "(High)".
+    scored = [
+        (len(_paren_tags(k) & tags) - len(_paren_tags(k) - tags), k, v)
+        for k, v in same_stem.items()
+    ]
+    if tags and scored:
+        best = max(s for s, _, _ in scored)
+        if best > 0:
+            winners = [(k, v) for s, k, v in scored if s == best]
+            if len(winners) == 1:
+                key, rec = winners[0]
+                rec["_matched_name"] = key
+                return rec
+    return None
+
+
 def get_page_record(api_model: dict, refresh: bool) -> dict | None:
-    """Look up the website record for one API model, by exact display name."""
+    """Look up the website record for one API model, by display name."""
     name = api_model.get("name", "")
     seen: set[str] = set()
     for cand in base_slug_candidates(api_model.get("slug", "")):
@@ -275,15 +333,9 @@ def get_page_record(api_model: dict, refresh: bool) -> dict | None:
         raw = fetch_page(cand, refresh)
         if raw is None:
             continue
-        records = parse_page_records(raw)
-        if name in records:
-            return records[name]
-        # Fall back to the only record whose label contains the API name's
-        # distinctive first segment (before any parenthesised effort info).
-        stem = name.split(" (")[0].lower()
-        hits = [v for k, v in records.items() if k.lower().startswith(stem.lower())]
-        if len(hits) == 1:
-            return hits[0]
+        rec = pick_record(parse_page_records(raw), name)
+        if rec is not None:
+            return rec
     return None
 
 
@@ -328,6 +380,11 @@ def fmt(m: dict) -> str:
                 lines.append(f"  {k}: ${page[k]}/Mtok")
     else:
         lines.append("  [no page record found]")
+    if page and page.get("_matched_name") not in (None, m.get("name")):
+        lines.append(
+            f"  note: matched AA record {page['_matched_name']!r} "
+            f"(API name {m.get('name')!r} is not on the page verbatim)"
+        )
     return "\n".join(lines)
 
 

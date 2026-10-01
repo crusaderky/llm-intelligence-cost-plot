@@ -28,30 +28,43 @@ one). `.agents/skills/aa-lookup` is the low-level AA query tool it builds on.
 
 Models are `Model(...)` dataclasses: `publisher`, `name`, `intelligence` and
 `provider_type` (`ProviderType.LOCAL` or `ProviderType.DATACENTER`) are positional,
-every other field is keyword-only. `aa_tok_per_task` is mandatory; `or_slug`,
-`or_session_cost_10_49_turns`, `or_toks_served`, `hardware` and the two render flags
-`available` (default `True`) and `trains_on_your_data` (default `False`) are optional.
-`estimated=True` marks points extrapolated outside AA: they render as hollow
-circles and add an `Estimated (not on AA)` legend entry. `__post_init__` enforces
-the per-type minimums: `aa_price_per_task` for datacenter models, `tok_per_sec`
-for local ones. The displayed price per task is derived on demand
-by `Model.price_per_task()` (see README for rationale):
+every other field is keyword-only. `aa_tok_per_task` is mandatory (AA's *output* tokens
+per task). The displayed price per task is derived on demand by
+`Model.price_per_task()` (see README for the full rationale):
 
-- `ProviderType.DATACENTER` — OR's session cost converted to $/task as
-  `aa_tok_per_task x or_session_cost_10_49_turns / or_tokens_per_session()`, where
-  `or_tokens_per_session()` is the volume-weighted (by `or_toks_served`) mean of
-  `aa_tok_per_task x or_session_cost_10_49_turns / aa_price_per_task`, i.e. the estimate
-  of tokens per 10-49-turn session. Equivalently: AA's cost per task times the model's
-  price-level ratio over the volume-weighted average. A model with no OR session data
-  keeps `aa_price_per_task` unscaled. All the inputs are re-fetched on every refresh.
-- `ProviderType.LOCAL` — electricity to generate `aa_tok_per_task` at `tok_per_sec` on
-  `hardware` (leave unset for RTX3090; `hardware=STRIX_HALO` for the ~120B class), with
-  no datacenter scaling. Use for sub-35B models. Requires tok/s measured on local
-  hardware, not from AA; the `⚡` and hardware suffix is appended automatically.
+- `ProviderType.DATACENTER` — AA's token mix for the task, priced at OR's synthetic
+  effective prices:
 
-When OR carries no 10-49-turn session data for a model on any harness (e.g.
-`qwen/qwen3.8-2.4t-a95b`), comment the row out — there is no fallback statistic for
-this metric.
+  - `aa_cost_per_task` is AA's cost of one task: a
+    `PricedTokens(input_, output, cached_input)` when AA publishes the split
+    (`input_` = nonCacheInput + cacheWrite, `output` = reasoning + answer,
+    `cached_input` = cacheRead; the three sum to the total), or a bare **float**
+    — the total only — for the models AA publishes no breakdown for. A
+    `cached_input` of 0.0 means "AA reports no cache reads for this model", which
+    is also how the refresh writes the model whose cache price AA leaves unset.
+  - `aa_sticker_price=PricedTokens(...)` is the same shape in USD per **1M tokens**: the
+    sticker price each stream was billed at. Cost ÷ price recovers the token counts.
+  - `or_eff_input_price` / `or_eff_output_price` (USD per 1M tokens) come from OR's
+    trailing-week effective-pricing chart: endpoint instances collapsed to their
+    provider (cheapest instance per day), first quintile across providers per day,
+    median across days. Never use OR's spot "cheapest provider" price.
+  - The total (`sum()` of the split, or the float) stays as the fallback price when
+    either the AA breakdown or the OR price is missing, and as the delta plot's
+    baseline; read it with `Model.aa_total_cost_per_task()`.
+  - `or_slug`, `or_session_cost_10_49_turns` and `or_toks_served` are still collected
+    but no longer price anything; keep them in sync, don't use them.
+
+- `ProviderType.LOCAL` — electricity to generate the task on `hardware` (None =
+  RTX3090; `hardware=STRIX_HALO` for the ~120B class). Runtime comes from
+  `Model.local_token_counts()`, which zeroes the cached input (free on a local rig)
+  and falls back to `LOCAL_INPUT_TOKEN_RATIO ×` output tokens when AA publishes no
+  split, times `LocalSpeed(prefill=…, decode=…)`. Both rates are measured on the
+  rig; prefill is currently a hand-typed guesstimate at 10× decode — replace it
+  with the measured number when there is one. The `⚡` and hardware suffix is
+  appended automatically.
+
+A publisher appearing for the first time must be added to `PUBLISHERS` with its
+artificialanalysis.ai color, or the script KeyErrors.
 
 ## Render markers
 
