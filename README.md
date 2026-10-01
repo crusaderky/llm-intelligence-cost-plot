@@ -88,8 +88,9 @@ how long each model takes to complete tasks.
 
 <a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/plots/low_cost.svg"><img src="plots/low_cost.png" alt="Intelligence vs. Price per Task (Low Cost)"></a>
 
-Let's merge the two plots together to better visualize the diminishing returns
-in performance/cost. Again, the area that's common to all plots is highlighted in green:
+Let's merge the two plots together to better visualize the diminishing returns in
+performance/cost. Again, the area that's common to all plots is highlighted in green.
+**CLICK TO EMBIGGEN** to admire it in all its zoomed-in glory:
 
 <a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/plots/all_models.svg"><img src="plots/all_models.png" alt="Intelligence vs. Price per Task (All Models)"></a>
 

@@ -83,6 +83,169 @@ from matplotlib.patches import Rectangle
 from matplotlib.path import Path as MplPath
 from matplotlib.ticker import FormatStrFormatter, MultipleLocator, StrMethodFormatter
 
+# --- knobs -----------------------------------------------------------------
+FIG_W, FIG_H = 26, 14  # inches
+DPI = 100
+VERBOSE = False  # set by --verbose: report residual label overlaps to stderr
+DOT_SIZE = 110
+LABEL_SIZE = 13
+PAD_PX = 4  # breathing room added around each label's bbox
+LEADER_COLOR = "#9aa1ad"
+UNAVAILABLE_COLOR = "#4b5563"  # dark grey for available=False labels
+LEADER_MIN = 8  # draw a leader once the label sits this far off the dot
+CROWD_X = 200  # px window used to decide a point is "in a cluster"
+CROWD_Y = 60
+CROWD_OFFSET = 23  # clustered labels sit at least this far out (points),
+# so their leader lines are long enough to follow
+
+# Bottom of the high-intelligence plot
+HIGH_INTELLIGENCE_THRESHOLD = 39
+# Right edge of the green band: the cheap cluster tops out at ~$0.15/task on
+# the new scale, and the next most expensive model sits at ~$1.4.
+LOW_COST_THRESHOLD = 0.25
+
+
+# Candidate label positions: (dx, dy) in points, plus alignment.
+# Ordered by preference -- first collision-free one wins.
+CANDIDATES = [
+    (10, 0, "left", "center"),
+    (-10, 0, "right", "center"),
+    (0, 10, "center", "bottom"),
+    (0, -10, "center", "top"),
+    (10, 9, "left", "bottom"),
+    (10, -9, "left", "top"),
+    (-10, 9, "right", "bottom"),
+    (-10, -9, "right", "top"),
+    (0, 24, "center", "bottom"),
+    (0, -24, "center", "top"),
+    (10, 23, "left", "bottom"),
+    (10, -23, "left", "top"),
+    (-10, 23, "right", "bottom"),
+    (-10, -23, "right", "top"),
+    (0, 38, "center", "bottom"),
+    (0, -38, "center", "top"),
+    (10, 37, "left", "bottom"),
+    (10, -37, "left", "top"),
+    (-10, 37, "right", "bottom"),
+    (-10, -37, "right", "top"),
+    (0, 52, "center", "bottom"),
+    (0, -52, "center", "top"),
+    (10, 51, "left", "bottom"),
+    (10, -51, "left", "top"),
+    (-10, 51, "right", "bottom"),
+    (-10, -51, "right", "top"),
+    (0, 66, "center", "bottom"),
+    (0, -66, "center", "top"),
+    (0, 80, "center", "bottom"),
+    (0, -80, "center", "top"),
+    (10, 79, "left", "bottom"),
+    (10, -79, "left", "top"),
+    (-10, 79, "right", "bottom"),
+    (-10, -79, "right", "top"),
+    # Wide horizontal slots: last resort when a dense cluster leaves no
+    # vertical room, e.g. two dots at the same intelligence level.
+    (26, 0, "left", "center"),
+    (-26, 0, "right", "center"),
+    (26, 9, "left", "bottom"),
+    (26, -9, "left", "top"),
+    (-26, 9, "right", "bottom"),
+    (-26, -9, "right", "top"),
+    (26, 23, "left", "bottom"),
+    (26, -23, "left", "top"),
+    (-26, 23, "right", "bottom"),
+    (-26, -23, "right", "top"),
+    # Very tall verticals and wide diagonals: escape hatches for dense
+    # clusters where every closer slot is taken.
+    (0, 94, "center", "bottom"),
+    (0, -94, "center", "top"),
+    (10, 93, "left", "bottom"),
+    (10, -93, "left", "top"),
+    (-10, 93, "right", "bottom"),
+    (-10, -93, "right", "top"),
+    (26, 37, "left", "bottom"),
+    (26, -37, "left", "top"),
+    (-26, 37, "right", "bottom"),
+    (-26, -37, "right", "top"),
+    (26, 51, "left", "bottom"),
+    (26, -51, "left", "top"),
+    (-26, 51, "right", "bottom"),
+    (-26, -51, "right", "top"),
+    # Even taller verticals: the reference-cost axis squeezes a dozen models
+    # into a handful of pixels at the left edge, and labels need to queue
+    # several intelligence units away from their dots.
+    (0, 108, "center", "bottom"),
+    (0, -108, "center", "top"),
+    (10, 107, "left", "bottom"),
+    (10, -107, "left", "top"),
+    (-10, 107, "right", "bottom"),
+    (-10, -107, "right", "top"),
+    (0, 122, "center", "bottom"),
+    (0, -122, "center", "top"),
+    (10, 121, "left", "bottom"),
+    (10, -121, "left", "top"),
+    (-10, 122, "right", "bottom"),
+    (-10, -122, "right", "top"),
+    (0, 136, "center", "bottom"),
+    (0, -136, "center", "top"),
+    # Wide horizontal slots: jump the whole left-edge dot/label pile instead
+    # of threading it.
+    (40, 0, "left", "center"),
+    (-40, 0, "right", "center"),
+    (54, 0, "left", "center"),
+    (-54, 0, "right", "center"),
+    (54, 23, "left", "bottom"),
+    (54, -23, "left", "top"),
+    (-54, 23, "right", "bottom"),
+    (-54, -23, "right", "top"),
+    # Taller queues still: when the mid-height bands (other models' labels)
+    # are full, the label has to climb to empty plot space.
+    (0, 150, "center", "bottom"),
+    (0, -150, "center", "top"),
+    (10, 149, "left", "bottom"),
+    (10, -149, "left", "top"),
+    (-10, 150, "right", "bottom"),
+    (-10, -150, "right", "top"),
+    (0, 164, "center", "bottom"),
+    (0, -164, "center", "top"),
+    (10, 163, "left", "bottom"),
+    (10, -163, "left", "top"),
+    (-10, 164, "right", "bottom"),
+    (-10, -164, "right", "top"),
+    (0, 178, "center", "bottom"),
+    (0, -178, "center", "top"),
+    (10, 177, "left", "bottom"),
+    (10, -177, "left", "top"),
+    (-10, 178, "right", "bottom"),
+    (-10, -178, "right", "top"),
+    (0, 192, "center", "bottom"),
+    (0, -192, "center", "top"),
+    (10, 191, "left", "bottom"),
+    (10, -191, "left", "top"),
+    (-10, 192, "right", "bottom"),
+    (-10, -192, "right", "top"),
+    (0, 206, "center", "bottom"),
+    (0, -206, "center", "top"),
+    (10, 205, "left", "bottom"),
+    (10, -205, "left", "top"),
+    (-10, 206, "right", "bottom"),
+    (-10, -206, "right", "top"),
+    (70, 0, "left", "center"),
+    (-70, 0, "right", "center"),
+    (70, 23, "left", "bottom"),
+    (70, -23, "left", "top"),
+    (-70, 23, "right", "bottom"),
+    (-70, -23, "right", "top"),
+]
+
+# Colored vector icons that stand in for the ⚡ emoji: matplotlib cannot render
+# color emoji, so without this ⚡ draws as a thin black outline.
+ICON_SIZE = {"bolt": 15, "mask": 20}  # px
+ICON_GAP = 4  # px between a label's text and its icon
+ICON_COLORS = {
+    "bolt": ("#fbbf24", "#b45309"),  # amber fill, dark edge
+    "mask": ("#1f2937", "#09090b"),  # black fill, blacker edge
+}
+
 # Publisher colors, replicated from artificialanalysis.ai
 PUBLISHERS = {
     "Accio": "#43674c",
@@ -1134,13 +1297,6 @@ MODELS = [
 ]
 
 
-# Bottom of the high-intelligence plot
-HIGH_INTELLIGENCE_THRESHOLD = 39
-# Right edge of the green band: the cheap cluster tops out at ~$0.15/task on
-# the new scale, and the next most expensive model sits at ~$1.4.
-LOW_COST_THRESHOLD = 0.25
-
-
 class PlotSpec(NamedTuple):
     """One filtered view.
 
@@ -1172,6 +1328,18 @@ class PlotSpec(NamedTuple):
     # bar (the rows OR carries no price for would all draw the same empty bar)
     x_break: float | None = None  # split the x axis here: points at or above
     # the break go into a second panel (see make_hardware_plot)
+    fig_w: float = FIG_W  # SVG figure width in inches, when this view needs
+    # a different one (the height is always FIG_H)
+    png_fig_w: float | None = None  # PNG figure width in inches
+    png_xtick_step: float | None = None  # PNG-only x tick step, for the same
+    # reason: a step that spaces ticks out on a 1488in figure crams them into
+    # an unreadable smear on a 26in one
+    x_pad: float = 0.03  # right margin on an unsigned x axis, as a fraction
+    # of the span: 0.03 is a few hundred pixels on a 26in figure but tens of
+    # inches on a 1000in one, so wide views tighten it -- for the SVG only,
+    # since on a 26in PNG the same fraction clips the rightmost dot
+    svg_x_pad: float | None = None  # x_pad for the SVG render, when it needs
+    # its own margin
 
 
 # The plots to generate.
@@ -1192,12 +1360,24 @@ PLOTS = [
         xtick_format="$%.2f",
         band_side="top",
     ),
+    # Spans $0-14 on the price axis, so at the shared 26in width every model
+    # under $0.50 piles up in the leftmost 3% of the plot. 1488in puts
+    # roughly $0.01 of price per inch -- the same density as the low-cost
+    # view, hard-coded so the width never depends on another view's data.
+    # The PNG keeps the 26in figure (an inline <img> scales it to the page
+    # anyway, and the SVG is what anyone zooms into), and svg_x_pad is tight
+    # because 3% of 1000in is 30in of blank space past the last model.
     PlotSpec(
         "Intelligence vs. Price per Task (All Models)",
         lambda _: True,
         "all_models",
-        xtick_step=0.5,
+        xtick_step=0.02,
         xtick_format="$%.2f",
+        fig_w=1000.0,
+        png_fig_w=FIG_W,
+        png_xtick_step=0.5,  # 0.02 over 26in is 700+ labels on one axis
+        svg_x_pad=0.002,  # ~$0.03 past Sonnet 5.5 (max); the PNG keeps the
+        # default 0.03, where 0.002 would cut that dot in half
     ),
     PlotSpec(
         "Δ from AA's Price per Task",
@@ -1229,163 +1409,6 @@ PLOTS = [
         x_break=28_000,
     ),
 ]
-
-# --- knobs -----------------------------------------------------------------
-FIG_W, FIG_H = 26, 14  # inches
-DPI = 100
-VERBOSE = False  # set by --verbose: report residual label overlaps to stderr
-DOT_SIZE = 110
-LABEL_SIZE = 13
-PAD_PX = 4  # breathing room added around each label's bbox
-LEADER_COLOR = "#9aa1ad"
-UNAVAILABLE_COLOR = "#4b5563"  # dark grey for available=False labels
-LEADER_MIN = 8  # draw a leader once the label sits this far off the dot
-CROWD_X = 200  # px window used to decide a point is "in a cluster"
-CROWD_Y = 60
-CROWD_OFFSET = 23  # clustered labels sit at least this far out (points),
-# so their leader lines are long enough to follow
-
-# Candidate label positions: (dx, dy) in points, plus alignment.
-# Ordered by preference -- first collision-free one wins.
-CANDIDATES = [
-    (10, 0, "left", "center"),
-    (-10, 0, "right", "center"),
-    (0, 10, "center", "bottom"),
-    (0, -10, "center", "top"),
-    (10, 9, "left", "bottom"),
-    (10, -9, "left", "top"),
-    (-10, 9, "right", "bottom"),
-    (-10, -9, "right", "top"),
-    (0, 24, "center", "bottom"),
-    (0, -24, "center", "top"),
-    (10, 23, "left", "bottom"),
-    (10, -23, "left", "top"),
-    (-10, 23, "right", "bottom"),
-    (-10, -23, "right", "top"),
-    (0, 38, "center", "bottom"),
-    (0, -38, "center", "top"),
-    (10, 37, "left", "bottom"),
-    (10, -37, "left", "top"),
-    (-10, 37, "right", "bottom"),
-    (-10, -37, "right", "top"),
-    (0, 52, "center", "bottom"),
-    (0, -52, "center", "top"),
-    (10, 51, "left", "bottom"),
-    (10, -51, "left", "top"),
-    (-10, 51, "right", "bottom"),
-    (-10, -51, "right", "top"),
-    (0, 66, "center", "bottom"),
-    (0, -66, "center", "top"),
-    (0, 80, "center", "bottom"),
-    (0, -80, "center", "top"),
-    (10, 79, "left", "bottom"),
-    (10, -79, "left", "top"),
-    (-10, 79, "right", "bottom"),
-    (-10, -79, "right", "top"),
-    # Wide horizontal slots: last resort when a dense cluster leaves no
-    # vertical room, e.g. two dots at the same intelligence level.
-    (26, 0, "left", "center"),
-    (-26, 0, "right", "center"),
-    (26, 9, "left", "bottom"),
-    (26, -9, "left", "top"),
-    (-26, 9, "right", "bottom"),
-    (-26, -9, "right", "top"),
-    (26, 23, "left", "bottom"),
-    (26, -23, "left", "top"),
-    (-26, 23, "right", "bottom"),
-    (-26, -23, "right", "top"),
-    # Very tall verticals and wide diagonals: escape hatches for dense
-    # clusters where every closer slot is taken.
-    (0, 94, "center", "bottom"),
-    (0, -94, "center", "top"),
-    (10, 93, "left", "bottom"),
-    (10, -93, "left", "top"),
-    (-10, 93, "right", "bottom"),
-    (-10, -93, "right", "top"),
-    (26, 37, "left", "bottom"),
-    (26, -37, "left", "top"),
-    (-26, 37, "right", "bottom"),
-    (-26, -37, "right", "top"),
-    (26, 51, "left", "bottom"),
-    (26, -51, "left", "top"),
-    (-26, 51, "right", "bottom"),
-    (-26, -51, "right", "top"),
-    # Even taller verticals: the reference-cost axis squeezes a dozen models
-    # into a handful of pixels at the left edge, and labels need to queue
-    # several intelligence units away from their dots.
-    (0, 108, "center", "bottom"),
-    (0, -108, "center", "top"),
-    (10, 107, "left", "bottom"),
-    (10, -107, "left", "top"),
-    (-10, 107, "right", "bottom"),
-    (-10, -107, "right", "top"),
-    (0, 122, "center", "bottom"),
-    (0, -122, "center", "top"),
-    (10, 121, "left", "bottom"),
-    (10, -121, "left", "top"),
-    (-10, 122, "right", "bottom"),
-    (-10, -122, "right", "top"),
-    (0, 136, "center", "bottom"),
-    (0, -136, "center", "top"),
-    # Wide horizontal slots: jump the whole left-edge dot/label pile instead
-    # of threading it.
-    (40, 0, "left", "center"),
-    (-40, 0, "right", "center"),
-    (54, 0, "left", "center"),
-    (-54, 0, "right", "center"),
-    (54, 23, "left", "bottom"),
-    (54, -23, "left", "top"),
-    (-54, 23, "right", "bottom"),
-    (-54, -23, "right", "top"),
-    # Taller queues still: when the mid-height bands (other models' labels)
-    # are full, the label has to climb to empty plot space.
-    (0, 150, "center", "bottom"),
-    (0, -150, "center", "top"),
-    (10, 149, "left", "bottom"),
-    (10, -149, "left", "top"),
-    (-10, 150, "right", "bottom"),
-    (-10, -150, "right", "top"),
-    (0, 164, "center", "bottom"),
-    (0, -164, "center", "top"),
-    (10, 163, "left", "bottom"),
-    (10, -163, "left", "top"),
-    (-10, 164, "right", "bottom"),
-    (-10, -164, "right", "top"),
-    (0, 178, "center", "bottom"),
-    (0, -178, "center", "top"),
-    (10, 177, "left", "bottom"),
-    (10, -177, "left", "top"),
-    (-10, 178, "right", "bottom"),
-    (-10, -178, "right", "top"),
-    (0, 192, "center", "bottom"),
-    (0, -192, "center", "top"),
-    (10, 191, "left", "bottom"),
-    (10, -191, "left", "top"),
-    (-10, 192, "right", "bottom"),
-    (-10, -192, "right", "top"),
-    (0, 206, "center", "bottom"),
-    (0, -206, "center", "top"),
-    (10, 205, "left", "bottom"),
-    (10, -205, "left", "top"),
-    (-10, 206, "right", "bottom"),
-    (-10, -206, "right", "top"),
-    (70, 0, "left", "center"),
-    (-70, 0, "right", "center"),
-    (70, 23, "left", "bottom"),
-    (70, -23, "left", "top"),
-    (-70, 23, "right", "bottom"),
-    (-70, -23, "right", "top"),
-]
-
-
-# Colored vector icons that stand in for the ⚡ emoji: matplotlib cannot render
-# color emoji, so without this ⚡ draws as a thin black outline.
-ICON_SIZE = {"bolt": 15, "mask": 20}  # px
-ICON_GAP = 4  # px between a label's text and its icon
-ICON_COLORS = {
-    "bolt": ("#fbbf24", "#b45309"),  # amber fill, dark edge
-    "mask": ("#1f2937", "#09090b"),  # black fill, blacker edge
-}
 
 
 def _icon_path(pts):
@@ -2097,10 +2120,45 @@ def _scatter_points(ax, models, x_of):
         )
 
 
+def _xtick_step(spec, fmt):
+    """x tick step for this render: the PNG gets its own coarser step when the
+    view has one (see png_xtick_step)."""
+    if fmt == "png" and spec.png_xtick_step is not None:
+        return spec.png_xtick_step
+    return spec.xtick_step
+
+
+def _x_pad(spec, fmt):
+    """Right margin on the x axis for this render: the SVG gets its own when
+    the view has one (see svg_x_pad)."""
+    if fmt == "svg" and spec.svg_x_pad is not None:
+        return spec.svg_x_pad
+    return spec.x_pad
+
+
 def make_plot(spec, models, band, y_lim):
+    """Draw one view, once per output format it needs.
+
+    A spec with png_fig_w is drawn twice: at png_fig_w for the PNG (what
+    GitHub, a README and every browser render inline, so it stays the
+    screen-sized figure) and at fig_w for the SVG (vector, so the 57x wider
+    view costs nothing but a few hundred KB and stays sharp when zoomed).
+    Labels are placed per figure, so the narrow PNG is not a squashed copy of
+    the wide one -- it is laid out from scratch at its own size.
+    """
+    if spec.png_fig_w is None:
+        _render_plot(spec, models, band, y_lim, spec.fig_w, "both")
+        return
+    _render_plot(spec, models, band, y_lim, spec.png_fig_w, "png")
+    _render_plot(spec, models, band, y_lim, spec.fig_w, "svg")
+
+
+def _render_plot(spec, models, band, y_lim, fig_w, fmt):
+    """Draw the view at fig_w inches wide and save it as fmt ("png", "svg" or
+    "both")."""
     xs = [spec.x_of(m) for m in models]
 
-    fig, ax = plt.subplots(figsize=(FIG_W, FIG_H), dpi=DPI)
+    fig, ax = plt.subplots(figsize=(fig_w, FIG_H), dpi=DPI)
 
     _scatter_points(ax, models, spec.x_of)
 
@@ -2126,7 +2184,7 @@ def make_plot(spec, models, band, y_lim):
         pad = 0.05 * (x_hi - x_lo)
         ax.set_xlim(max(x_lo - pad, spec.x_min), x_hi + pad)
     else:
-        ax.set_xlim(0, x_hi * 1.03)
+        ax.set_xlim(0, x_hi * (1 + _x_pad(spec, fmt)))
     # y_lim: floor/ceil of the points with 0.2 of slack, except on the band
     # side, which snaps exactly to the band edge (computed in main).
     y_lo, y_hi = y_lim
@@ -2147,7 +2205,7 @@ def make_plot(spec, models, band, y_lim):
                     zorder=0,
                 )
             )
-    ax.xaxis.set_major_locator(MultipleLocator(spec.xtick_step))
+    ax.xaxis.set_major_locator(MultipleLocator(_xtick_step(spec, fmt)))
     ax.xaxis.set_major_formatter(FormatStrFormatter(spec.xtick_format))
     ax.yaxis.set_major_locator(MultipleLocator(1))
 
@@ -2205,13 +2263,15 @@ def make_plot(spec, models, band, y_lim):
     os.makedirs("plots", exist_ok=True)
     # Drop the <dc:date> timestamp so regenerating with unchanged data is a
     # no-op for git.
-    fig.savefig(
-        f"plots/{spec.stem}.svg",
-        format="svg",
-        bbox_inches="tight",
-        metadata={"Date": None},
-    )
-    fig.savefig(f"plots/{spec.stem}.png", format="png", bbox_inches="tight")
+    if "svg" in fmt:
+        fig.savefig(
+            f"plots/{spec.stem}.svg",
+            format="svg",
+            bbox_inches="tight",
+            metadata={"Date": None},
+        )
+    if "png" in fmt:
+        fig.savefig(f"plots/{spec.stem}.png", format="png", bbox_inches="tight")
     plt.close(fig)
 
 
