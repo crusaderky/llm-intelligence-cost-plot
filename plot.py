@@ -1466,6 +1466,41 @@ ICON_PATHS = {
 }
 
 
+# Reasoning-effort suffixes AA appends to a model name when one permaslug is
+# benchmarked at several thinking levels. Not every parenthetical is an effort
+# tag -- "Qwen3.8 Max (0902)" carries a release date -- so only these words get
+# dropped when a label is stripped.
+EFFORT_TAGS = frozenset({"minimal", "low", "medium", "high", "xhigh", "max"})
+
+
+def _clean_label(m: Model) -> str:
+    """Model name without its reasoning-effort or hardware tag.
+
+    "GLM-5.3-Flash (max)" -> "GLM-5.3-Flash", and "Qwen3.8-Flash (Strix Halo
+    128GB ⚡)" -> "Qwen3.8-Flash ⚡": the effort suffix and the hardware name
+    Model.__post_init__ splices in are dropped, but the ⚡ itself is kept so
+    the local-electricity marker still renders (the plots have a legend entry
+    for it). A parenthetical that is part of the model's real name -- a release
+    date, or any word outside EFFORT_TAGS -- stays.
+    """
+    name, bolt = m.name, ""
+    if "⚡" in name:
+        head, _, tail = name.partition("⚡")
+        name = head.rstrip() + tail.lstrip()  # rejoin around the bolt
+        bolt = " ⚡"
+        if m.hardware is not None:
+            tag = f" ({m.hardware.name})"
+            name = name.removesuffix(tag)
+    while name.endswith(")"):
+        open_ = name.rfind("(")
+        if open_ < 0:
+            break
+        if name[open_ + 1 : -1].strip().lower() not in EFFORT_TAGS:
+            break
+        name = name[:open_].rstrip()
+    return name + bolt
+
+
 def _split_icon(m, name=None):
     """Split the display glyphs out of a model's label.
 
@@ -2323,7 +2358,7 @@ def make_hardware_plot(spec, models, y_lim):
             [
                 (left_, right_, icon, strike, spec.x_of(m), m.intelligence)
                 for m in panel
-                for left_, icon, right_, strike in [_split_icon(m)]
+                for left_, icon, right_, strike in [_split_icon(m, _clean_label(m))]
             ],
             marker_r_px,
             extra_obstacles=(_pad(legend.get_window_extent(renderer)),)
@@ -2352,20 +2387,22 @@ def make_bar_plot(spec, models):
     tick string: they are stripped from the label and drawn as their vector
     icons just right of the label text (see the icon pass after the draw).
 
-    With one_per_model, a model's effort variants collapse to a single bar:
-    one permaslug carries every effort level, and the rows OR carries no price
-    for would otherwise all draw the same empty bar. The max-effort row (the
-    highest intelligence) stands in, and the bar keeps that row's effort suffix
-    in its label -- the variants no longer share x. Before OpenRouter's
-    effective prices were priced directly, every variant of a permaslug shared
-    one Δ (a ratio of two AA figures scaled by a single OR statistic); now each
-    effort level burns a different mix of input and output tokens, so the
-    families split: Sonnet 5.5 is +42% at (medium) and +86% at (max).
+    With one_per_model, a model's effort variants collapse to a single bar: one
+    permaslug carries every effort level, and the variants of a model OR carries
+    no price for share only their name, so the key falls back to that name with
+    the suffix dropped (else five "GPT-6.1 Sol" rows all draw the same empty
+    bar). The max-effort row -- the highest intelligence -- stands in and its
+    effort suffix is stripped from the label, so one name means one model.
+    Two rows of the same name stay separate only if their permaslugs differ:
+    Muse Spark 1.3 and its -contributor endpoint are different offers, not
+    thinking levels. Each effort level burns a different mix of input and
+    output tokens, so a family's Δ really does spread (Sonnet 5.5 is +42% at
+    medium and +86% at max); the bar reports the smartest variant's.
     """
     if spec.one_per_model:
         best: dict[str, Model] = {}
         for m in models:
-            key = m.or_slug or m.name
+            key = m.or_slug or _clean_label(m)
             if key not in best or m.intelligence > best[key].intelligence:
                 best[key] = m
         models = list(best.values())
@@ -2380,7 +2417,7 @@ def make_bar_plot(spec, models):
     labels = []
     icon_rows = []
     for i, m in enumerate(ordered):
-        name = m.name
+        name = _clean_label(m) if spec.one_per_model else m.name
         left, icon, right, _strike = _split_icon(m, name)
         labels.append((left + " " + right).strip())
         if icon is not None:
