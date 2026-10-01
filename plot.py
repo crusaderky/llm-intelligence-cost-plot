@@ -1389,7 +1389,7 @@ PLOTS = [
         png_x_pad=0.03,
         easter_eggs=(
             (0.25, "Too cheap to care"),
-            (1.0, "Need to be careful\nabout your bill"),
+            (0.75, "Need to be careful\nabout your bill"),
             (1.5, "This is EXPENSIVE"),
             (
                 3.0,
