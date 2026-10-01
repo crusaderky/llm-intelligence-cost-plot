@@ -91,6 +91,10 @@ DOT_SIZE = 110
 LABEL_SIZE = 13
 PAD_PX = 4  # breathing room added around each label's bbox
 LEADER_COLOR = "#9aa1ad"
+EGG_SIZE = 60  # points, for the easter eggs: the axis is FIG_H (1008pt)
+# tall, so one shout is about an eighth of its height
+EGG_COLOR = "#5b6270"  # the tick-label grey, only bigger
+EGG_ALPHA = 0.25
 UNAVAILABLE_COLOR = "#4b5563"  # dark grey for available=False labels
 LEADER_MIN = 8  # draw a leader once the label sits this far off the dot
 CROWD_X = 200  # px window used to decide a point is "in a cluster"
@@ -1335,11 +1339,15 @@ class PlotSpec(NamedTuple):
     # reason: a step that spaces ticks out on a 1488in figure crams them into
     # an unreadable smear on a 26in one
     x_pad: float = 0.03  # right margin on an unsigned x axis, as a fraction
-    # of the span: 0.03 is a few hundred pixels on a 26in figure but tens of
-    # inches on a 1000in one, so wide views tighten it -- for the SVG only,
-    # since on a 26in PNG the same fraction clips the rightmost dot
-    svg_x_pad: float | None = None  # x_pad for the SVG render, when it needs
-    # its own margin
+    # of the span. This is the SVG's margin: 0.03 is a few hundred pixels on
+    # a 26in figure but 30in of white on a 1000in one, so a wide view tightens
+    png_x_pad: float | None = None  # x_pad for the PNG render, when it needs
+    # its own margin (a fraction that reads as inches on the wide SVG is a
+    # handful of pixels on the 26in PNG, where it clips the rightmost dot)
+    easter_eggs: tuple[tuple[float, str], ...] = ()  # (x, slogan) shouts in
+    # the background of the SVG only -- the PNG is the one people actually
+    # read, so the jokes stay off it. Newlines are kept, to wrap a long
+    # slogan instead of letting it run into its neighbour.
 
 
 # The plots to generate.
@@ -1365,7 +1373,7 @@ PLOTS = [
     # roughly $0.01 of price per inch -- the same density as the low-cost
     # view, hard-coded so the width never depends on another view's data.
     # The PNG keeps the 26in figure (an inline <img> scales it to the page
-    # anyway, and the SVG is what anyone zooms into), and svg_x_pad is tight
+    # anyway, and the SVG is what anyone zooms into), and x_pad is tight
     # because 3% of 1000in is 30in of blank space past the last model.
     PlotSpec(
         "Intelligence vs. Price per Task (All Models)",
@@ -1376,8 +1384,21 @@ PLOTS = [
         fig_w=1000.0,
         png_fig_w=FIG_W,
         png_xtick_step=0.5,  # 0.02 over 26in is 700+ labels on one axis
-        svg_x_pad=0.002,  # ~$0.03 past Sonnet 5.5 (max); the PNG keeps the
+        x_pad=0.002,  # ~$0.03 past Sonnet 5.5 (max); the PNG needs the
         # default 0.03, where 0.002 would cut that dot in half
+        png_x_pad=0.03,
+        easter_eggs=(
+            (0.25, "Too cheap to care"),
+            (1.0, "Need to be careful\nabout your bill"),
+            (1.5, "This is EXPENSIVE"),
+            (
+                3.0,
+                "Anything beyond this point\nis unaffordable without\nVC subsidies",
+            ),
+            (5.0, "Keep scrolling"),
+            (9.0, "Are you still here?"),
+            (14.0, "Congratulations,\nyou made it to the end!"),
+        ),
     ),
     PlotSpec(
         "Δ from AA's Price per Task",
@@ -2120,6 +2141,26 @@ def _scatter_points(ax, models, x_of):
         )
 
 
+def _draw_easter_eggs(ax, spec, y_mid):
+    """Shout every slogan across the middle of the plot, centred on its own x
+    milestone. zorder 1 keeps them over the grid and under the frontier, the
+    dots and the labels, so no model is ever hidden by a joke."""
+    for x, text in spec.easter_eggs:
+        ax.text(
+            x,
+            y_mid,
+            text,
+            ha="center",
+            va="center",
+            fontsize=EGG_SIZE,
+            fontweight="bold",
+            color=EGG_COLOR,
+            alpha=EGG_ALPHA,
+            linespacing=1.15,
+            zorder=1,
+        )
+
+
 def _xtick_step(spec, fmt):
     """x tick step for this render: the PNG gets its own coarser step when the
     view has one (see png_xtick_step)."""
@@ -2129,10 +2170,10 @@ def _xtick_step(spec, fmt):
 
 
 def _x_pad(spec, fmt):
-    """Right margin on the x axis for this render: the SVG gets its own when
-    the view has one (see svg_x_pad)."""
-    if fmt == "svg" and spec.svg_x_pad is not None:
-        return spec.svg_x_pad
+    """Right margin on the x axis for this render: the PNG gets its own when
+    the view has one (see png_x_pad)."""
+    if fmt == "png" and spec.png_x_pad is not None:
+        return spec.png_x_pad
     return spec.x_pad
 
 
@@ -2189,6 +2230,8 @@ def _render_plot(spec, models, band, y_lim, fig_w, fmt):
     # side, which snaps exactly to the band edge (computed in main).
     y_lo, y_hi = y_lim
     ax.set_ylim(y_lo, y_hi)
+    if fmt == "svg":
+        _draw_easter_eggs(ax, spec, (y_lo + y_hi) / 2)
     if band is not None:
         # band: the same (y_lo, y_hi) range on every plot, clipped to the axis
         b_lo = max(band[0], y_lo)
