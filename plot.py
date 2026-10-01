@@ -1138,7 +1138,7 @@ MODELS = [
 HIGH_INTELLIGENCE_THRESHOLD = 39
 # Right edge of the green band: the cheap cluster tops out at ~$0.15/task on
 # the new scale, and the next most expensive model sits at ~$1.4.
-LOW_COST_THRESHOLD = 0.5
+LOW_COST_THRESHOLD = 0.25
 
 
 class PlotSpec(NamedTuple):
