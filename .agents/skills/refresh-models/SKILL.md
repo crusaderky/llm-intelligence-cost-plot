@@ -64,7 +64,8 @@ workflow (`pixi r plot`, visually inspect the PNGs, `pixi r lint`).
   - `GLM-5.3-Flash (high)` is extrapolated from the `(max)` record — multiply
     intelligence by 28.01/28.99 and tokens by 70610/138690 (the ratios themselves are
     historical, from Z.ai's coding scores and AA's GLM-5.3 effort split).
-  - `Muse Spark 1.3 [TRAIN]` must always get the same AA numbers as `Muse Spark 1.3`,
+  - The `trains_on_your_data=True` twin of `Muse Spark 1.3` must always get the same AA
+    numbers as `Muse Spark 1.3`,
     but has its own OR permaslug, session cost and weekly volume.
   - Local models: update `intelligence` and `aa_tok_per_task`; keep tok/s and
     `hardware` (measured on real hardware, never from AA). `Ternary-Bonsai-2` is not on

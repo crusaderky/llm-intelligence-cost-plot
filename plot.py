@@ -144,13 +144,21 @@ class Model:
     # Not on AA: the point is extrapolated/estimated. Rendered as a hollow
     # circle, with a matching "Estimated (not on AA)" legend entry.
     estimated: bool = field(default=False, kw_only=True)
+    # False: the model is not offered to the public yet (it is on AA but has
+    # no real price to buy it at). Rendered grey with a strikethrough and kept
+    # out of the Pareto frontier, with a "Not publicly available" legend entry.
+    available: bool = field(default=True, kw_only=True)
+    # The provider trains on your prompts. Rendered with the thief mask icon
+    # and kept out of the Pareto frontier (same offer, worse provider).
+    trains_on_your_data: bool = field(default=False, kw_only=True)
 
     def __post_init__(self) -> None:
         if self.provider_type is ProviderType.LOCAL:
             if self.tok_per_sec is None:
                 raise ValueError(f"{self.name}: local model needs tok_per_sec")
             # The ⚡ marker (ICON_PATHS["bolt"]) and the hardware name are
-            # part of the label, exactly like the explicit [TRAIN] markers.
+            # spliced into the label here, unlike the trains_on_your_data and
+            # available flags, which are drawn as glyphs at render time.
             if self.hardware is None:
                 self.hardware = RTX3090
             self.name = f"{self.name} ({self.hardware.name} ⚡)"
@@ -204,14 +212,6 @@ class Model:
         if self.aa_price_per_task is None:
             return None
         return 100 * (self.price_per_task() / self.aa_price_per_task - 1)
-
-    @property
-    def trains_on_your_data(self) -> bool:
-        return "[TRAIN]" in self.name
-
-    @property
-    def not_publicly_available(self) -> bool:
-        return "[UNAVAILABLE]" in self.name
 
 
 MODELS = [
@@ -403,7 +403,7 @@ MODELS = [
     ),
     Model(
         "Meta",
-        "Muse Spark 1.3 [TRAIN]",
+        "Muse Spark 1.3",
         48.0923,
         ProviderType.DATACENTER,
         aa_tok_per_task=60200,
@@ -411,6 +411,7 @@ MODELS = [
         or_slug="meta/muse-spark-1.3-contributor-20260902",
         or_session_cost_10_49_turns=0.026903109124999998,
         or_toks_served=1670770467899,
+        trains_on_your_data=True,
     ),
     Model(
         "Z AI",
@@ -472,6 +473,18 @@ MODELS = [
         or_session_cost_10_49_turns=0.27267587249999997,
         or_toks_served=2158560409059,
     ),
+    # AA badges it "Not publicly available" (released 2026-09-30, no provider serves
+    # it), and OpenRouter has no permaslug for it, so there is no session cost to
+    # rescale by: the price stays AA's sticker figure unscaled.
+    Model(
+        "Google",
+        "Gemini 4 Argon (high)",
+        52.5605655745982,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=61558,
+        aa_price_per_task=1.990322379299008,
+        available=False,
+    ),
     Model(
         "SpaceXAI",
         "Grok 4.7 (high)",
@@ -502,6 +515,7 @@ MODELS = [
         ProviderType.DATACENTER,
         aa_tok_per_task=64144,
         aa_price_per_task=0.7174901509283937,
+        available=False,
     ),
     Model(
         "Xiaomi",
@@ -910,7 +924,7 @@ DOT_SIZE = 110
 LABEL_SIZE = 13
 PAD_PX = 4  # breathing room added around each label's bbox
 LEADER_COLOR = "#9aa1ad"
-UNAVAILABLE_COLOR = "#4b5563"  # dark grey for [UNAVAILABLE] labels
+UNAVAILABLE_COLOR = "#4b5563"  # dark grey for available=False labels
 LEADER_MIN = 8  # draw a leader once the label sits this far off the dot
 CROWD_X = 200  # px window used to decide a point is "in a cluster"
 CROWD_Y = 60
@@ -1138,28 +1152,30 @@ ICON_PATHS = {
 }
 
 
-def _split_icon(name):
-    """Split the marker out of a model name.
+def _split_icon(m, name=None):
+    """Split the display glyphs out of a model's label.
 
-    Returns (left, icon, right, strike): the text before the marker, the icon
-    key (None, "bolt", or "mask"), the text after it, and whether the name
-    carried [UNAVAILABLE] (rendered dark grey with a strikethrough, no icon).
-    The icon is drawn between the two text halves, so e.g. "(RTX 3090 ⚡)"
-    keeps its parentheses. Models that train on your data are marked with
-    [TRAIN] in the data; the plots render them with the thief mask icon.
+    Returns (left, icon, right, strike): the text before the glyph, the icon
+    key (None, "bolt", or "mask"), the text after it, and whether the label is
+    unavailable (rendered dark grey with a strikethrough, no icon). The icon is
+    drawn between the two text halves, so e.g. "(RTX 3090 ⚡)" keeps its
+    parentheses. Only the ⚡ still lives in the name (Model.__post_init__ splices
+    it in); the thief mask comes from Model.trains_on_your_data and the
+    strikethrough from available=False, so no marker text is carried in the data.
+
+    `name` overrides the display text (e.g. with an effort suffix removed).
     """
-    for marker, icon in (("⚡", "bolt"), ("[TRAIN]", "mask")):
-        idx = name.find(marker)
-        if idx >= 0:
-            left = name[:idx].rstrip()
-            right = name[idx + len(marker) :].lstrip()
-            return left, icon, right, False
-    idx = name.find("[UNAVAILABLE]")
+    if name is None:
+        name = m.name
+    strike = not m.available
+    idx = name.find("⚡")
     if idx >= 0:
         left = name[:idx].rstrip()
-        right = name[idx + len("[UNAVAILABLE]") :].lstrip()
-        return left, None, right, True
-    return name, None, "", False
+        right = name[idx + len("⚡") :].lstrip()
+        return left, "bolt", right, strike
+    if m.trains_on_your_data:
+        return name, "mask", "", strike
+    return name, None, "", strike
 
 
 def _pad(bb, pad=PAD_PX):
@@ -1244,7 +1260,7 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
     """points: [(left, right, icon, strike, x, y)] in data coords -- icon is
     None, "bolt", or "mask"; the icon is drawn as a colored vector marker
     between the left and right text halves, so e.g. "(RTX 3090 ⚡)" keeps its
-    parens. strike=True (the [UNAVAILABLE] tag) renders the text dark grey
+    parens. strike=True (available=False) renders the text dark grey
     with a strikethrough and no icon. Adds annotations, auto-placed.
 
     Placement runs in rounds: a greedy sequential pass, then repair rounds in
@@ -1592,8 +1608,9 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
 
 def _plot_legend(ax, models, loc="lower right", bbox_to_anchor=None):
     """Legend for the publishers present in a plot, plus an entry for every
-    special marker in use (⚡ local electricity, [TRAIN] thief mask, hollow
-    dot for estimated points, [UNAVAILABLE]).
+    special marker in use (⚡ local electricity, thief mask for
+    trains_on_your_data, hollow dot for estimated points, strikethrough for
+    available=False).
     Returns (legend, has_unavailable_entry)."""
     present = [p for p in PUBLISHERS if any(m.publisher == p for m in models)]
     handles = [
@@ -1652,7 +1669,7 @@ def _plot_legend(ax, models, loc="lower right", bbox_to_anchor=None):
                 label="Estimated (not on AA)",
             )
         )
-    have_unavailable = any(m.not_publicly_available for m in models)
+    have_unavailable = any(not m.available for m in models)
     if have_unavailable:
         handles.append(
             Line2D(
@@ -1682,19 +1699,17 @@ def pareto_frontier(models, x_of):
     Computed over ALL models, not one plot's filtered view. Each plot is a
     zoom of the same frontier; the axes clip the line, so on the zoomed plots
     it runs off the edge ("continues"), while on the all-models plot it ends at
-    the frontier's true last step. Models that train on your data ([TRAIN] in
-    the name) are excluded: they are the same offers at providers that train
+    the frontier's true last step. Models flagged trains_on_your_data are excluded:
+    they are the same offers at providers that train
     on your data, not separate models. Models that are not publicly available
-    ([UNAVAILABLE]) are excluded too: their cost is an estimate, not a real
+    (available=False) are excluded too: their cost is an estimate, not a real
     offer. Models the x statistic cannot place are skipped.
     """
     pts = sorted(
         (
             (x, m.intelligence)
             for m in models
-            if not m.trains_on_your_data
-            and not m.not_publicly_available
-            and (x := x_of(m)) is not None
+            if not m.trains_on_your_data and m.available and (x := x_of(m)) is not None
         ),
         key=lambda p: (p[0], -p[1]),
     )
@@ -1832,7 +1847,7 @@ def make_plot(spec, models, band, y_lim):
         [
             (left, right, icon, strike, spec.x_of(m), m.intelligence)
             for m in models
-            for left, icon, right, strike in [_split_icon(m.name)]
+            for left, icon, right, strike in [_split_icon(m)]
         ],
         marker_r_px,
         extra_obstacles=(legend_box,),
@@ -1994,7 +2009,7 @@ def make_hardware_plot(spec, models, y_lim):
             [
                 (left_, right_, icon, strike, spec.x_of(m), m.intelligence)
                 for m in panel
-                for left_, icon, right_, strike in [_split_icon(m.name)]
+                for left_, icon, right_, strike in [_split_icon(m)]
             ],
             marker_r_px,
             extra_obstacles=(_pad(legend.get_window_extent(renderer)),)
@@ -2019,7 +2034,7 @@ def make_bar_plot(spec, models):
     """Horizontal bar version of a PlotSpec: one bar per model, x = x_of(m),
     ordered by intelligence (dumbest at the bottom). The model names are the
     y tick labels, so there is no auto-placed text, no Pareto frontier and no
-    green band. A name's markers ([TRAIN], ⚡) cannot be embedded in a plain
+    green band. A label's glyphs (thief mask, ⚡) cannot be embedded in a plain
     tick string: they are stripped from the label and drawn as their vector
     icons just right of the label text (see the icon pass after the draw).
 
@@ -2042,8 +2057,8 @@ def make_bar_plot(spec, models):
     colors = [PUBLISHERS[m.publisher] for m in ordered]
     # Collapsed bars represent the whole permaslug family, not just the
     # max-effort row that stands in: drop the effort suffix from the label.
-    # The tick labels are plain strings, so a name's markers ([TRAIN], ⚡)
-    # cannot be embedded: strip them from the text and record the row, the
+    # The tick labels are plain strings, so a label's glyphs (thief mask,
+    # ⚡) cannot be embedded: strip them from the text and record the row, the
     # matching icon is drawn next to the label after the figure is rendered
     # (below).
     labels = []
@@ -2055,7 +2070,7 @@ def make_bar_plot(spec, models):
                 if name.endswith(suffix):
                     name = name[: -len(suffix)]
                     break
-        left, icon, right, _strike = _split_icon(name)
+        left, icon, right, _strike = _split_icon(m, name)
         labels.append((left + " " + right).strip())
         if icon is not None:
             icon_rows.append((i, icon))

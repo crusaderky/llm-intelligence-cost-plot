@@ -68,6 +68,8 @@ Models marked with a thief mask symbol
 train on your data and you should not use them for anything that you would not
 want to become publicly available on the internet.
 
+Models in grey with a strikethrough are not offered to the public yet.
+
 Models that ArtificialAnalysis has not measured are drawn as hollow circles; their
 positions are extrapolated or estimated (the details are in the list of differences
 below).
@@ -224,12 +226,12 @@ while the latter can be as cheap as a mobile phone subscription.
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
 appreciate how much better Claude Opus 5.5 at max effort (intelligence score 58,
-$9.31/task) is compared to GLM-5.3 (intelligence 45, $1.84/task — 5x cheaper), most
-people will have a hard time doing so. Going further down, GLM-5.3-Flash at max effort
-(intelligence 42, $0.15/task — over _sixty times_ cheaper than Opus 5.5) is visibly less
-capable when you give it very sophisticated tasks, like one-shotting a whole coding
-project on its own, but it remains _enough_ for 90% of what people actually need. Even
-the highly specialized engineers and scientists mentioned above don't actually need the
-extra intelligence for a lot of what they do. Descending just a little bit further, an
-enthusiast gamer can run Qwen3.8-27B (intelligence 34, $0.03/task in electricity) on a
-computer they already own.
+$9.31/task) is compared to GPT Sol-6.1 at high effort (intelligence 51, $0.39/task — 24x
+cheaper), most people will have a hard time doing so. Going further down, GLM-5.3-Flash
+at high effort (intelligence 40, $0.13/task — over _seventy times_ cheaper than Opus
+5.5) is visibly less capable when you give it very sophisticated tasks, like
+one-shotting a whole coding project on its own, but it remains _enough_ for 90% of what
+people actually need. Even the highly specialized engineers and scientists mentioned
+above don't actually need the extra intelligence for a lot of what they do. Descending
+just a little bit further, an enthusiast gamer can run Qwen3.8-27B (intelligence 34,
+$0.03/task in electricity) on a computer they already own.

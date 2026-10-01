@@ -29,7 +29,8 @@ one). `.agents/skills/aa-lookup` is the low-level AA query tool it builds on.
 Models are `Model(...)` dataclasses: `publisher`, `name`, `intelligence` and
 `provider_type` (`ProviderType.LOCAL` or `ProviderType.DATACENTER`) are positional,
 every other field is keyword-only. `aa_tok_per_task` is mandatory; `or_slug`,
-`or_session_cost_10_49_turns`, `or_toks_served` and `hardware` are optional.
+`or_session_cost_10_49_turns`, `or_toks_served`, `hardware` and the two render flags
+`available` (default `True`) and `trains_on_your_data` (default `False`) are optional.
 `estimated=True` marks points extrapolated outside AA: they render as hollow
 circles and add an `Estimated (not on AA)` legend entry. `__post_init__` enforces
 the per-type minimums: `aa_price_per_task` for datacenter models, `tok_per_sec`
@@ -52,13 +53,16 @@ When OR carries no 10-49-turn session data for a model on any harness (e.g.
 `qwen/qwen3.8-2.4t-a95b`), comment the row out — there is no fallback statistic for
 this metric.
 
-## Name markers (load-bearing strings)
+## Render markers
 
-Markers embedded in model names drive rendering — do not "clean them up":
+Only the `⚡` is still a name string (`__post_init__` splices it into local models) —
+do not "clean it up". The other two are boolean fields on `Model`, never text in a
+name:
 
 - `⚡` → lightning bolt icon (local electricity cost)
-- `[TRAIN]` → thief mask icon (provider trains on your data); excluded from Pareto frontier
-- `[UNAVAILABLE]` → grey strikethrough text; excluded from Pareto frontier
+- `trains_on_your_data=True` → thief mask icon (provider trains on your data); excluded
+  from the Pareto frontier
+- `available=False` → grey strikethrough text; excluded from the Pareto frontier
 
 A publisher appearing for the first time must be added to `PUBLISHERS` with its
 artificialanalysis.ai color, or the script KeyErrors.

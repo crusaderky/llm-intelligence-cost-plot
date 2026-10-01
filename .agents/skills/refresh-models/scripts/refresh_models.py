@@ -51,8 +51,8 @@ AUTH_PATHS = [
 ]
 
 # plot.py MODELS base name -> (AA page slug, AA record name).
-# One row per DISTINCT AA record; [TRAIN] twins and local-vs-datacenter pairs
-# of the same model share a row.
+# One row per DISTINCT AA record; the trains_on_your_data twins and local-vs-datacenter
+# pairs of the same model share a row.
 AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     # base name: (aa_page_slug, aa_record_name, derived_intelligence?)
     "MiniCPM5-2B": ("minicpm5-2b", "MiniCPM5-2B", False),
@@ -79,6 +79,8 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "GLM-5.3": ("glm-5-3", "GLM-5.3 (max)", False),
     "Kimi K3": ("kimi-k3", "Kimi K3 (max)", False),
     "Gemini 3.8 Flash": ("gemini-3-8-flash", "Gemini 3.8 Flash (high)", False),
+    # not on OpenRouter yet, so the refresh reports it with no session data
+    "Gemini 4 Argon (high)": ("gemini-4-argon", "Gemini 4 Argon (High)", False),
     "Grok 4.7 (high)": ("grok-4-7-high", "Grok 4.7 (high)", False),
     "Grok 4.7 (xhigh)": ("grok-4-7", "Grok 4.7 (xhigh)", False),
     "MiMo-V2.6-Flash": ("mimo-v2-6-flash", "MiMo-V2.6-Flash", False),
@@ -238,10 +240,10 @@ def fetch_or_toks_served(refresh: bool) -> dict[str, int]:
 
 
 def base_name(name: str) -> str:
-    """MODELS display name -> key into AA_LOOKUPS (strip local hardware suffix,
-    [TRAIN] and [UNAVAILABLE] markers)."""
-    left, _icon, _right, _strike = plot._split_icon(name)
-    left = left.replace(" [TRAIN]", "").replace(" [UNAVAILABLE]", "")
+    """MODELS display name -> key into AA_LOOKUPS (strip the local hardware suffix
+    and the ⚡ marker; trains_on_your_data and available are flags, so unlike the
+    old name markers they never reach here)."""
+    left = name
     # local names carry "(RTX 3090 ⚡)" / "(Strix Halo 128GB ⚡)"
     if "⚡" in name and "(" in left:
         left = left[: left.rfind("(")].strip()
@@ -397,8 +399,10 @@ def main() -> None:
                 "   (derived: values are extrapolated from the (max) record — "
                 "the ratios are historical, see the README note)"
             )
-        if "[TRAIN]" in m.name:
-            print("   ([TRAIN] twin of the entry above — keep values in sync)")
+        if m.trains_on_your_data:
+            print(
+                "   (trains_on_your_data twin of the entry above — keep values in sync)"
+            )
         if m.provider_type is plot.ProviderType.LOCAL:
             print(
                 "   (local: update intelligence + aa_tok_per_task; "
