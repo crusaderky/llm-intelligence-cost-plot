@@ -27,8 +27,8 @@ for, the bare total as a float. `aa_sticker_price` is the same three streams in 
 per 1M tokens; a `cached_input` of 0.0 in either means "AA reports no cache reads
 for this model".
 
-A datacenter model with no OR price chart, or with no AA split to get the token mix
-from, keeps AA's own cost per task.
+A datacenter model with no OR price chart, no paid OR endpoint, or no AA split to get
+the token mix from, keeps AA's own cost per task.
 
 ## Running the refresh
 
@@ -57,7 +57,7 @@ plot`, visually inspect the PNGs, `pixi r lint`).
   (weekly volume) are expected on every refresh: they move with every AA page republish
   and every rolling window. Always apply them. The OR prices are rounded to 4
   significant digits (~0.01%) before they are stored, so sub-noise wobble in the
-  trailing-week median does not dirty plot.py or the plots.
+  trailing-week token-share average does not dirty plot.py or the plots.
 - If OR ever returns a trailing week with no days at all (it does so transiently for a
   model whose traffic just moved permaslug), the refresh warns on stderr and keeps the
   last chart that had days in it, so a hiccup cannot silently drop a model back to AA's
@@ -107,6 +107,7 @@ plot`, visually inspect the PNGs, `pixi r lint`).
    (`/api/frontend/v1/catalog/models`). Verify OR publishes a trailing-week effective
    price chart for it: `pixi r refresh-models --refresh` then check the slug is in
    `.cache/or_effective_pricing.json`. Without one the model plots at AA's own price.
+  (A model that is free on OR — every endpoint priced at 0 — also plots at AA's price.)
 2. Find it on AA and get the exact record name + page slug: `pixi r aa-query --list`
    (see the `aa-lookup` skill for details).
 3. Print the constructor row:
@@ -131,10 +132,14 @@ pixi r refresh-models --new OR_SLUG --aa-slug AA_SLUG --aa-name "AA Record Name"
 - Intelligence, tokens per task, cost per task, its split and the sticker prices: AA
   model page payloads, unrounded (`aa-lookup` skill does the fetching).
 - OR effective input/output prices: `GET /api/frontend/v1/stats/effective-pricing`
-  (`?permaslug=…&shape=v7&range=1w`). One value per day per endpoint instance; collapse
-  instances to their provider via `endpointRawNames` (cheapest instance per provider per
-  day), take the first quintile across providers on each day, then the median across
-  days. Never substitute the spot "cheapest provider" price — it is very volatile.
+  (`?permaslug=…&shape=v7&range=1w`). One value per day per endpoint instance, plus
+  `providerSummaries[]` carrying each instance's latest effective price (identical to the
+  last chart day) and the tokens it served. Each instance is priced at the mean of its
+  daily values, then the instances are averaged again weighted by their token share
+  (`totalTokens`); instances priced at 0 (free tiers) are dropped and the rest
+  renormalized, and a model with no paid instance keeps AA's price. Never substitute the
+  spot "cheapest provider" price, nor the old per-day quintile/median reduction: it
+  priced providers whose traffic is a rounding error.
 - OR session cost: `GET /api/frontend/v1/rankings/session-cost`
   (`data.harnesses[].models[].points`, bucket `core` = 10–49 turns), averaged across
   the harnesses that carry session data. Recorded only, never plotted.

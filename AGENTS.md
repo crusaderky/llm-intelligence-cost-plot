@@ -45,9 +45,11 @@ per task). The displayed price per task is derived on demand by
   - `aa_sticker_price=PricedTokens(...)` is the same shape in USD per **1M tokens**: the
     sticker price each stream was billed at. Cost ÷ price recovers the token counts.
   - `or_eff_input_price` / `or_eff_output_price` (USD per 1M tokens) come from OR's
-    trailing-week effective-pricing chart: endpoint instances collapsed to their
-    provider (cheapest instance per day), first quintile across providers per day,
-    median across days. Never use OR's spot "cheapest provider" price.
+    trailing-week effective-pricing chart: every endpoint instance is priced at its mean
+    effective price over the window's days, then instances are averaged weighted by the
+    share of the model's tokens they served (free endpoints dropped). Never use OR's
+    spot "cheapest provider" price, and not the old quintile/median reduction either —
+    it priced providers nobody routed to.
   - The total (`sum()` of the split, or the float) stays as the fallback price when
     either the AA breakdown or the OR price is missing, and as the delta plot's
     baseline; read it with `Model.aa_total_cost_per_task()`.

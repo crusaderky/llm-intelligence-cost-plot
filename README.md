@@ -25,7 +25,7 @@ Over time, I've become progressively more irritated by this plot, for a few reas
 The first issue I have with it is that it uses a logarithmic scale on the cost axis.
 Using a log scale is the only way to make you spot the difference between a model that
 costs $0.010 per task and one that costs $0.019, while the same plot contains a model
-that costs $7.63 — over 700 times as expensive. However, the net result is that the
+that costs $15.87 — over 1,500 times as expensive. However, the net result is that the
 viewers can no longer appreciate the immensity of the price difference between the cheap
 models and the heavy ones; nor can they realize how inconsequential the price
 differences are between the cheap models.
@@ -142,12 +142,13 @@ An agentic task caches aggressively, so most input tokens are cache hits. Opus 5
 max effort, for example, spends 12.1M cached input tokens against 294k uncached ones.
 
 **Step 2 — OpenRouter's real prices.** The spot price of the cheapest provider is far
-too volatile to plot (it moves wildly within hours), so I use a rolling average over the
-last week instead. For each day, and for each provider serving the model that day,
-OpenRouter's _effective_ price — what that provider's traffic actually pays per input
-and per output token, after its cache discounts — is reduced to the first quintile
-across providers, and the median across the days of the week gives the model's price.
-Finally:
+too volatile to plot (it moves wildly within hours), and the cheapest provider is
+sometimes one nobody actually routes to, e.g. because it's too slow or too degraded. So
+I use the trailing week and weight by real traffic: for each endpoint instance serving
+the model, OpenRouter's _effective_ price — what that instance's traffic actually pays
+per input and per output token, after its cache discounts — is averaged over the days of
+the week, and those per-instance averages are then averaged again weighted by the share
+of the model's tokens that instance served. Finally:
 
 ```text
 price per task = (input tokens × OR effective input price + output tokens × OR effective output price) / 1e6
@@ -240,12 +241,12 @@ while the latter can be as cheap as a mobile phone subscription.
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
 appreciate how much better Claude Opus 5.5 at max effort (intelligence score 58,
-$10.93/task) is compared to GPT Sol-6.1 at xhigh effort (intelligence 51, $0.29/task — 37x
+$13.99/task) is compared to GPT Sol-6.1 at xhigh effort (intelligence 51, $0.52/task — 27x
 cheaper), most people will have a hard time doing so. Going further down, GLM-5.3-Flash
-at high effort (intelligence 40, $0.18/task — over _sixty times_ cheaper than Opus
+at high effort (intelligence 40, $0.21/task — almost _seventy times_ cheaper than Opus
 5.5) is visibly less capable when you give it very sophisticated tasks, like
 one-shotting a whole coding project on its own, but it remains _enough_ for 90% of what
 people actually need. Even the highly specialized engineers and scientists mentioned
 above don't actually need the extra intelligence for a lot of what they do. Descending
 just a little bit further, an enthusiast gamer can run Qwen3.8-27B (intelligence 34,
-$0.06/task in electricity) on a computer they already own.
+$0.04/task in electricity) on a computer they already own.

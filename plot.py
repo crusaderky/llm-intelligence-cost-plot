@@ -31,10 +31,11 @@ publishes no breakdown for stores the bare total as a float instead of the
 split.
 
 OpenRouter's prices for those tokens come from the trailing week rather than
-the volatile spot quote: for every provider and every day, the first quintile
-of the effective price across providers, then the median of those across days
-(see .agents/skills/refresh-models). That gives one synthetic OR price pair
-per model, in $/M tokens:
+the volatile spot quote: every endpoint instance that serves the model is
+priced at its mean effective price over those days, and the instances are
+averaged again weighted by the share of tokens each one served (see
+.agents/skills/refresh-models). Free endpoints are left out. That gives one
+synthetic OR price pair per model, in $/M tokens:
 
     price per task = (input tokens x OR input $/M
                       + output tokens x OR output $/M) / 1e6
@@ -106,7 +107,7 @@ CROWD_OFFSET = 23  # clustered labels sit at least this far out (points),
 HIGH_INTELLIGENCE_THRESHOLD = 39
 # Right edge of the green band: the cheap cluster tops out at ~$0.15/task on
 # the new scale, and the next most expensive model sits at ~$1.4.
-LOW_COST_THRESHOLD = 0.25
+LOW_COST_THRESHOLD = 0.30
 
 
 # Candidate label positions: (dx, dy) in points, plus alignment.
@@ -362,9 +363,11 @@ class Model:
     # coding session, or_toks_served the trailing-week volume behind it.
     or_session_cost_10_49_turns: float | None = field(default=None, kw_only=True)
     or_toks_served: int | None = field(default=None, kw_only=True)
-    # Datacenter models: OR's synthetic effective prices in $/M tokens, the
-    # first quintile of provider prices per day, median across the days of the
-    # trailing week (see .agents/skills/refresh-models).
+    # Datacenter models: OR's synthetic effective prices in $/M tokens: each
+    # endpoint instance's trailing-week mean effective price, weighted by the
+    # share of the model's tokens that instance served (see
+    # .agents/skills/refresh-models). Free endpoints are excluded; a model with
+    # no paid endpoint on OR keeps None and plots at AA's price.
     or_eff_input_price: float | None = field(default=None, kw_only=True)
     or_eff_output_price: float | None = field(default=None, kw_only=True)
     # Local models: measured throughput on `hardware` (None = RTX3090).
@@ -509,9 +512,10 @@ MODELS = [
     #   breakdown for); aa_sticker_price is those same three streams in USD per
     #   1M tokens.
     # - datacenter: or_slug + or_eff_input_price / or_eff_output_price
-    #   (openrouter.ai, GET /api/frontend/v1/stats/effective-pricing: first
-    #   quintile of the providers' effective prices each day, median across
-    #   the days of the trailing week, $/M tokens).
+    #   (openrouter.ai, GET /api/frontend/v1/stats/effective-pricing: each
+    #   endpoint instance's mean effective price over the trailing week,
+    #   weighted by the share of the model's tokens that instance served,
+    #   $/M tokens).
     #   or_session_cost_10_49_turns (GET
     #   /api/frontend/v1/rankings/session-cost: median 10-49-turn session
     #   cost, averaged across the coding harnesses that carry the model) and
@@ -638,7 +642,7 @@ MODELS = [
         or_slug="qwen/qwen3.8-flash-20260826",
         or_session_cost_10_49_turns=0.045219097333333326,
         or_toks_served=514237440996,
-        or_eff_input_price=0.04191,
+        or_eff_input_price=0.04146,
         or_eff_output_price=0.4696,
     ),
     Model(
@@ -654,7 +658,7 @@ MODELS = [
         or_slug="qwen/qwen3.8-max-20260902",
         or_session_cost_10_49_turns=0.76834275,
         or_toks_served=274540525277,
-        or_eff_input_price=0.3659,
+        or_eff_input_price=0.3718,
         or_eff_output_price=6.0,
     ),
     Model(
@@ -671,8 +675,8 @@ MODELS = [
         or_slug="deepseek/deepseek-v4.1-flash-20260910",
         or_session_cost_10_49_turns=0.058345011,
         or_toks_served=25632936806017,
-        or_eff_input_price=0.01795,
-        or_eff_output_price=0.5588,
+        or_eff_input_price=0.02232,
+        or_eff_output_price=0.82,
     ),
     Model(
         "Tencent",
@@ -687,8 +691,8 @@ MODELS = [
         or_slug="tencent/hy3-20260706",
         or_session_cost_10_49_turns=0.04743342,
         or_toks_served=2145970555775,
-        or_eff_input_price=0.04681,
-        or_eff_output_price=0.5296,
+        or_eff_input_price=0.04111,
+        or_eff_output_price=0.5075,
     ),
     # Guesstimate - not on AA. Intelligence is extrapolated from Tencent's own
     # agentic-benchmark chart for Hy4 preview
@@ -721,8 +725,8 @@ MODELS = [
         or_slug="tencent/hy4-preview-20260827",
         or_session_cost_10_49_turns=0.21568037,
         or_toks_served=7483445110726,
-        or_eff_input_price=0.07637364127197355,
-        or_eff_output_price=2.500449440012165,
+        or_eff_input_price=0.08003,
+        or_eff_output_price=2.467,
         hardware_cost=21200,
         estimated=True,
     ),
@@ -739,7 +743,7 @@ MODELS = [
         or_slug="meta/muse-spark-1.3-20260902",
         or_session_cost_10_49_turns=0.50941202,
         or_toks_served=284849827129,
-        or_eff_input_price=0.4159,
+        or_eff_input_price=0.4128,
         or_eff_output_price=4.25,
     ),
     Model(
@@ -755,7 +759,7 @@ MODELS = [
         or_slug="meta/muse-spark-1.3-contributor-20260902",
         or_session_cost_10_49_turns=0.026878580875,
         or_toks_served=1463544514326,
-        or_eff_input_price=0.04726,
+        or_eff_input_price=0.04061,
         or_eff_output_price=0.1996,
         trains_on_your_data=True,
     ),
@@ -777,8 +781,8 @@ MODELS = [
         or_slug="z-ai/glm-5.3-flash-20260826",
         or_session_cost_10_49_turns=0.03966811475,
         or_toks_served=9570478959426,
-        or_eff_input_price=0.04117,
-        or_eff_output_price=0.4145,
+        or_eff_input_price=0.04817,
+        or_eff_output_price=0.4639,
         estimated=True,
     ),
     Model(
@@ -794,8 +798,8 @@ MODELS = [
         or_slug="z-ai/glm-5.3-flash-20260826",
         or_session_cost_10_49_turns=0.03966811475,
         or_toks_served=9570478959426,
-        or_eff_input_price=0.04117,
-        or_eff_output_price=0.4145,
+        or_eff_input_price=0.04817,
+        or_eff_output_price=0.4639,
         hardware_cost=10200,
     ),
     Model(
@@ -812,8 +816,8 @@ MODELS = [
         or_slug="z-ai/glm-5.3-20260816",
         or_session_cost_10_49_turns=0.4667711225,
         or_toks_served=2834146362893,
-        or_eff_input_price=0.1874,
-        or_eff_output_price=2.881,
+        or_eff_input_price=0.2645,
+        or_eff_output_price=3.916,
     ),
     Model(
         "Moonshot AI",
@@ -829,8 +833,8 @@ MODELS = [
         or_slug="moonshotai/kimi-k3-20260715",
         or_session_cost_10_49_turns=0.7484920825,
         or_toks_served=1597559226448,
-        or_eff_input_price=0.4764,
-        or_eff_output_price=12.55,
+        or_eff_input_price=0.6263,
+        or_eff_output_price=14.4,
     ),
     Model(
         "Google",
@@ -845,8 +849,8 @@ MODELS = [
         or_slug="google/gemini-3.8-flash-20260902",
         or_session_cost_10_49_turns=0.272685015,
         or_toks_served=2155413033520,
-        or_eff_input_price=0.2059,
-        or_eff_output_price=1.909,
+        or_eff_input_price=0.3477,
+        or_eff_output_price=4.037,
     ),
     # AA badges it "Not publicly available" (released 2026-09-30, no provider serves
     # it), and OpenRouter has no permaslug for it, so there is no session cost to
@@ -876,8 +880,8 @@ MODELS = [
         or_slug="x-ai/grok-4.7-20260916",
         or_session_cost_10_49_turns=0.90376115,
         or_toks_served=346401685126,
-        or_eff_input_price=0.8025,
-        or_eff_output_price=6.132,
+        or_eff_input_price=0.8266,
+        or_eff_output_price=6.024,
     ),
     Model(
         "SpaceXAI",
@@ -892,8 +896,8 @@ MODELS = [
         or_slug="x-ai/grok-4.7-20260916",
         or_session_cost_10_49_turns=0.90376115,
         or_toks_served=346401685126,
-        or_eff_input_price=0.8025,
-        or_eff_output_price=6.132,
+        or_eff_input_price=0.8266,
+        or_eff_output_price=6.024,
     ),
     # Expected to land on OpenRouter on 2026-10-15
     Model(
@@ -922,8 +926,8 @@ MODELS = [
         or_slug="xiaomi/mimo-v2.6-flash-20260921",
         or_session_cost_10_49_turns=0.0333002585,
         or_toks_served=9535285723501,
-        or_eff_input_price=0.02109,
-        or_eff_output_price=0.2781,
+        or_eff_input_price=0.01191,
+        or_eff_output_price=0.2795,
     ),
     Model(
         "Xiaomi",
@@ -939,8 +943,8 @@ MODELS = [
         or_slug="xiaomi/mimo-v2.6-pro-20260921",
         or_session_cost_10_49_turns=0.10763974166666666,
         or_toks_served=1195603370581,
-        or_eff_input_price=0.03238,
-        or_eff_output_price=0.8662,
+        or_eff_input_price=0.04141,
+        or_eff_output_price=0.867,
     ),
     Model(
         "OpenAI",
@@ -955,8 +959,8 @@ MODELS = [
         or_slug="openai/gpt-6-luna-20260922",
         or_session_cost_10_49_turns=0.029956872,
         or_toks_served=6073943000351,
-        or_eff_input_price=0.01837,
-        or_eff_output_price=0.3515,
+        or_eff_input_price=0.0332,
+        or_eff_output_price=0.4819,
     ),
     Model(
         "OpenAI",
@@ -971,8 +975,8 @@ MODELS = [
         or_slug="openai/gpt-6-luna-20260922",
         or_session_cost_10_49_turns=0.029956872,
         or_toks_served=6073943000351,
-        or_eff_input_price=0.01837,
-        or_eff_output_price=0.3515,
+        or_eff_input_price=0.0332,
+        or_eff_output_price=0.4819,
     ),
     Model(
         "OpenAI",
@@ -987,8 +991,8 @@ MODELS = [
         or_slug="openai/gpt-6-luna-20260922",
         or_session_cost_10_49_turns=0.029956872,
         or_toks_served=6073943000351,
-        or_eff_input_price=0.01837,
-        or_eff_output_price=0.3515,
+        or_eff_input_price=0.0332,
+        or_eff_output_price=0.4819,
     ),
     Model(
         "OpenAI",
@@ -1003,8 +1007,8 @@ MODELS = [
         or_slug="openai/gpt-6-luna-20260922",
         or_session_cost_10_49_turns=0.029956872,
         or_toks_served=6073943000351,
-        or_eff_input_price=0.01837,
-        or_eff_output_price=0.3515,
+        or_eff_input_price=0.0332,
+        or_eff_output_price=0.4819,
     ),
     Model(
         "OpenAI",
@@ -1019,8 +1023,8 @@ MODELS = [
         or_slug="openai/gpt-6-luna-20260922",
         or_session_cost_10_49_turns=0.029956872,
         or_toks_served=6073943000351,
-        or_eff_input_price=0.01837,
-        or_eff_output_price=0.3515,
+        or_eff_input_price=0.0332,
+        or_eff_output_price=0.4819,
     ),
     Model(
         "OpenAI",
@@ -1034,8 +1038,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         or_slug="openai/gpt-6.1-sol-20260929",
         or_toks_served=584825483772,
-        or_eff_input_price=0.2343,
-        or_eff_output_price=6.57,
+        or_eff_input_price=0.4591,
+        or_eff_output_price=9.837,
     ),
     Model(
         "OpenAI",
@@ -1049,8 +1053,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         or_slug="openai/gpt-6.1-sol-20260929",
         or_toks_served=584825483772,
-        or_eff_input_price=0.2343,
-        or_eff_output_price=6.57,
+        or_eff_input_price=0.4591,
+        or_eff_output_price=9.837,
     ),
     Model(
         "OpenAI",
@@ -1064,8 +1068,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         or_slug="openai/gpt-6.1-sol-20260929",
         or_toks_served=584825483772,
-        or_eff_input_price=0.2343,
-        or_eff_output_price=6.57,
+        or_eff_input_price=0.4591,
+        or_eff_output_price=9.837,
     ),
     Model(
         "OpenAI",
@@ -1079,8 +1083,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         or_slug="openai/gpt-6.1-sol-20260929",
         or_toks_served=584825483772,
-        or_eff_input_price=0.2343,
-        or_eff_output_price=6.57,
+        or_eff_input_price=0.4591,
+        or_eff_output_price=9.837,
     ),
     Model(
         "OpenAI",
@@ -1094,8 +1098,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         or_slug="openai/gpt-6.1-sol-20260929",
         or_toks_served=584825483772,
-        or_eff_input_price=0.2343,
-        or_eff_output_price=6.57,
+        or_eff_input_price=0.4591,
+        or_eff_output_price=9.837,
     ),
     Model(
         "OpenAI",
@@ -1110,8 +1114,8 @@ MODELS = [
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.8708335,
         or_toks_served=1414081468965,
-        or_eff_input_price=1.442,
-        or_eff_output_price=35.27,
+        or_eff_input_price=2.461,
+        or_eff_output_price=49.83,
     ),
     Model(
         "OpenAI",
@@ -1126,8 +1130,8 @@ MODELS = [
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.8708335,
         or_toks_served=1414081468965,
-        or_eff_input_price=1.442,
-        or_eff_output_price=35.27,
+        or_eff_input_price=2.461,
+        or_eff_output_price=49.83,
     ),
     Model(
         "OpenAI",
@@ -1142,8 +1146,8 @@ MODELS = [
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.8708335,
         or_toks_served=1414081468965,
-        or_eff_input_price=1.442,
-        or_eff_output_price=35.27,
+        or_eff_input_price=2.461,
+        or_eff_output_price=49.83,
     ),
     Model(
         "OpenAI",
@@ -1158,8 +1162,8 @@ MODELS = [
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.8708335,
         or_toks_served=1414081468965,
-        or_eff_input_price=1.442,
-        or_eff_output_price=35.27,
+        or_eff_input_price=2.461,
+        or_eff_output_price=49.83,
     ),
     Model(
         "OpenAI",
@@ -1174,8 +1178,8 @@ MODELS = [
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.8708335,
         or_toks_served=1414081468965,
-        or_eff_input_price=1.442,
-        or_eff_output_price=35.27,
+        or_eff_input_price=2.461,
+        or_eff_output_price=49.83,
     ),
     Model(
         "Anthropic",
@@ -1189,8 +1193,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
         or_toks_served=676140361401,
-        or_eff_input_price=0.4823,
-        or_eff_output_price=10.0,
+        or_eff_input_price=0.6117,
+        or_eff_output_price=10.07,
     ),
     Model(
         "Anthropic",
@@ -1204,8 +1208,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
         or_toks_served=676140361401,
-        or_eff_input_price=0.4823,
-        or_eff_output_price=10.0,
+        or_eff_input_price=0.6117,
+        or_eff_output_price=10.07,
     ),
     Model(
         "Anthropic",
@@ -1219,8 +1223,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
         or_toks_served=676140361401,
-        or_eff_input_price=0.4823,
-        or_eff_output_price=10.0,
+        or_eff_input_price=0.6117,
+        or_eff_output_price=10.07,
     ),
     Model(
         "Anthropic",
@@ -1234,8 +1238,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
         or_toks_served=676140361401,
-        or_eff_input_price=0.4823,
-        or_eff_output_price=10.0,
+        or_eff_input_price=0.6117,
+        or_eff_output_price=10.07,
     ),
     Model(
         "Anthropic",
@@ -1249,8 +1253,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
         or_toks_served=676140361401,
-        or_eff_input_price=0.4823,
-        or_eff_output_price=10.0,
+        or_eff_input_price=0.6117,
+        or_eff_output_price=10.07,
     ),
     Model(
         "Anthropic",
@@ -1265,8 +1269,8 @@ MODELS = [
         or_slug="anthropic/claude-opus-5.5-20260921",
         or_session_cost_10_49_turns=1.4107879666666667,
         or_toks_served=2316510688375,
-        or_eff_input_price=0.6881,
-        or_eff_output_price=20.0,
+        or_eff_input_price=0.9326,
+        or_eff_output_price=20.2,
     ),
     Model(
         "Anthropic",
@@ -1281,8 +1285,8 @@ MODELS = [
         or_slug="anthropic/claude-opus-5.5-20260921",
         or_session_cost_10_49_turns=1.4107879666666667,
         or_toks_served=2316510688375,
-        or_eff_input_price=0.6881,
-        or_eff_output_price=20.0,
+        or_eff_input_price=0.9326,
+        or_eff_output_price=20.2,
     ),
     Model(
         "Anthropic",
@@ -1297,8 +1301,8 @@ MODELS = [
         or_slug="anthropic/claude-opus-5.5-20260921",
         or_session_cost_10_49_turns=1.4107879666666667,
         or_toks_served=2316510688375,
-        or_eff_input_price=0.6881,
-        or_eff_output_price=20.0,
+        or_eff_input_price=0.9326,
+        or_eff_output_price=20.2,
     ),
     Model(
         "Anthropic",
@@ -1313,8 +1317,8 @@ MODELS = [
         or_slug="anthropic/claude-opus-5.5-20260921",
         or_session_cost_10_49_turns=1.4107879666666667,
         or_toks_served=2316510688375,
-        or_eff_input_price=0.6881,
-        or_eff_output_price=20.0,
+        or_eff_input_price=0.9326,
+        or_eff_output_price=20.2,
     ),
     Model(
         "Anthropic",
@@ -1329,8 +1333,8 @@ MODELS = [
         or_slug="anthropic/claude-opus-5.5-20260921",
         or_session_cost_10_49_turns=1.4107879666666667,
         or_toks_served=2316510688375,
-        or_eff_input_price=0.6881,
-        or_eff_output_price=20.0,
+        or_eff_input_price=0.9326,
+        or_eff_output_price=20.2,
     ),
     Model(
         "InclusionAI",
@@ -1476,15 +1480,17 @@ PLOTS = [
         png_x_pad=0.03,
         easter_eggs=(
             (0.25, "Too cheap to care"),
-            (0.75, "Need to be careful\nabout your bill"),
-            (1.5, "This is EXPENSIVE"),
+            (0.85, "Need to be careful\nabout your bill"),
+            (1.90, "This is EXPENSIVE"),
             (
-                3.0,
+                2.80,
                 "Anything beyond this point\nis unaffordable without\nVC subsidies",
             ),
-            (5.0, "Keep scrolling"),
-            (9.0, "Are you still here?"),
-            (14.0, "Congratulations,\nyou made it to the end!"),
+            (5.00, "Keep scrolling"),
+            (7.90, "This is getting ridiculous"),
+            (12.0, "Are you still here?"),
+            (14.0, "Almost there..."),
+            (15.7, "Congratulations,\nyou made it to the end!"),
         ),
     ),
     PlotSpec(

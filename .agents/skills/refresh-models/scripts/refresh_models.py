@@ -10,9 +10,10 @@ Reads the MODELS list from plot.py, re-fetches from:
   OR coding harnesses that carry session data for the model. Collected but no
   longer used to price the plot; it stays as a record of real session spend.
 - openrouter.ai (GET /api/frontend/v1/stats/effective-pricing): the effective
-  input and output price per provider per day over the last week, reduced to
-  one synthetic price pair per permaslug (first quintile across providers per
-  day, median across days). This is what prices the plot's datacenter models.
+  input and output price per endpoint instance per day over the last week,
+  reduced to one synthetic price pair per permaslug: each instance's weekly
+  mean price, weighted by the share of tokens it served. This is what prices
+  the plot's datacenter models.
 - openrouter.ai (GET /api/frontend/v1/rankings/models?view=week): prompt +
   completion tokens served in the trailing week per permaslug, summed across
   variants.
@@ -260,76 +261,80 @@ class OrEffectivePrice:
 
     input: float
     output: float
-    days: int  # daily points the medians came from
-    providers: int  # distinct providers seen across those days
+    days: int  # daily points the per-endpoint means came from
+    providers: int  # distinct providers that carried weight
     cache_hit_rate: float | None  # OR's token-weighted cache hit rate
 
 
 def _significant(value: float) -> float:
     """Round to 4 significant digits.
 
-    A trailing-week median of a quintile is a noisy statistic at the 1e-5 level
-    (the window rolls by a day every refresh), and plot.py stores whatever it is
-    given at full precision. Rounding to 4 significant digits -- ~0.01%, far
-    finer than the gap between any two real prices, and far coarser than the
-    window noise -- keeps an unchanged model byte-identical across refreshes so
-    the plots stay reproducible.
+    A trailing-week token-share-weighted average is a noisy statistic at the
+    1e-5 level (the window rolls by a day every refresh), and plot.py stores
+    whatever it is given at full precision. Rounding to 4 significant digits --
+    ~0.01%, far finer than the gap between any two real prices, and far coarser
+    than the window noise -- keeps an unchanged model byte-identical across
+    refreshes so the plots stay reproducible.
     """
     return float(f"{value:.4g}")
 
 
-def first_quintile(values: list[float]) -> float:
-    """Linear-interpolation 20th percentile (the numpy/statistics default)."""
-    s = sorted(values)
-    if not s:
-        raise ValueError("no values")
-    if len(s) == 1:
-        return s[0]
-    pos = 0.2 * (len(s) - 1)
-    lo = int(pos)
-    hi = min(lo + 1, len(s) - 1)
-    return s[lo] + (s[hi] - s[lo]) * (pos - lo)
+def _weekly_means(chart: dict, key: str) -> dict[str, float]:
+    """endpoint instance -> mean of its daily effective prices."""
+    prices: dict[str, list[float]] = {}
+    for day in chart.get(key) or []:
+        for endpoint_id, price in day["y"].items():
+            prices.setdefault(endpoint_id, []).append(price)
+    return {
+        endpoint_id: statistics.fmean(values) for endpoint_id, values in prices.items()
+    }
 
 
 def synthesize_effective(chart: dict) -> OrEffectivePrice | None:
-    """Reduce OR's effective-pricing chart to one price pair.
+    """Reduce OR's effective-pricing chart to one token-share-weighted price pair.
 
-    The chart carries one value per day per *endpoint instance* (a provider
-    colocation, e.g. "Sail Research (1)" and "(2)"). Instances are collapsed
-    to their provider (endpointRawNames) keeping the cheapest one that day, so
-    a provider with five colos does not get five votes; the first quintile is
-    then taken across providers on each day and the median across days, which
-    is what the plot prices with. None when the chart carries no day at all.
+    OR prices per *endpoint instance* (a provider colocation, e.g. "Sail
+    Research (1)" and "(2)") and reports, per instance, one effective price per
+    day plus the tokens that instance served. Each instance's price is averaged
+    over its days, then the instances are averaged again weighted by their
+    token share: the price an average token of the model's real traffic cost.
+
+    Free ($0) instances are dropped and the weights renormalized over the rest:
+    a free tier is not what a paying user buys. None when that leaves nothing
+    (the model is free on OR, so it keeps AA's price) or when the chart carries
+    no day at all.
     """
+    means_in = _weekly_means(chart, "inputChartData")
+    means_out = _weekly_means(chart, "outputChartData")
     raw_names = chart.get("endpointRawNames") or {}
-    days_in = chart.get("inputChartData") or []
-    days_out = chart.get("outputChartData") or []
-    per_day_in: list[float] = []
-    per_day_out: list[float] = []
+    weight = 0.0
+    total_in = 0.0
+    total_out = 0.0
     providers: set[str] = set()
-    for day_in, day_out in zip(days_in, days_out):
-        cheapest_in: dict[str, float] = {}
-        cheapest_out: dict[str, float] = {}
-        for series, cheapest in (
-            (day_in["y"], cheapest_in),
-            (day_out["y"], cheapest_out),
+    for summary in chart.get("providerSummaries") or []:
+        endpoint_id = summary["endpointId"]
+        tokens = summary["totalTokens"]
+        mean_in = means_in.get(endpoint_id)
+        mean_out = means_out.get(endpoint_id)
+        if (
+            not tokens
+            or mean_in is None
+            or mean_out is None
+            or not mean_in
+            or not mean_out
         ):
-            for endpoint_id, price in series.items():
-                provider = raw_names.get(endpoint_id, endpoint_id)
-                if provider not in cheapest or price < cheapest[provider]:
-                    cheapest[provider] = price
-        served = sorted(set(cheapest_in) & set(cheapest_out))
-        if not served:
+            # no traffic, no price history, or a free instance: no vote
             continue
-        providers.update(served)
-        per_day_in.append(first_quintile([cheapest_in[p] for p in served]))
-        per_day_out.append(first_quintile([cheapest_out[p] for p in served]))
-    if not per_day_in:
+        weight += tokens
+        total_in += tokens * mean_in
+        total_out += tokens * mean_out
+        providers.add(raw_names.get(endpoint_id, endpoint_id))
+    if not weight:
         return None
     return OrEffectivePrice(
-        input=_significant(statistics.median(per_day_in)),
-        output=_significant(statistics.median(per_day_out)),
-        days=len(per_day_in),
+        input=_significant(total_in / weight),
+        output=_significant(total_out / weight),
+        days=len(chart.get("inputChartData") or []),
         providers=len(providers),
         cache_hit_rate=chart.get("weightedCacheHitRate"),
     )
@@ -487,7 +492,7 @@ def main() -> None:
             )
         print(
             f"OR {args.new}: ${eff.input:.6f}/Mtok input, ${eff.output:.6f}/Mtok output "
-            f"(first quintile over {eff.providers} providers, median over {eff.days} days)"
+            f"(token share over {eff.providers} providers, {eff.days} days)"
         )
         print(f"OR {args.new}: {toks} tokens served in the trailing week")
         print(
@@ -521,8 +526,8 @@ def main() -> None:
     print("(OR session $: 10-49-turn median, averaged across the coding harnesses;")
     print(" recorded for reference, no longer used to price the plot)")
     print("(OR week toks: prompt + completion tokens served in the trailing week)")
-    print("(OR eff $/M: first quintile of provider effective prices per day,")
-    print(" median across days of the trailing week)")
+    print("(OR eff $/M: per-endpoint trailing-week mean effective prices, weighted")
+    print(" by the token share that provider serves)")
     aa_cache: dict[tuple[str, str], dict | None] = {}
     print(
         f"{'model':30s} {'intelligence':>22s} {'tokens/task':>20s} "
@@ -597,7 +602,7 @@ def main() -> None:
             new_eff_in = eff.input if eff else None
             new_eff_out = eff.output if eff else None
             if eff is None:
-                src += " (no OR price chart: plots at AA's price)"
+                src += " (no usable OR price: plots at AA's price)"
         else:  # local: electricity, no OR fields
             old_aa = old_sess = old_vol = new_aa = new_sess = new_vol = None
             old_eff_in = old_eff_out = new_eff_in = new_eff_out = None
@@ -695,7 +700,7 @@ def main() -> None:
         "the green band non-empty, and that HIGH_INTELLIGENCE_THRESHOLD still\n"
         "floors the top plot. VOL! and ORP! are expected on every refresh: the\n"
         "weekly serving volume is a rolling window and the OR prices are a\n"
-        "trailing-week median, so always apply them."
+        "trailing-week average, so always apply them."
     )
 
 
