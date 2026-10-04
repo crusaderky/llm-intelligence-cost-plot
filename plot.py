@@ -68,7 +68,7 @@ import unicodedata
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import NamedTuple
+from typing import Literal, NamedTuple
 
 import matplotlib
 
@@ -637,8 +637,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.15, 0.47, 0.016),
         or_slug="qwen/qwen3.8-flash-20260826",
         or_session_cost_10_49_turns=0.045219097333333326,
-        or_toks_served=508711706393,
-        or_eff_input_price=0.03644,
+        or_toks_served=514237440996,
+        or_eff_input_price=0.04191,
         or_eff_output_price=0.4696,
     ),
     Model(
@@ -653,8 +653,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 6.0, 0.25),
         or_slug="qwen/qwen3.8-max-20260902",
         or_session_cost_10_49_turns=0.76834275,
-        or_toks_served=241332154546,
-        or_eff_input_price=0.4044,
+        or_toks_served=274540525277,
+        or_eff_input_price=0.3659,
         or_eff_output_price=6.0,
     ),
     Model(
@@ -670,9 +670,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
         or_slug="deepseek/deepseek-v4.1-flash-20260910",
         or_session_cost_10_49_turns=0.058345011,
-        or_toks_served=22711810402576,
-        or_eff_input_price=0.01775,
-        or_eff_output_price=0.5127,
+        or_toks_served=25632936806017,
+        or_eff_input_price=0.01795,
+        or_eff_output_price=0.5588,
     ),
     Model(
         "Tencent",
@@ -686,7 +686,7 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.136, 0.5549999999999999, 0.034),
         or_slug="tencent/hy3-20260706",
         or_session_cost_10_49_turns=0.04743342,
-        or_toks_served=2392572066775,
+        or_toks_served=2145970555775,
         or_eff_input_price=0.04681,
         or_eff_output_price=0.5296,
     ),
@@ -738,8 +738,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(1.25, 4.25, 0.15),
         or_slug="meta/muse-spark-1.3-20260902",
         or_session_cost_10_49_turns=0.50941202,
-        or_toks_served=466486859323,
-        or_eff_input_price=0.3368,
+        or_toks_served=284849827129,
+        or_eff_input_price=0.4159,
         or_eff_output_price=4.25,
     ),
     Model(
@@ -753,10 +753,10 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(1.25, 4.25, 0.15),
         or_slug="meta/muse-spark-1.3-contributor-20260902",
-        or_session_cost_10_49_turns=0.026889327375,
-        or_toks_served=1490822960778,
-        or_eff_input_price=0.02641,
-        or_eff_output_price=0.1997,
+        or_session_cost_10_49_turns=0.026878580875,
+        or_toks_served=1463544514326,
+        or_eff_input_price=0.04726,
+        or_eff_output_price=0.1996,
         trains_on_your_data=True,
     ),
     Model(
@@ -775,10 +775,10 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(0.15, 0.5, 0.026),
         or_slug="z-ai/glm-5.3-flash-20260826",
-        or_session_cost_10_49_turns=0.039667699,
-        or_toks_served=10640449608045,
-        or_eff_input_price=0.041656773770215316,
-        or_eff_output_price=0.42437039556042544,
+        or_session_cost_10_49_turns=0.03966811475,
+        or_toks_served=9570478959426,
+        or_eff_input_price=0.04117,
+        or_eff_output_price=0.4145,
         estimated=True,
     ),
     Model(
@@ -792,10 +792,10 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(0.15, 0.5, 0.026),
         or_slug="z-ai/glm-5.3-flash-20260826",
-        or_session_cost_10_49_turns=0.039667699,
-        or_toks_served=10640449608045,
-        or_eff_input_price=0.0416,
-        or_eff_output_price=0.4244,
+        or_session_cost_10_49_turns=0.03966811475,
+        or_toks_served=9570478959426,
+        or_eff_input_price=0.04117,
+        or_eff_output_price=0.4145,
         hardware_cost=10200,
     ),
     Model(
@@ -811,9 +811,9 @@ MODELS = [
         hardware_cost=21200,
         or_slug="z-ai/glm-5.3-20260816",
         or_session_cost_10_49_turns=0.4667711225,
-        or_toks_served=2742791905468,
-        or_eff_input_price=0.2052,
-        or_eff_output_price=2.676,
+        or_toks_served=2834146362893,
+        or_eff_input_price=0.1872,
+        or_eff_output_price=2.881,
     ),
     Model(
         "Moonshot AI",
@@ -828,9 +828,9 @@ MODELS = [
         hardware_cost=320_000,
         or_slug="moonshotai/kimi-k3-20260715",
         or_session_cost_10_49_turns=0.7484920825,
-        or_toks_served=1563281846165,
-        or_eff_input_price=0.4698,
-        or_eff_output_price=11.83,
+        or_toks_served=1597559226448,
+        or_eff_input_price=0.473,
+        or_eff_output_price=12.55,
     ),
     Model(
         "Google",
@@ -843,10 +843,10 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(0.75, 3.75, 0.075),
         or_slug="google/gemini-3.8-flash-20260902",
-        or_session_cost_10_49_turns=0.27268573,
-        or_toks_served=2109386042551,
-        or_eff_input_price=0.2022,
-        or_eff_output_price=1.912,
+        or_session_cost_10_49_turns=0.272685015,
+        or_toks_served=2155413033520,
+        or_eff_input_price=0.2081,
+        or_eff_output_price=1.909,
     ),
     # AA badges it "Not publicly available" (released 2026-09-30, no provider serves
     # it), and OpenRouter has no permaslug for it, so there is no session cost to
@@ -875,9 +875,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 6.0, 0.5),
         or_slug="x-ai/grok-4.7-20260916",
         or_session_cost_10_49_turns=0.90376115,
-        or_toks_served=399474296804,
-        or_eff_input_price=0.7052,
-        or_eff_output_price=3.083,
+        or_toks_served=346401685126,
+        or_eff_input_price=0.8025,
+        or_eff_output_price=6.132,
     ),
     Model(
         "SpaceXAI",
@@ -891,9 +891,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 6.0, 0.5),
         or_slug="x-ai/grok-4.7-20260916",
         or_session_cost_10_49_turns=0.90376115,
-        or_toks_served=399474296804,
-        or_eff_input_price=0.7052,
-        or_eff_output_price=3.083,
+        or_toks_served=346401685126,
+        or_eff_input_price=0.8025,
+        or_eff_output_price=6.132,
     ),
     # Expected to land on OpenRouter on 2026-10-15
     Model(
@@ -913,17 +913,17 @@ MODELS = [
         "MiMo-V2.6-Flash",
         37.8843590141754,
         ProviderType.DATACENTER,
-        aa_tok_per_task=77637,
+        aa_tok_per_task=77792,
         aa_cost_per_task=PricedTokens(
-            0.022533601185366535, 0.02173824097089166, 0.017918131033471504
+            0.022581436951699726, 0.02178167406180075, 0.017951590352690297
         ),
         aa_sticker_price=PricedTokens(0.14, 0.28, 0.0028),
         hardware_cost=6800,
         or_slug="xiaomi/mimo-v2.6-flash-20260921",
         or_session_cost_10_49_turns=0.0333002585,
-        or_toks_served=9102332455655,
-        or_eff_input_price=0.02106,
-        or_eff_output_price=0.2791,
+        or_toks_served=9535285723501,
+        or_eff_input_price=0.02109,
+        or_eff_output_price=0.2781,
     ),
     Model(
         "Xiaomi",
@@ -938,25 +938,25 @@ MODELS = [
         hardware_cost=27200,
         or_slug="xiaomi/mimo-v2.6-pro-20260921",
         or_session_cost_10_49_turns=0.10763974166666666,
-        or_toks_served=1254603803670,
-        or_eff_input_price=0.03468,
-        or_eff_output_price=0.8695,
+        or_toks_served=1195603370581,
+        or_eff_input_price=0.03238,
+        or_eff_output_price=0.8662,
     ),
     Model(
         "OpenAI",
         "GPT-6 Luna (low)",
         21.5261980080866,
         ProviderType.DATACENTER,
-        aa_tok_per_task=2086,
+        aa_tok_per_task=2087,
         aa_cost_per_task=PricedTokens(
-            0.0030098746835280866, 0.0010429532866733373, 0.0004622873857188762
+            0.003010489994633766, 0.0010436098775824284, 0.0004625076971940582
         ),
         aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="openai/gpt-6-luna-20260922",
         or_session_cost_10_49_turns=0.029956872,
-        or_toks_served=5130680873240,
-        or_eff_input_price=0.01937,
-        or_eff_output_price=0.3519,
+        or_toks_served=6073943000351,
+        or_eff_input_price=0.01837,
+        or_eff_output_price=0.3515,
     ),
     Model(
         "OpenAI",
@@ -970,25 +970,25 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="openai/gpt-6-luna-20260922",
         or_session_cost_10_49_turns=0.029956872,
-        or_toks_served=5130680873240,
-        or_eff_input_price=0.01937,
-        or_eff_output_price=0.3519,
+        or_toks_served=6073943000351,
+        or_eff_input_price=0.01837,
+        or_eff_output_price=0.3515,
     ),
     Model(
         "OpenAI",
         "GPT-6 Luna (high)",
         32.9282054150837,
         ProviderType.DATACENTER,
-        aa_tok_per_task=19693,
+        aa_tok_per_task=19703,
         aa_cost_per_task=PricedTokens(
-            0.007806171580684527, 0.00984636067750162, 0.011371302262915588
+            0.007808019704092541, 0.009851617041137984, 0.011371939658497492
         ),
         aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="openai/gpt-6-luna-20260922",
         or_session_cost_10_49_turns=0.029956872,
-        or_toks_served=5130680873240,
-        or_eff_input_price=0.01937,
-        or_eff_output_price=0.3519,
+        or_toks_served=6073943000351,
+        or_eff_input_price=0.01837,
+        or_eff_output_price=0.3515,
     ),
     Model(
         "OpenAI",
@@ -1002,25 +1002,25 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="openai/gpt-6-luna-20260922",
         or_session_cost_10_49_turns=0.029956872,
-        or_toks_served=5130680873240,
-        or_eff_input_price=0.01937,
-        or_eff_output_price=0.3519,
+        or_toks_served=6073943000351,
+        or_eff_input_price=0.01837,
+        or_eff_output_price=0.3515,
     ),
     Model(
         "OpenAI",
         "GPT-6 Luna (max)",
         38.1245186869738,
         ProviderType.DATACENTER,
-        aa_tok_per_task=49956,
+        aa_tok_per_task=50012,
         aa_cost_per_task=PricedTokens(
-            0.013791726628584668, 0.024977997942542858, 0.028884493149051504
+            0.013840232874372521, 0.025005845215270134, 0.02897687860847939
         ),
         aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="openai/gpt-6-luna-20260922",
         or_session_cost_10_49_turns=0.029956872,
-        or_toks_served=5130680873240,
-        or_eff_input_price=0.01937,
-        or_eff_output_price=0.3519,
+        or_toks_served=6073943000351,
+        or_eff_input_price=0.01837,
+        or_eff_output_price=0.3515,
     ),
     # Not on OR: no 10-49-turn session data — falls back to AA's cost per task.
     Model(
@@ -1090,9 +1090,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(10.0, 50.0, 1.0),
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.8708335,
-        or_toks_served=906957480360,
-        or_eff_input_price=1.357,
-        or_eff_output_price=35.37,
+        or_toks_served=1414081468965,
+        or_eff_input_price=1.442,
+        or_eff_output_price=35.27,
     ),
     Model(
         "OpenAI",
@@ -1106,9 +1106,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(10.0, 50.0, 1.0),
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.8708335,
-        or_toks_served=906957480360,
-        or_eff_input_price=1.357,
-        or_eff_output_price=35.37,
+        or_toks_served=1414081468965,
+        or_eff_input_price=1.442,
+        or_eff_output_price=35.27,
     ),
     Model(
         "OpenAI",
@@ -1122,9 +1122,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(10.0, 50.0, 1.0),
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.8708335,
-        or_toks_served=906957480360,
-        or_eff_input_price=1.357,
-        or_eff_output_price=35.37,
+        or_toks_served=1414081468965,
+        or_eff_input_price=1.442,
+        or_eff_output_price=35.27,
     ),
     Model(
         "OpenAI",
@@ -1138,9 +1138,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(10.0, 50.0, 1.0),
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.8708335,
-        or_toks_served=906957480360,
-        or_eff_input_price=1.357,
-        or_eff_output_price=35.37,
+        or_toks_served=1414081468965,
+        or_eff_input_price=1.442,
+        or_eff_output_price=35.27,
     ),
     Model(
         "OpenAI",
@@ -1154,23 +1154,23 @@ MODELS = [
         aa_sticker_price=PricedTokens(10.0, 50.0, 1.0),
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.8708335,
-        or_toks_served=906957480360,
-        or_eff_input_price=1.357,
-        or_eff_output_price=35.37,
+        or_toks_served=1414081468965,
+        or_eff_input_price=1.442,
+        or_eff_output_price=35.27,
     ),
     Model(
         "Anthropic",
         "Claude Sonnet 5.5 (medium)",
-        40.7386909594307,
+        40.838652287929,
         ProviderType.DATACENTER,
-        aa_tok_per_task=19488,
+        aa_tok_per_task=20938,
         aa_cost_per_task=PricedTokens(
-            0.17103384559119494, 0.19488335802899007, 0.22026503649891727
+            0.16774360885978076, 0.20937627614580473, 0.212287795199691
         ),
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
-        or_toks_served=251180050863,
-        or_eff_input_price=0.5396,
+        or_toks_served=676140361401,
+        or_eff_input_price=0.4823,
         or_eff_output_price=10.0,
     ),
     Model(
@@ -1178,14 +1178,14 @@ MODELS = [
         "Claude Sonnet 5.5 (high)",
         46.7356921799024,
         ProviderType.DATACENTER,
-        aa_tok_per_task=34467,
+        aa_tok_per_task=37327,
         aa_cost_per_task=PricedTokens(
-            0.26819095938977744, 0.34467167925515074, 0.46689603407058566
+            0.27314221049272563, 0.37327393013630916, 0.476067434943033
         ),
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
-        or_toks_served=251180050863,
-        or_eff_input_price=0.5396,
+        or_toks_served=676140361401,
+        or_eff_input_price=0.4823,
         or_eff_output_price=10.0,
     ),
     Model(
@@ -1193,14 +1193,14 @@ MODELS = [
         "Claude Sonnet 5.5 (xhigh)",
         51.8522867021152,
         ProviderType.DATACENTER,
-        aa_tok_per_task=73724,
+        aa_tok_per_task=74810,
         aa_cost_per_task=PricedTokens(
-            0.5289330611609605, 0.7372438302563433, 1.476399712406901
+            0.529775714283959, 0.7480964840807534, 1.4683247635797327
         ),
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
-        or_toks_served=251180050863,
-        or_eff_input_price=0.5396,
+        or_toks_served=676140361401,
+        or_eff_input_price=0.4823,
         or_eff_output_price=10.0,
     ),
     Model(
@@ -1208,14 +1208,14 @@ MODELS = [
         "Claude Sonnet 5.5 (max)",
         55.9779549012591,
         ProviderType.DATACENTER,
-        aa_tok_per_task=193527,
+        aa_tok_per_task=197430,
         aa_cost_per_task=PricedTokens(
-            1.265889654779412, 1.9352686965568107, 4.419484669750206
+            1.280625156107197, 1.974303716101193, 4.411847445202884
         ),
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
-        or_toks_served=251180050863,
-        or_eff_input_price=0.5396,
+        or_toks_served=676140361401,
+        or_eff_input_price=0.4823,
         or_eff_output_price=10.0,
     ),
     Model(
@@ -1229,9 +1229,9 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_session_cost_10_49_turns=1.4099249333333332,
-        or_toks_served=1935216775671,
-        or_eff_input_price=0.7045,
+        or_session_cost_10_49_turns=1.4107879666666667,
+        or_toks_served=2316510688375,
+        or_eff_input_price=0.6881,
         or_eff_output_price=20.0,
     ),
     Model(
@@ -1245,9 +1245,9 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_session_cost_10_49_turns=1.4099249333333332,
-        or_toks_served=1935216775671,
-        or_eff_input_price=0.7045,
+        or_session_cost_10_49_turns=1.4107879666666667,
+        or_toks_served=2316510688375,
+        or_eff_input_price=0.6881,
         or_eff_output_price=20.0,
     ),
     Model(
@@ -1261,9 +1261,9 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_session_cost_10_49_turns=1.4099249333333332,
-        or_toks_served=1935216775671,
-        or_eff_input_price=0.7045,
+        or_session_cost_10_49_turns=1.4107879666666667,
+        or_toks_served=2316510688375,
+        or_eff_input_price=0.6881,
         or_eff_output_price=20.0,
     ),
     Model(
@@ -1277,9 +1277,9 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_session_cost_10_49_turns=1.4099249333333332,
-        or_toks_served=1935216775671,
-        or_eff_input_price=0.7045,
+        or_session_cost_10_49_turns=1.4107879666666667,
+        or_toks_served=2316510688375,
+        or_eff_input_price=0.6881,
         or_eff_output_price=20.0,
     ),
     Model(
@@ -1293,10 +1293,27 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
         or_slug="anthropic/claude-opus-5.5-20260921",
-        or_session_cost_10_49_turns=1.4099249333333332,
-        or_toks_served=1935216775671,
-        or_eff_input_price=0.7045,
+        or_session_cost_10_49_turns=1.4107879666666667,
+        or_toks_served=2316510688375,
+        or_eff_input_price=0.6881,
         or_eff_output_price=20.0,
+    ),
+    Model(
+        "InclusionAI",
+        "Ling 3.1 Flash",
+        41.0906200397391,
+        ProviderType.DATACENTER,
+        hardware_cost=15300,
+        aa_tok_per_task=100671,
+        aa_cost_per_task=PricedTokens(
+            0.3441050128378794, 0.09060381742459483, 0.550980668121204
+        ),
+        aa_sticker_price=PricedTokens(0.3, 0.9, 0.06),
+        or_slug="inclusionai/ling-3.1-flash-20261002",
+        or_toks_served=77359660361,
+        # Currently free on OpenRouter; use AA pricing only
+        # or_eff_input_price=0.0,
+        # or_eff_output_price=0.0,
     ),
 ]
 
@@ -1345,9 +1362,45 @@ class PlotSpec(NamedTuple):
     # its own margin (a fraction that reads as inches on the wide SVG is a
     # handful of pixels on the 26in PNG, where it clips the rightmost dot)
     easter_eggs: tuple[tuple[float, str], ...] = ()  # (x, slogan) shouts in
-    # the background of the SVG only -- the PNG is the one people actually
-    # read, so the jokes stay off it. Newlines are kept, to wrap a long
+    # the background of the SVG only. Newlines are kept, to wrap a long
     # slogan instead of letting it run into its neighbour.
+
+    def split_renders(self) -> bool:
+        return (
+            self.png_fig_w is not None
+            or self.png_xtick_step is not None
+            or self.png_x_pad is not None
+            or bool(self.easter_eggs)
+        )
+
+    def get_fig_w(self, fmt: Literal["png", "svg", "both"]) -> float:
+        """fig_w for this render: the SVG can be much larger"""
+        assert fmt in ("png", "svg", "both")
+        if fmt == "both":
+            assert self.png_fig_w is None
+        elif fmt == "png" and self.png_fig_w is not None:
+            return self.png_fig_w
+        return self.fig_w
+
+    def get_xtick_step(self, fmt: Literal["png", "svg", "both"]) -> float:
+        """x tick step for this render: the PNG gets its own coarser step when the
+        view has one (see png_xtick_step)."""
+        assert fmt in ("png", "svg", "both")
+        if fmt == "both":
+            assert self.png_xtick_step is None
+        elif fmt == "png" and self.png_xtick_step is not None:
+            return self.png_xtick_step
+        return self.xtick_step
+
+    def get_x_pad(self, fmt: Literal["png", "svg", "both"]) -> float:
+        """Right margin on the x axis for this render: the PNG gets its own when
+        the view has one (see png_x_pad)."""
+        assert fmt in ("png", "svg", "both")
+        if fmt == "both":
+            assert self.png_x_pad is None
+        elif fmt == "png" and self.png_x_pad is not None:
+            return self.png_x_pad
+        return self.x_pad
 
 
 # The plots to generate.
@@ -2141,7 +2194,7 @@ def _scatter_points(ax, models, x_of):
         )
 
 
-def _draw_easter_eggs(ax, spec, y_mid):
+def _draw_easter_eggs(ax, spec: PlotSpec, y_mid) -> None:
     """Shout every slogan across the middle of the plot, centred on its own x
     milestone. zorder 1 keeps them over the grid and under the frontier, the
     dots and the labels, so no model is ever hidden by a joke."""
@@ -2161,23 +2214,7 @@ def _draw_easter_eggs(ax, spec, y_mid):
         )
 
 
-def _xtick_step(spec, fmt):
-    """x tick step for this render: the PNG gets its own coarser step when the
-    view has one (see png_xtick_step)."""
-    if fmt == "png" and spec.png_xtick_step is not None:
-        return spec.png_xtick_step
-    return spec.xtick_step
-
-
-def _x_pad(spec, fmt):
-    """Right margin on the x axis for this render: the PNG gets its own when
-    the view has one (see png_x_pad)."""
-    if fmt == "png" and spec.png_x_pad is not None:
-        return spec.png_x_pad
-    return spec.x_pad
-
-
-def make_plot(spec, models, band, y_lim):
+def make_datacenter_plots(spec: PlotSpec, models, band, y_lim):
     """Draw one view, once per output format it needs.
 
     A spec with png_fig_w is drawn twice: at png_fig_w for the PNG (what
@@ -2187,19 +2224,20 @@ def make_plot(spec, models, band, y_lim):
     Labels are placed per figure, so the narrow PNG is not a squashed copy of
     the wide one -- it is laid out from scratch at its own size.
     """
-    if spec.png_fig_w is None:
-        _render_plot(spec, models, band, y_lim, spec.fig_w, "both")
-        return
-    _render_plot(spec, models, band, y_lim, spec.png_fig_w, "png")
-    _render_plot(spec, models, band, y_lim, spec.fig_w, "svg")
+    if spec.split_renders():
+        _make_datacenter_plot(spec, models, band, y_lim, "png")
+        _make_datacenter_plot(spec, models, band, y_lim, "svg")
+    else:
+        _make_datacenter_plot(spec, models, band, y_lim, "both")
 
 
-def _render_plot(spec, models, band, y_lim, fig_w, fmt):
-    """Draw the view at fig_w inches wide and save it as fmt ("png", "svg" or
-    "both")."""
+def _make_datacenter_plot(
+    spec: PlotSpec, models, band, y_lim, fmt: Literal["png", "svg", "both"]
+) -> None:
+    """Draw the view and save it"""
     xs = [spec.x_of(m) for m in models]
 
-    fig, ax = plt.subplots(figsize=(fig_w, FIG_H), dpi=DPI)
+    fig, ax = plt.subplots(figsize=(spec.get_fig_w(fmt), FIG_H), dpi=DPI)
 
     _scatter_points(ax, models, spec.x_of)
 
@@ -2225,13 +2263,15 @@ def _render_plot(spec, models, band, y_lim, fig_w, fmt):
         pad = 0.05 * (x_hi - x_lo)
         ax.set_xlim(max(x_lo - pad, spec.x_min), x_hi + pad)
     else:
-        ax.set_xlim(0, x_hi * (1 + _x_pad(spec, fmt)))
+        ax.set_xlim(0, x_hi * (1 + spec.get_x_pad(fmt)))
     # y_lim: floor/ceil of the points with 0.2 of slack, except on the band
     # side, which snaps exactly to the band edge (computed in main).
     y_lo, y_hi = y_lim
     ax.set_ylim(y_lo, y_hi)
-    if fmt == "svg":
-        _draw_easter_eggs(ax, spec, (y_lo + y_hi) / 2)
+    if spec.easter_eggs:
+        assert fmt != "both"
+        if fmt == "svg":
+            _draw_easter_eggs(ax, spec, (y_lo + y_hi) / 2)
     if band is not None:
         # band: the same (y_lo, y_hi) range on every plot, clipped to the axis
         b_lo = max(band[0], y_lo)
@@ -2248,7 +2288,7 @@ def _render_plot(spec, models, band, y_lim, fig_w, fmt):
                     zorder=0,
                 )
             )
-    ax.xaxis.set_major_locator(MultipleLocator(_xtick_step(spec, fmt)))
+    ax.xaxis.set_major_locator(MultipleLocator(spec.get_xtick_step(fmt)))
     ax.xaxis.set_major_formatter(FormatStrFormatter(spec.xtick_format))
     ax.yaxis.set_major_locator(MultipleLocator(1))
 
@@ -2302,19 +2342,26 @@ def _render_plot(spec, models, band, y_lim, fig_w, fmt):
         marker_r_px,
         extra_obstacles=(legend_box,),
     )
+    save_plots(fig, spec.stem, fmt)
 
+
+def save_plots(fig, stem: str, fmt: Literal["png", "svg", "both"] = "both") -> None:
     os.makedirs("plots", exist_ok=True)
-    # Drop the <dc:date> timestamp so regenerating with unchanged data is a
-    # no-op for git.
-    if "svg" in fmt:
+    assert fmt in ("png", "svg", "both")
+    if fmt in ("svg", "both"):
+        print(f"Saving plots/{stem}.svg")
         fig.savefig(
-            f"plots/{spec.stem}.svg",
+            f"plots/{stem}.svg",
             format="svg",
             bbox_inches="tight",
+            # Drop the <dc:date> timestamp so regenerating with unchanged data is a
+            # no-op for git.
             metadata={"Date": None},
         )
-    if "png" in fmt:
-        fig.savefig(f"plots/{spec.stem}.png", format="png", bbox_inches="tight")
+    if fmt in ("png", "both"):
+        print(f"Saving plots/{stem}.png")
+        fig.savefig(f"plots/{stem}.png", format="png", bbox_inches="tight")
+
     plt.close(fig)
 
 
@@ -2469,17 +2516,7 @@ def make_hardware_plot(spec, models, y_lim):
             else (),
         )
 
-    os.makedirs("plots", exist_ok=True)
-    # Drop the <dc:date> timestamp so regenerating with unchanged data is a
-    # no-op for git.
-    fig.savefig(
-        f"plots/{spec.stem}.svg",
-        format="svg",
-        bbox_inches="tight",
-        metadata={"Date": None},
-    )
-    fig.savefig(f"plots/{spec.stem}.png", format="png", bbox_inches="tight")
-    plt.close(fig)
+    save_plots(fig, spec.stem)
 
 
 def make_bar_plot(spec, models):
@@ -2598,17 +2635,7 @@ def make_bar_plot(spec, models):
                 clip_on=False,
             )
 
-    os.makedirs("plots", exist_ok=True)
-    # Drop the <dc:date> timestamp so regenerating with unchanged data is a
-    # no-op for git.
-    fig.savefig(
-        f"plots/{spec.stem}.svg",
-        format="svg",
-        bbox_inches="tight",
-        metadata={"Date": None},
-    )
-    fig.savefig(f"plots/{spec.stem}.png", format="png", bbox_inches="tight")
-    plt.close(fig)
+    save_plots(fig, spec.stem)
 
 
 def _display_width(text: str) -> int:
@@ -2690,6 +2717,7 @@ def main(argv=None):
     for spec in PLOTS:
         models = models_by_stem[spec.stem]
         if spec.bar:
+            print("Generating bar plot:", spec.stem)
             make_bar_plot(spec, models)
             continue
         y_lo = math.floor(min(m.intelligence for m in models)) - 0.2
@@ -2701,9 +2729,11 @@ def main(argv=None):
         elif spec.band_side == "top":
             y_hi = band[1]
         if spec.x_break is not None:  # two panels, not one
+            print("Generating hardware plot:", spec.stem)
             make_hardware_plot(spec, models, (y_lo, y_hi))
             continue
-        make_plot(spec, models, band if spec.band else None, (y_lo, y_hi))
+        print("Generating datacenter plot:", spec.stem)
+        make_datacenter_plots(spec, models, band if spec.band else None, (y_lo, y_hi))
 
 
 if __name__ == "__main__":

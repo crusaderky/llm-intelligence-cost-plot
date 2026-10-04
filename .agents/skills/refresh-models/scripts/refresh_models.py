@@ -119,49 +119,50 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     # there is nothing to refresh and the row was dropped from plot.py.
     "Claude Sonnet 5.5 (medium)": (
         "claude-sonnet-5-5-medium",
-        "Claude Sonnet 5.5 (Adaptive Reasoning, Medium Effort, Default Fallback)",
+        "Claude Sonnet 5.5 (Medium, Default Fallback)",
         False,
     ),
     "Claude Sonnet 5.5 (high)": (
         "claude-sonnet-5-5-high",
-        "Claude Sonnet 5.5 (Adaptive Reasoning, High Effort, Default Fallback)",
+        "Claude Sonnet 5.5 (High, Default Fallback)",
         False,
     ),
     "Claude Sonnet 5.5 (xhigh)": (
         "claude-sonnet-5-5-xhigh",
-        "Claude Sonnet 5.5 (Adaptive Reasoning, Xhigh Effort, Default Fallback)",
+        "Claude Sonnet 5.5 (Xhigh, Default Fallback)",
         False,
     ),
     "Claude Sonnet 5.5 (max)": (
         "claude-sonnet-5-5",
-        "Claude Sonnet 5.5 (Adaptive Reasoning, Max Effort, Default Fallback)",
+        "Claude Sonnet 5.5 (Max, Default Fallback)",
         False,
     ),
     "Claude Opus 5.5 (low)": (
         "claude-opus-5-5-low",
-        "Claude Opus 5.5 (Adaptive Reasoning, Low Effort, Default Fallback)",
+        "Claude Opus 5.5 (Low, Default Fallback)",
         False,
     ),
     "Claude Opus 5.5 (medium)": (
         "claude-opus-5-5-medium",
-        "Claude Opus 5.5 (Adaptive Reasoning, Medium Effort, Default Fallback)",
+        "Claude Opus 5.5 (Medium, Default Fallback)",
         False,
     ),
     "Claude Opus 5.5 (high)": (
         "claude-opus-5-5-high",
-        "Claude Opus 5.5 (Adaptive Reasoning, High Effort, Default Fallback)",
+        "Claude Opus 5.5 (High, Default Fallback)",
         False,
     ),
     "Claude Opus 5.5 (xhigh)": (
         "claude-opus-5-5-xhigh",
-        "Claude Opus 5.5 (Adaptive Reasoning, Xhigh Effort, Default Fallback)",
+        "Claude Opus 5.5 (Xhigh, Default Fallback)",
         False,
     ),
     "Claude Opus 5.5 (max)": (
         "claude-opus-5-5",
-        "Claude Opus 5.5 (Adaptive Reasoning, Max Effort, Default Fallback)",
+        "Claude Opus 5.5 (Max, Default Fallback)",
         False,
     ),
+    "Ling 3.1 Flash": ("ling-3-1-flash", "Ling 3.1 Flash", False),
 }
 
 
