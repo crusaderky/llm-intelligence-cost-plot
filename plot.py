@@ -812,7 +812,7 @@ MODELS = [
         or_slug="z-ai/glm-5.3-20260816",
         or_session_cost_10_49_turns=0.4667711225,
         or_toks_served=2834146362893,
-        or_eff_input_price=0.1872,
+        or_eff_input_price=0.1874,
         or_eff_output_price=2.881,
     ),
     Model(
@@ -829,7 +829,7 @@ MODELS = [
         or_slug="moonshotai/kimi-k3-20260715",
         or_session_cost_10_49_turns=0.7484920825,
         or_toks_served=1597559226448,
-        or_eff_input_price=0.473,
+        or_eff_input_price=0.4764,
         or_eff_output_price=12.55,
     ),
     Model(
@@ -845,7 +845,7 @@ MODELS = [
         or_slug="google/gemini-3.8-flash-20260902",
         or_session_cost_10_49_turns=0.272685015,
         or_toks_served=2155413033520,
-        or_eff_input_price=0.2081,
+        or_eff_input_price=0.2059,
         or_eff_output_price=1.909,
     ),
     # AA badges it "Not publicly available" (released 2026-09-30, no provider serves
@@ -1022,7 +1022,6 @@ MODELS = [
         or_eff_input_price=0.01837,
         or_eff_output_price=0.3515,
     ),
-    # Not on OR: no 10-49-turn session data — falls back to AA's cost per task.
     Model(
         "OpenAI",
         "GPT-6.1 Sol (low)",
@@ -1033,6 +1032,10 @@ MODELS = [
             0.07543296949664269, 0.03976700974677209, 0.015551929455178966
         ),
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
+        or_slug="openai/gpt-6.1-sol-20260929",
+        or_toks_served=584825483772,
+        or_eff_input_price=0.2343,
+        or_eff_output_price=6.57,
     ),
     Model(
         "OpenAI",
@@ -1044,6 +1047,10 @@ MODELS = [
             0.1014432139069315, 0.08069842557491673, 0.03155924319690711
         ),
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
+        or_slug="openai/gpt-6.1-sol-20260929",
+        or_toks_served=584825483772,
+        or_eff_input_price=0.2343,
+        or_eff_output_price=6.57,
     ),
     Model(
         "OpenAI",
@@ -1055,6 +1062,10 @@ MODELS = [
             0.1331377332970313, 0.1319187021982128, 0.054087988261402986
         ),
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
+        or_slug="openai/gpt-6.1-sol-20260929",
+        or_toks_served=584825483772,
+        or_eff_input_price=0.2343,
+        or_eff_output_price=6.57,
     ),
     Model(
         "OpenAI",
@@ -1066,6 +1077,10 @@ MODELS = [
             0.1484522739101359, 0.17618833790384872, 0.06822055977452197
         ),
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
+        or_slug="openai/gpt-6.1-sol-20260929",
+        or_toks_served=584825483772,
+        or_eff_input_price=0.2343,
+        or_eff_output_price=6.57,
     ),
     Model(
         "OpenAI",
@@ -1077,6 +1092,10 @@ MODELS = [
             0.21968205039306782, 0.3812842891443378, 0.12320072601609774
         ),
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
+        or_slug="openai/gpt-6.1-sol-20260929",
+        or_toks_served=584825483772,
+        or_eff_input_price=0.2343,
+        or_eff_output_price=6.57,
     ),
     Model(
         "OpenAI",
@@ -1157,6 +1176,21 @@ MODELS = [
         or_toks_served=1414081468965,
         or_eff_input_price=1.442,
         or_eff_output_price=35.27,
+    ),
+    Model(
+        "Anthropic",
+        "Claude Sonnet 5.5 (low)",
+        35.8681594577587,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=14253,
+        aa_cost_per_task=PricedTokens(
+            0.13081937380226352, 0.14253222854129013, 0.14361884944620498
+        ),
+        aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
+        or_slug="anthropic/claude-sonnet-5.5-20260928",
+        or_toks_served=676140361401,
+        or_eff_input_price=0.4823,
+        or_eff_output_price=10.0,
     ),
     Model(
         "Anthropic",

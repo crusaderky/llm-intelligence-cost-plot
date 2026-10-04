@@ -115,8 +115,11 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "GPT-6 Astra (xhigh)": ("gpt-6-astra-xhigh", "GPT-6 Astra (Xhigh)", False),
     "GPT-6 Astra (max)": ("gpt-6-astra", "GPT-6 Astra (Max)", False),
     "Step 5 Preview": ("step-5", "Step 5 Preview", False),
-    # AA retired its Low Effort record: it is on no Sonnet page any more, so
-    # there is nothing to refresh and the row was dropped from plot.py.
+    "Claude Sonnet 5.5 (low)": (
+        "claude-sonnet-5-5-low",
+        "Claude Sonnet 5.5 (Low, Default Fallback)",
+        False,
+    ),
     "Claude Sonnet 5.5 (medium)": (
         "claude-sonnet-5-5-medium",
         "Claude Sonnet 5.5 (Medium, Default Fallback)",
