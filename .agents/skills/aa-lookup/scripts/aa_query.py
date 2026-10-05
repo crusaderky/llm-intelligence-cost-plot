@@ -1,10 +1,11 @@
 """Query the Artificial Analysis Data API + website for one or more models.
 
-The free Data API (GET /api/v2/data/llms/models) returns the unrounded
-Intelligence Index, per-M-token pricing (input/output/blended) and speed — but
-NOT the cost per task, cache prices or per-task token counts. Those only exist
-on the website, embedded in each model page's Next.js flight payload. This
-script therefore:
+The free Data API (GET /api/v2/language/models/free — the V2 replacement for the
+retired /api/v2/data/llms/models) returns the Intelligence Index, per-M-token
+pricing (input/output/cache hit/cache write), the headline indices and median
+speed — but NOT the cost-per-task token breakdown or per-task token counts.
+Those only exist on the website, embedded in each model page's Next.js flight
+payload. This script therefore:
 
 1. Fetches the API dataset (cached 6h) for fuzzy name matching, slugs and speed.
 2. Fetches the model page for each match (cached 6h per slug) and extracts the
@@ -29,7 +30,10 @@ import sys
 import time
 import urllib.request
 
-API_URL = "https://artificialanalysis.ai/api/v2/data/llms/models"
+# V2 free-tier endpoint. The legacy /api/v2/data/llms/models answers with
+# `Deprecation` / `Sunset` headers and returns 410 Gone after 2026-11-04.
+# It is paginated at a fixed 200 models per page; a page past total_pages is a 500.
+API_URL = "https://artificialanalysis.ai/api/v2/language/models/free"
 CACHE_PATH = os.path.join(".cache", "aa_query.json")
 PAGE_CACHE_DIR = os.path.join(".cache", "aa_pages")
 CACHE_TTL = 6 * 3600  # hours; AA benchmarks update at most daily
@@ -60,6 +64,9 @@ def load_cache():
     try:
         with open(CACHE_PATH) as f:
             entry = json.load(f)
+        # A cache written by a different endpoint has a different field shape.
+        if entry["api"] != API_URL:
+            return None
         if time.time() - entry["fetched_at"] < CACHE_TTL:
             return entry["data"]
     except (FileNotFoundError, json.JSONDecodeError, KeyError):
@@ -72,18 +79,27 @@ def fetch_data(refresh: bool):
         cached = load_cache()
         if cached is not None:
             return cached, True
-    req = urllib.request.Request(API_URL, headers={"x-api-key": get_key()})
+    # Walk the pagination to the end (200 models per page, ~4 pages).
+    data: list[dict] = []
     try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            payload = json.load(resp)
+        page = 1
+        while True:
+            req = urllib.request.Request(
+                f"{API_URL}?page={page}", headers={"x-api-key": get_key()}
+            )
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                payload = json.load(resp)
+            data += payload["data"]
+            if not payload["pagination"]["has_more"]:
+                break
+            page += 1
     except urllib.error.HTTPError as e:
         sys.exit(f"API HTTP {e.code}: {e.read().decode(errors='replace')[:300]}")
     except urllib.error.URLError as e:
         sys.exit(f"Network error: {e.reason}")
-    data = payload["data"]
     os.makedirs(os.path.dirname(CACHE_PATH), exist_ok=True)
     with open(CACHE_PATH, "w") as f:
-        json.dump({"fetched_at": time.time(), "data": data}, f)
+        json.dump({"fetched_at": time.time(), "api": API_URL, "data": data}, f)
     return data, False
 
 
@@ -342,6 +358,7 @@ def get_page_record(api_model: dict, refresh: bool) -> dict | None:
 def fmt(m: dict) -> str:
     ev = m.get("evaluations") or {}
     pr = m.get("pricing") or {}
+    perf = m.get("performance") or {}
     creator = (m.get("model_creator") or {}).get("name", "?")
     lines = [
         f"{creator} — {m.get('name')} (slug: {m.get('slug')})",
@@ -350,18 +367,26 @@ def fmt(m: dict) -> str:
     parts = []
     for label, key in [
         ("input", "price_1m_input_tokens"),
-        ("cache_read", "price_1m_cache_read_tokens"),
+        ("cache_read", "price_1m_cache_hit_tokens"),
         ("cache_write", "price_1m_cache_write_tokens"),
         ("output", "price_1m_output_tokens"),
-        ("blended_3:1", "price_1m_blended_3_to_1"),
     ]:
-        if key in pr:
+        if pr.get(key) is not None:
             parts.append(f"{label}=${pr[key]}/Mtok")
     if parts:
         lines.append("  Pricing: " + ", ".join(parts))
-    sp = m.get("median_output_tokens_per_second")
+    sp = perf.get("median_output_tokens_per_second")
     if sp is not None:
         lines.append(f"  Output speed: {sp} tok/s")
+    # Free tier exposes AA's own cost per Intelligence Index task (total only,
+    # no token-type split); the page record below is what plot.py actually uses.
+    cpt = (
+        (m.get("artificial_analysis_intelligence_index_cost") or {})
+        .get("cost_per_task", {})
+        .get("total_cost")
+    )
+    if cpt is not None:
+        lines.append(f"  API cost/task (total only): ${cpt}")
     page = m.get("_page") or {}
     if page:
         lines.append(f"  Intelligence Index (page, sub-unit): {page['intelligence']}")

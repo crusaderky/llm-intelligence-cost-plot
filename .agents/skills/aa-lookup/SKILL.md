@@ -1,6 +1,6 @@
 ---
 name: aa-lookup
-description: Queries artificialanalysis.ai for a model's unrounded Intelligence Index and pricing (input/cache/output per M tokens, cost per task) via the AA free Data API. Use when the user asks for AA intelligence scores, model benchmark scores, or AA pricing for LLMs — replaces pixel-peeping AA's plots.
+description: Queries artificialanalysis.ai for a model's Intelligence Index and pricing (input/cache/output per M tokens, cost per task) via the AA free Data API and the model page payload. Use when the user asks for AA intelligence scores, model benchmark scores, or AA pricing for LLMs — replaces pixel-peeping AA's plots.
 ---
 
 # AA Lookup — Intelligence Index + pricing from Artificial Analysis
@@ -8,13 +8,14 @@ description: Queries artificialanalysis.ai for a model's unrounded Intelligence 
 ## Why this exists
 
 AA's website displays the Intelligence Index rounded to the unit, and cost per task
-with aggressive rounding on cheap models. The **free Data API** returns the unrounded
-values — this is the robust alternative to pixel-peeping plots:
+with aggressive rounding on cheap models. The **free Data API** plus each model page's
+machine-readable payload give the exact values — this is the robust alternative to
+pixel-peeping plots:
 
-The free **Data API** returns the unrounded Intelligence Index and basic per-M-token
-pricing (input/output/blended) — but NOT cost per task, cache prices or per-task token
-counts. Those exist only on the website, embedded in each model page's Next.js flight
-payload. The script therefore:
+The free **Data API** returns the Intelligence Index and per-M-token pricing
+(input/output/cache hit/cache write) — but NOT the cost-per-task token breakdown or
+per-task token counts. Those exist only on the website, embedded in each model page's Next.js
+flight payload. The script therefore:
 
 1. Queries the API for name matching, slugs and speed.
 1. Fetches the model page (one per base slug, cached 6h) and extracts the full record:
@@ -43,9 +44,21 @@ name. Refresh tooling uses `pick_record` the same way.
   of each stream; a missing `cacheHitPrice` means the model is treated as never hitting
   a cache.
 
-Docs: https://artificialanalysis.ai/api-reference
-Endpoint: `GET https://artificialanalysis.ai/api/v2/data/llms/models` (all models,
-one request; 1000 req/day; responses cached locally for 6h — do not hammer it).
+Docs: https://artificialanalysis.ai/data-api/docs
+Endpoint: `GET https://artificialanalysis.ai/api/v2/language/models/free?page=N`
+(V2 free tier; paginated at a fixed 200 models/page — the script walks `pagination.has_more`,
+so one refresh is ~4 requests; 1000 req/day; responses cached locally for 6h — do not hammer
+it). The legacy `GET /api/v2/data/llms/models` is retired: it already answers with
+`Deprecation`/`Sunset` headers and returns `410 Gone` after 2026-11-04. The local cache records
+the endpoint it came from and is refetched when the endpoint changes.
+
+Free-tier shape: `evaluations` (headline + capability indices), `pricing`
+(`price_1m_input_tokens` / `price_1m_output_tokens` / `price_1m_cache_hit_tokens` /
+`price_1m_cache_write_tokens` — no blended field), `performance` (medians only, nested under
+`performance`), `model_creator` (no `slug`), and
+`artificial_analysis_intelligence_index_cost.cost_per_task.total_cost` — AA's cost per task,
+total only and null for most models; `aa_query` prints it as a cross-check against the page
+breakdown, which is what plot.py consumes.
 
 ## Setup
 

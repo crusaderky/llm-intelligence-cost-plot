@@ -131,6 +131,9 @@ pixi r refresh-models --new OR_SLUG --aa-slug AA_SLUG --aa-name "AA Record Name"
 
 - Intelligence, tokens per task, cost per task, its split and the sticker prices: AA
   model page payloads, unrounded (`aa-lookup` skill does the fetching).
+- AA model names, slugs and speed: `GET /api/v2/language/models/free?page=N` (paginated
+  at 200/page). The legacy `/api/v2/data/llms/models` is retired — `410 Gone` after
+  2026-11-04 — and its `pricing` has no cache fields and stale speed data anyway.
 - OR effective input/output prices: `GET /api/frontend/v1/stats/effective-pricing`
   (`?permaslug=…&shape=v7&range=1w`). One value per day per endpoint instance, plus
   `providerSummaries[]` carrying each instance's latest effective price (identical to the
