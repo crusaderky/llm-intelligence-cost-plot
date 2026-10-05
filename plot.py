@@ -399,7 +399,9 @@ class Model:
             # available flags, which are drawn as glyphs at render time.
             if self.hardware is None:
                 self.hardware = RTX3090
-            self.name = f"{self.name} ({self.hardware.name} ⚡)"
+                self.name += " ⚡"
+            else:
+                self.name += f" ({self.hardware.name} ⚡)"
         elif self.aa_cost_per_task is None:
             raise ValueError(f"{self.name}: datacenter model needs aa_cost_per_task")
 
@@ -549,7 +551,7 @@ MODELS = [
         # price; 0.0 in the cached slot of both splits means "never caches"
         aa_sticker_price=PricedTokens(0.375, 2.25, 0.0),
         local_speed=LocalSpeed(prefill=2215, decode=150),
-        hardware_cost=1500,
+        hardware_cost=2300,
     ),
     # Not on AA: intelligence = linear interpolation of median of self-published
     # benchmark scores vs. known intelligence index scores.
@@ -561,7 +563,7 @@ MODELS = [
         ProviderType.LOCAL,
         aa_tok_per_task=34594 * 1.23,
         local_speed=LocalSpeed(prefill=2345, decode=134),
-        hardware_cost=1500,
+        hardware_cost=2300,
         estimated=True,
     ),
     Model(
@@ -575,7 +577,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(0.32499999999999996, 1.35, 0.04),
         local_speed=LocalSpeed(prefill=938, decode=124),
-        hardware_cost=2300,
+        hardware_cost=2600,
     ),
     Model(
         "Institute of Foundation Models",
@@ -584,7 +586,7 @@ MODELS = [
         ProviderType.LOCAL,
         aa_tok_per_task=72163,
         local_speed=LocalSpeed(prefill=3430, decode=104),
-        hardware_cost=1500,
+        hardware_cost=1000,
     ),
     Model(
         "Alibaba",
@@ -597,7 +599,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(0.5, 3.0, 0.1),
         local_speed=LocalSpeed(prefill=963, decode=57),
-        hardware_cost=2300,
+        hardware_cost=2600,
     ),
     # Not on AA: intelligence = 0.9165 x Qwen3.8-27B, the 91.65% of BF16 that
     # ByteShape measured for this ternary quant (see README note); tokens per
@@ -609,7 +611,7 @@ MODELS = [
         ProviderType.LOCAL,
         aa_tok_per_task=66797,
         local_speed=LocalSpeed(prefill=963, decode=73),
-        hardware_cost=1500,
+        hardware_cost=2300,
         estimated=True,
     ),
     Model(
@@ -622,10 +624,8 @@ MODELS = [
             0.04967406603399954, 0.05070581107333271, 0.2717961254229642
         ),
         aa_sticker_price=PricedTokens(0.15, 0.47, 0.016),
-        # https://github.com/peonist-ai/halogen-flash-server
-        local_speed=LocalSpeed(prefill=1584, decode=55),
-        hardware_cost=3800,
-        hardware=STRIX_HALO,
+        local_speed=LocalSpeed(prefill=900, decode=75),
+        hardware_cost=2600,
     ),
     # --- Datacenter models (price per task = AA's token mix priced at OR's
     # effective input/output prices) ---

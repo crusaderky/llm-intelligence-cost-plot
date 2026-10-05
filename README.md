@@ -176,16 +176,14 @@ calculated as follows:
   3.78× the output tokens, which is the median of that ratio over the 34 models AA
   does break down. It is a crude guess: the real ratio is about 2 for a max-effort
   task and about 13 for a low-effort one.
-- Crudely observe decode speed (tok/s) on local hardware. Most measurements were taken
-  on the same RTX 3090 video card from 2020, which today is relatively affordable at
-  ~$1,400 (used). Prefill speed is not published or measured anywhere, so it is
-  guesstimated at 10× the decode speed; on these task sizes that makes prefill a minor
-  addition to the runtime.
+- Crudely observe prefill and decode speed (tok/s) on local hardware. All measurements
+  were taken on the same RTX 3090 video card from 2020, which today is relatively
+  affordable at ~$1,400 (used).
 - Measure delta between peak and idle energy draw on said hardware
 - Price electricity at $0.2049/kWh, which is the US residential electricity price,
   weighted average by population, as of May 2026.
-- Hardware is priced at zero, on the basis that both an RTX 3090 PC and a 64GB Strix
-  Halo are desirable gaming/work machines anyways.
+- Hardware is priced at zero, on the basis that PCs with RTX 5060 Ti to RTX 3090 are
+  desirable gaming machines anyways.
 
 Note that there isn't a material difference in electricity costs between different
 hardware platforms: a Strix Halo draws less power than an RTX 3090, but it's slower so
@@ -196,28 +194,31 @@ it needs to run longer to complete the same tasks.
 Not including the cost of hardware stops being defensible once you upgrade beyond 64 GB
 RAM, as almost nobody needs that much RAM if not for AI.
 
-Qwen3.8-Flash needs, as a minimum, a 128GB Strix Halo to run locally. It appears twice
-on the plot: once with datacenter pricing and once with the ⚡ symbol for local
-electricity cost. The latter hides a substantial hardware expense: a 64 GB Strix Halo,
-which is a very desirable general purpose mini PC, costs $2,200; a 128 GB one costs
-$3,800 and doesn't enable anything other than AI models in the ~120B-parameter class.
+Qwen3.8-Flash needs, as a minimum, 12 GB VRAM and 64 GB host RAM to run locally, which
+doubles as a very desirable general purpose/gaming PC costing ~$2,700 new and easily
+found for less on the used market. It appears twice on the plot: once with datacenter
+pricing and once with the ⚡ symbol for local electricity cost. The next (and, according
+to real user experience instead of benchmarks, very arguable) upgrade is GLM-5.3-Flash,
+which requires a mini-cluster of DGX Sparks costing the eye-watering amount of $10,200
+and which doesn't enable anything other than AI models in the ~300B-parameter class.
 
 The following models _can_ be run locally, but their up-front hardware cost grows very
 rapidly:
 
-| RAM requirements | Hardware | Price | Models |
+| RAM | Hardware | Price | Models |
 | --- | --- | --- | --- |
-| 4 GB | Mobile phone | ~$250 | MiniCPM5-2B |
-| 12 GB | PC with RTX 3080 Ti | ~$1,500 (used) | Ternary-Bonsai-2<br>Occamy-1.0 |
-| 24 GB | PC with RTX 3090 | ~$2,300 (used) | Qwen-3.8-27B |
-| 96 GB | Strix Halo 128 GB<br>DGX Spark (128 GB)<br>Mac Studio M5 Max 128 GB<br>Mac Studio M5 Ultra 96 GB<br>MacBook Pro M5 Max 128 GB<br>PC with RTX 6000 Pro | $3,800<br>$5,000<br>$5,100<br>$5,400<br>$7,000<br>~$16,000 | Qwen3.8-Flash<br> |
-| 192 GB | Gorgon Halo | $6,800 | MiMo-v2.6-Flash |
-| 256 GB | 2x DGX Spark<br>Mac Studio M5 Ultra 256 GB | $10,200<br>$11,300 | GLM-5.3-Flash |
-| 280 GB | 3x DGX Spark | $15,300 | DeepSeek-V4.1-Flash |
-| 384 GB | 3x DGX Spark | $15,300 | Ling 3.1 Flash |
-| 512 GB | 4x DGX Spark + QFP28 switch<br>2x Mac Studio M5 Ultra 256 GB<br>Mac studio M5 Ultra 512 GB | $21,200<br>$22,600<br>T.B.A. | GLM-5.3<br>Hy4 preview |
-| 640 GB | 5x DGX Spark + 2x QFP28 switch | $27,200 | MiMo-v2.6-Pro |
-| 2 TB | 2x TensTorrent Galaxy Blackhole | $320,000 | Kimi K3 |
+| 4 GB unified | Mobile phone | ~$250 | MiniCPM5-2B |
+| 16 GB unified | Strix Point laptop | ~$1,000 | K2 Horizon 7B |
+| 16 GB VRAM + 32 GB host | PC with RTX 5060 Ti | ~$2,300 | Qwen3.8-Flash Coder ([Strata](https://github.com/Niko1221/Strata))<br>Ternary-Bonsai-2<br>Occamy-1.0<br> |
+| 24 GB VRAM + 32 GB host | PC with RTX 3090 | ~$2,600 (used) | Qwen-3.8-27B |
+| 16 GB VRAM + 64 GB host | PC with RTX 5060 Ti | ~$2,700 | Qwen3.8-Flash ([Strata](https://github.com/Niko1221/Strata)) |
+| 128 GB unified | Strix Halo 128 GB<br>DGX Spark (128 GB)<br>Mac Studio M5 Max 128 GB<br>Mac Studio M5 Ultra 96 GB<br>MacBook Pro M5 Max 128 GB | $3,800<br>$5,000<br>$5,100<br>$5,400<br>$7,000 | Qwen3.8-Flash (llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [DwarfStar](https://dwarfstar.sh/))|
+| 192 GB unified | Gorgon Halo | $6,800 | MiMo-v2.6-Flash |
+| 256 GB unified | 2x DGX Spark<br>Mac Studio M5 Ultra 256 GB | $10,200<br>$11,300 | GLM-5.3-Flash |
+| 384 GB unified | 3x DGX Spark | $15,300 | DeepSeek-V4.1-Flash<br>Ling 3.1 Flash |
+| 512 GB unified | 4x DGX Spark + QFP28 switch<br>2x Mac Studio M5 Ultra 256 GB<br>Mac studio M5 Ultra 512 GB | $21,200<br>$22,600<br>T.B.A. | GLM-5.3<br>Hy4 preview |
+| 640 GB unified | 5x DGX Spark + 2x QFP28 switch | $27,200 | MiMo-v2.6-Pro |
+| 2 TB VRAM | 2x TensTorrent Galaxy Blackhole | $320,000 | Kimi K3 |
 
 The same models on a hardware-cost axis instead of a per-task one. Each point
 sits at the cheapest rig in the table above that can run the model, so the
@@ -241,12 +242,12 @@ while the latter can be as cheap as a mobile phone subscription.
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
 appreciate how much better Claude Opus 5.5 at max effort (intelligence score 58,
-$13.99/task) is compared to GPT Sol-6.1 at xhigh effort (intelligence 51, $0.52/task — 27x
-cheaper), most people will have a hard time doing so. Going further down, GLM-5.3-Flash
-at high effort (intelligence 40, $0.21/task — almost _seventy times_ cheaper than Opus
-5.5) is visibly less capable when you give it very sophisticated tasks, like
-one-shotting a whole coding project on its own, but it remains _enough_ for 90% of what
-people actually need. Even the highly specialized engineers and scientists mentioned
-above don't actually need the extra intelligence for a lot of what they do. Descending
-just a little bit further, an enthusiast gamer can run Qwen3.8-27B (intelligence 34,
-$0.04/task in electricity) on a computer they already own.
+$13.99/task) is compared to GPT Sol-6.1 at xhigh effort (intelligence 51, $0.52/task —
+27x cheaper), most people will have a hard time doing so. Going further down,
+GLM-5.3-Flash at high effort (intelligence 40, $0.21/task — almost _seventy times_
+cheaper than Opus 5.5) is visibly less capable when you give it very sophisticated
+tasks, like one-shotting a whole coding project on its own, but it remains _enough_ for
+90% of what people actually need. Even the highly specialized engineers and scientists
+mentioned above don't actually need the extra intelligence for a lot of what they do.
+Finally, an enthusiast gamer can run Qwen3.8-Flash (intelligence 40, $0.03/task in
+electricity) on a computer they already own.
