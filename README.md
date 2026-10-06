@@ -215,9 +215,9 @@ rapidly:
 | 128 GB unified | Strix Halo 128 GB<br>DGX Spark (128 GB)<br>Mac Studio M5 Max 128 GB<br>Mac Studio M5 Ultra 96 GB<br>MacBook Pro M5 Max 128 GB | $3,800<br>$5,000<br>$5,100<br>$5,400<br>$7,000 | Qwen3.8-Flash (llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [DwarfStar](https://dwarfstar.sh/))|
 | 192 GB unified | Gorgon Halo | $6,800 | MiMo-v2.6-Flash |
 | 256 GB unified | 2x DGX Spark<br>Mac Studio M5 Ultra 256 GB | $10,200<br>$11,300 | GLM-5.3-Flash |
-| 384 GB unified | 3x DGX Spark | $15,300 | DeepSeek-V4.1-Flash<br>Ling 3.1 Flash |
+| 384 GB unified | 3x DGX Spark | $15,300 | DeepSeek-V4.1-Flash<br>Ling 3.1 Flash<br>Step 5 Preview |
 | 512 GB unified | 4x DGX Spark + QFP28 switch<br>2x Mac Studio M5 Ultra 256 GB<br>Mac studio M5 Ultra 512 GB | $21,200<br>$22,600<br>T.B.A. | GLM-5.3<br>Hy4 preview |
-| 640 GB unified | 5x DGX Spark + 2x QFP28 switch | $27,200 | MiMo-v2.6-Pro |
+| 640 GB unified | 5x DGX Spark + 2x QFP28 switch | $27,200 | MiMo-v2.6-Pro<br>Mistral 4 Large Preview |
 | 2 TB VRAM | 2x TensTorrent Galaxy Blackhole | $320,000 | Kimi K3 |
 
 The same models on a hardware-cost axis instead of a per-task one. Each point

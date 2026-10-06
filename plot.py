@@ -625,7 +625,7 @@ MODELS = [
             0.04967406603399954, 0.05070581107333271, 0.2717961254229642
         ),
         aa_sticker_price=PricedTokens(0.15, 0.47, 0.016),
-        local_speed=LocalSpeed(prefill=900, decode=75),
+        local_speed=LocalSpeed(prefill=2100, decode=75),
         hardware_cost=2600,
     ),
     # --- Datacenter models (price per task = AA's token mix priced at OR's
@@ -912,6 +912,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(1.0, 2.7, 0.05),
         available=False,
+        hardware_cost=15300,
     ),
     Model(
         "Xiaomi",
@@ -1360,9 +1361,11 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.3, 0.9, 0.06),
         or_slug="inclusionai/ling-3.1-flash-20261002",
         or_toks_served=237313136659,
-        # Currently free on OpenRouter; use AA pricing only
+        # Currently free but rate-limited and effectively unusable on OpenRouter
+        # use AA pricing only
         # or_eff_input_price=0.0,
         # or_eff_output_price=0.0,
+        available=False,
     ),
     # Released 2026-10-06 as a preview on Mistral's own API. OpenRouter carries no
     # permaslug for it yet, so there is no market price to reprice AA's token mix
@@ -1377,6 +1380,8 @@ MODELS = [
             0.26824226061275014, 0.2897992456331666, 0.5737175470549178
         ),
         aa_sticker_price=PricedTokens(1.36, 4.18, 0.14),
+        available=False,
+        hardware_cost=27200,
     ),
 ]
 
