@@ -167,6 +167,8 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
         False,
     ),
     "Ling 3.1 Flash": ("ling-3-1-flash", "Ling 3.1 Flash", False),
+    # not on OpenRouter yet, so the refresh reports it with no session data
+    "Mistral Large 4 Preview": ("mistral-large-4", "Mistral Large 4 Preview", False),
 }
 
 

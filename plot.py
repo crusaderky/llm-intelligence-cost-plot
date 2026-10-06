@@ -262,6 +262,7 @@ PUBLISHERS = {
     "InclusionAI": "#4fb5ff",
     "Institute of Foundation Models": "#1521a9",
     "Meta": "#0089f4",
+    "Mistral": "#f32e02",
     "Moonshot AI": "#047AFE",
     "OpenAI": "#1f1f1f",
     "OpenBMB": "#3B62EC",
@@ -1352,6 +1353,20 @@ MODELS = [
         # Currently free on OpenRouter; use AA pricing only
         # or_eff_input_price=0.0,
         # or_eff_output_price=0.0,
+    ),
+    # Released 2026-10-06 as a preview on Mistral's own API. OpenRouter carries no
+    # permaslug for it yet, so there is no market price to reprice AA's token mix
+    # with: the price stays AA's own cost per task, and the delta plot reads 0%.
+    Model(
+        "Mistral",
+        "Mistral Large 4 Preview",
+        38.3770408917494,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=69330,
+        aa_cost_per_task=PricedTokens(
+            0.26824226061275014, 0.2897992456331666, 0.5737175470549178
+        ),
+        aa_sticker_price=PricedTokens(1.36, 4.18, 0.14),
     ),
 ]
 
