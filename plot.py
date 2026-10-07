@@ -96,7 +96,7 @@ EGG_SIZE = 60  # points, for the easter eggs: the axis is FIG_H (1008pt)
 # tall, so one shout is about an eighth of its height
 EGG_COLOR = "#5b6270"  # the tick-label grey, only bigger
 EGG_ALPHA = 0.25
-UNAVAILABLE_COLOR = "#4b5563"  # dark grey for available=False labels
+UNAVAILABLE_COLOR = "#4b5563"  # dark grey for unavailable labels
 LEADER_MIN = 8  # draw a leader once the label sits this far off the dot
 CROWD_X = 200  # px window used to decide a point is "in a cluster"
 CROWD_Y = 60
@@ -383,10 +383,10 @@ class Model:
     # Not on AA: the point is extrapolated/estimated. Rendered as a hollow
     # circle, with a matching "Estimated (not on AA)" legend entry.
     estimated: bool = field(default=False, kw_only=True)
-    # False: the model is not offered to the public yet (it is on AA but has
-    # no real price to buy it at). Rendered grey with a strikethrough and kept
-    # out of the Pareto frontier, with a "Not publicly available" legend entry.
-    available: bool = field(default=True, kw_only=True)
+    # Set to False to indicate that the model is not available from datacenters
+    available_datacenter: bool = field(default=True, kw_only=True)
+    # Set to False to indicate that model weights can't be downloaded
+    available_local: bool = field(default=True, kw_only=True)
     # The provider trains on your prompts. Rendered with the thief mask icon
     # and kept out of the Pareto frontier (same offer, worse provider).
     trains_on_your_data: bool = field(default=False, kw_only=True)
@@ -866,7 +866,8 @@ MODELS = [
             1.0554022379429868, 0.6155762620764799, 0.3193438792795405
         ),
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
-        available=False,
+        available_datacenter=False,
+        available_local=False,
     ),
     Model(
         "SpaceXAI",
@@ -911,7 +912,8 @@ MODELS = [
             0.23538385680255072, 0.1731895812858314, 0.30891671284001165
         ),
         aa_sticker_price=PricedTokens(1.0, 2.7, 0.05),
-        available=False,
+        available_datacenter=False,
+        available_local=False,
         hardware_cost=15300,
     ),
     Model(
@@ -1365,11 +1367,9 @@ MODELS = [
         # use AA pricing only
         # or_eff_input_price=0.0,
         # or_eff_output_price=0.0,
-        available=False,
+        available_datacenter=False,
+        available_local=False,
     ),
-    # Released 2026-10-06 as a preview on Mistral's own API. OpenRouter carries no
-    # permaslug for it yet, so there is no market price to reprice AA's token mix
-    # with: the price stays AA's own cost per task, and the delta plot reads 0%.
     Model(
         "Mistral",
         "Mistral Large 4 Preview",
@@ -1380,7 +1380,14 @@ MODELS = [
             0.26824226061275014, 0.2897992456331666, 0.5737175470549178
         ),
         aa_sticker_price=PricedTokens(1.36, 4.18, 0.14),
-        available=False,
+        # Released on 2026-10-06: only two days of trailing-week data so far and
+        # no OR coding-harness session cost yet.
+        or_slug="mistralai/mistral-large-4-0-20261006",
+        or_toks_served=12686079569,
+        or_eff_input_price=0.2331,
+        or_eff_output_price=2.13,
+        available_datacenter=True,
+        available_local=False,
         hardware_cost=27200,
     ),
 ]
@@ -1668,7 +1675,7 @@ def _clean_label(m: Model) -> str:
     return name + bolt
 
 
-def _split_icon(m, name=None):
+def _split_icon(m, name=None, available=True):
     """Split the display glyphs out of a model's label.
 
     Returns (left, icon, right, strike): the text before the glyph, the icon
@@ -1677,13 +1684,16 @@ def _split_icon(m, name=None):
     drawn between the two text halves, so e.g. "(RTX 3090 ⚡)" keeps its
     parentheses. Only the ⚡ still lives in the name (Model.__post_init__ splices
     it in); the thief mask comes from Model.trains_on_your_data and the
-    strikethrough from available=False, so no marker text is carried in the data.
+    strikethrough from an availability flag (whichever of available_datacenter
+    or available_local the calling view is governed by), so no marker text is
+    carried in the data.
 
     `name` overrides the display text (e.g. with an effort suffix removed).
+    `available` overrides the availability the label is rendered under.
     """
     if name is None:
         name = m.name
-    strike = not m.available
+    strike = not available
     idx = name.find("⚡")
     if idx >= 0:
         left = name[:idx].rstrip()
@@ -1776,8 +1786,9 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
     """points: [(left, right, icon, strike, x, y)] in data coords -- icon is
     None, "bolt", or "mask"; the icon is drawn as a colored vector marker
     between the left and right text halves, so e.g. "(RTX 3090 ⚡)" keeps its
-    parens. strike=True (available=False) renders the text dark grey
-    with a strikethrough and no icon. Adds annotations, auto-placed.
+    parens. strike=True (the view's availability flag is False) renders the
+    text dark grey with a strikethrough and no icon. Adds annotations,
+    auto-placed.
 
     Placement runs in rounds: a greedy sequential pass, then repair rounds in
     which every label re-chooses its spot around everyone else's position, so
@@ -2122,11 +2133,13 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
             )
 
 
-def _plot_legend(ax, models, loc="lower right", bbox_to_anchor=None):
+def _plot_legend(
+    ax, models, loc="lower right", bbox_to_anchor=None, available_of=lambda m: True
+):
     """Legend for the publishers present in a plot, plus an entry for every
     special marker in use (⚡ local electricity, thief mask for
     trains_on_your_data, hollow dot for estimated points, strikethrough for
-    available=False).
+    a model unavailable under `available_of`).
     Returns (legend, has_unavailable_entry)."""
     present = [p for p in PUBLISHERS if any(m.publisher == p for m in models)]
     handles = [
@@ -2185,7 +2198,7 @@ def _plot_legend(ax, models, loc="lower right", bbox_to_anchor=None):
                 label="Estimated (not on AA)",
             )
         )
-    have_unavailable = any(not m.available for m in models)
+    have_unavailable = any(not available_of(m) for m in models)
     if have_unavailable:
         handles.append(
             Line2D(
@@ -2208,7 +2221,7 @@ def _plot_legend(ax, models, loc="lower right", bbox_to_anchor=None):
     return legend, have_unavailable
 
 
-def pareto_frontier(models, x_of):
+def pareto_frontier(models, x_of, available_of=lambda m: True):
     """The Pareto staircase: running max of intelligence over ascending x,
     as two parallel lists ready for ax.plot.
 
@@ -2218,14 +2231,17 @@ def pareto_frontier(models, x_of):
     the frontier's true last step. Models flagged trains_on_your_data are excluded:
     they are the same offers at providers that train
     on your data, not separate models. Models that are not publicly available
-    (available=False) are excluded too: their cost is an estimate, not a real
+    under `available_of` (the plot's availability flag) are excluded too: their
+    cost is an estimate, not a real
     offer. Models the x statistic cannot place are skipped.
     """
     pts = sorted(
         (
             (x, m.intelligence)
             for m in models
-            if not m.trains_on_your_data and m.available and (x := x_of(m)) is not None
+            if not m.trains_on_your_data
+            and available_of(m)
+            and (x := x_of(m)) is not None
         ),
         key=lambda p: (p[0], -p[1]),
     )
@@ -2314,7 +2330,9 @@ def _make_datacenter_plot(
     # Faint dotted Pareto frontier. The delta plot's x axis is not a price,
     # so it gets no frontier (spec.frontier is False).
     frontier_x, frontier_y = (
-        pareto_frontier(MODELS, spec.x_of) if spec.frontier else ([], [])
+        pareto_frontier(MODELS, spec.x_of, lambda m: m.available_datacenter)
+        if spec.frontier
+        else ([], [])
     )
     if len(frontier_x) > 1:
         ax.plot(
@@ -2389,7 +2407,9 @@ def _make_datacenter_plot(
     ax.tick_params(labelsize=12, colors="#5b6270")
 
     # Legend: one entry per publisher actually present in this plot.
-    legend, have_unavailable = _plot_legend(ax, models)
+    legend, have_unavailable = _plot_legend(
+        ax, models, available_of=lambda m: m.available_datacenter
+    )
 
     fig.tight_layout()
     fig.canvas.draw()
@@ -2407,7 +2427,9 @@ def _make_datacenter_plot(
         [
             (left, right, icon, strike, spec.x_of(m), m.intelligence)
             for m in models
-            for left, icon, right, strike in [_split_icon(m)]
+            for left, icon, right, strike in [
+                _split_icon(m, available=m.available_datacenter)
+            ]
         ],
         marker_r_px,
         extra_obstacles=(legend_box,),
@@ -2475,7 +2497,9 @@ def make_hardware_plot(spec, models, y_lim):
     # 12x less hardware), so the staircase ends in the left panel and the
     # right panel gets a bare dot.
     if spec.frontier:
-        frontier_x, frontier_y = pareto_frontier(left, spec.x_of)
+        frontier_x, frontier_y = pareto_frontier(
+            left, spec.x_of, lambda m: m.available_local
+        )
         if len(frontier_x) > 1:
             ax_l.plot(
                 frontier_x,
@@ -2536,7 +2560,9 @@ def make_hardware_plot(spec, models, y_lim):
         ax.tick_params(labelsize=12, colors="#5b6270")
 
     # Legend: one entry per publisher actually present in this plot.
-    legend, have_unavailable = _plot_legend(ax_l, models, loc="lower right")
+    legend, have_unavailable = _plot_legend(
+        ax_l, models, loc="lower right", available_of=lambda m: m.available_local
+    )
     fig.tight_layout()
     # The gap between the panels, after tight_layout rather than in
     # gridspec_kw: tight_layout gives up ("Axes that are not compatible with
@@ -2578,7 +2604,9 @@ def make_hardware_plot(spec, models, y_lim):
             [
                 (left_, right_, icon, strike, spec.x_of(m), m.intelligence)
                 for m in panel
-                for left_, icon, right_, strike in [_split_icon(m, _clean_label(m))]
+                for left_, icon, right_, strike in [
+                    _split_icon(m, _clean_label(m), available=m.available_local)
+                ]
             ],
             marker_r_px,
             extra_obstacles=(_pad(legend.get_window_extent(renderer)),)
@@ -2667,7 +2695,11 @@ def make_bar_plot(spec, models):
     ax.tick_params(axis="x", labelsize=12, colors="#5b6270")
 
     legend, have_unavailable = _plot_legend(
-        ax, models, loc="center left", bbox_to_anchor=(1.005, 0.5)
+        ax,
+        models,
+        loc="center left",
+        bbox_to_anchor=(1.005, 0.5),
+        available_of=lambda m: m.available_datacenter,
     )
     fig.tight_layout()
     fig.canvas.draw()

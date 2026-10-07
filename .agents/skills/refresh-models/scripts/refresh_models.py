@@ -167,7 +167,6 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
         False,
     ),
     "Ling 3.1 Flash": ("ling-3-1-flash", "Ling 3.1 Flash", False),
-    # not on OpenRouter yet, so the refresh reports it with no session data
     "Mistral Large 4 Preview": ("mistral-large-4", "Mistral Large 4 Preview", False),
 }
 
@@ -441,14 +440,12 @@ def aa_splits(rec: dict | None) -> tuple[plot.PricedTokens, plot.PricedTokens] |
 
 
 def base_name(name: str) -> str:
-    """MODELS display name -> key into AA_LOOKUPS (strip the local hardware suffix
-    and the ⚡ marker; trains_on_your_data and available are flags, so unlike the
-    old name markers they never reach here)."""
-    left = name
-    # local names carry "(RTX 3090 ⚡)" / "(Strix Halo 128GB ⚡)"
-    if "⚡" in name and "(" in left:
-        left = left[: left.rfind("(")].strip()
-    return left.strip()
+    """Strip local hardware suffix eg "(RTX 3090 ⚡)", "(Strix Halo 128GB ⚡)", or just ⚡" """
+    if "⚡" in name and "(" in name:
+        name = name[: name.rfind("(")].strip()
+    elif "⚡" in name:
+        name = name.replace("⚡", "")
+    return name.strip()
 
 
 def main() -> None:
