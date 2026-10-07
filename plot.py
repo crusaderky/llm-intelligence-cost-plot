@@ -318,11 +318,11 @@ class LocalSpeed(NamedTuple):
 
 # AA publishes no cost-per-task breakdown for some local models, so their
 # uncached input token count is estimated as this multiple of the output token
-# count. 3.78 is the median of (uncached input tokens / output tokens) over the
-# 34 models AA does break down; the real ratio climbs steeply as output tokens
-# fall (2.1 at max effort, 12.9 on a low-effort record), so this is a coarse
+# count. 5.72 is the median of (uncached input tokens / output tokens) over the
+# 33 models AA does break down; the real ratio climbs steeply as output tokens
+# fall (2.2 at max effort, 12.5 on a low-effort record), so this is a coarse
 # middle guess, not a per-model fit.
-LOCAL_INPUT_TOKEN_RATIO = 3.78
+LOCAL_INPUT_TOKEN_RATIO = 5.72
 
 
 class ProviderType(Enum):

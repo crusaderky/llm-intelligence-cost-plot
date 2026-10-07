@@ -173,9 +173,9 @@ calculated as follows:
   Cache hits are free on your own machine, so they are excluded.
 - AA publishes no breakdown for a few of these models (MiniCPM5-2B, K2 Horizon 7B,
   Occamy-1.0, Ternary-Bonsai-2). For those, the uncached input tokens are estimated as
-  3.78× the output tokens, which is the median of that ratio over the 34 models AA
+  5.72× the output tokens, which is the median of that ratio over the 33 models AA
   does break down. It is a crude guess: the real ratio is about 2 for a max-effort
-  task and about 13 for a low-effort one.
+  task and about 12 for a low-effort one.
 - Crudely observe prefill and decode speed (tok/s) on local hardware. All measurements
   were taken on the same RTX 3090 video card from 2020, which today is relatively
   affordable at ~$1,400 (used).
