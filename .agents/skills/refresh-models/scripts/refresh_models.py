@@ -166,6 +166,31 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
         "Claude Opus 5.5 (Max, Default Fallback)",
         False,
     ),
+    "Claude Haiku 5.5 (low)": (
+        "claude-haiku-5-5-low",
+        "Claude Haiku 5.5 (Low, Default Fallback)",
+        False,
+    ),
+    "Claude Haiku 5.5 (medium)": (
+        "claude-haiku-5-5-medium",
+        "Claude Haiku 5.5 (Medium, Default Fallback)",
+        False,
+    ),
+    "Claude Haiku 5.5 (high)": (
+        "claude-haiku-5-5-high",
+        "Claude Haiku 5.5 (High, Default Fallback)",
+        False,
+    ),
+    "Claude Haiku 5.5 (xhigh)": (
+        "claude-haiku-5-5-xhigh",
+        "Claude Haiku 5.5 (Xhigh, Default Fallback)",
+        False,
+    ),
+    "Claude Haiku 5.5 (max)": (
+        "claude-haiku-5-5",
+        "Claude Haiku 5.5 (Max, Default Fallback)",
+        False,
+    ),
     "Ling 3.1 Flash": ("ling-3-1-flash", "Ling 3.1 Flash", False),
     "Mistral Large 4 Preview": ("mistral-large-4", "Mistral Large 4 Preview", False),
 }
