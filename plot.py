@@ -1502,7 +1502,7 @@ class PlotSpec(NamedTuple):
     one_per_model: bool = False  # collapse a model's effort variants to one
     # bar (the rows OR carries no price for would all draw the same empty bar)
     x_break: float | None = None  # split the x axis here: points at or above
-    # the break go into a second panel (see make_hardware_plot)
+    # the break go into a second panel (see make_broken_axis_plot)
     fig_w: float = FIG_W  # SVG figure width in inches, when this view needs
     # a different one (the height is always FIG_H)
     png_fig_w: float | None = None  # PNG figure width in inches
@@ -1518,6 +1518,23 @@ class PlotSpec(NamedTuple):
     easter_eggs: tuple[tuple[float, str], ...] = ()  # (x, slogan) shouts in
     # the background of the SVG only. Newlines are kept, to wrap a long
     # slogan instead of letting it run into its neighbour.
+    available_of: Callable[[Model], bool] = lambda m: (
+        m.available_datacenter
+    )  # which availability flag this view is governed by: the strikethrough,
+    # the legend entry and the frontier exclusion all follow it
+    label_of: Callable[[Model], str] = lambda m: m.name  # a point's display
+    # text. The hardware plot drops the effort/hardware suffixes, since its x
+    # is the same rig for every effort variant of a model
+    right_xtick_step: float | None = None  # tick step for the x_break panel.
+    # None gives it one tick per model, for when the prices are six figures
+    # and a fixed step would only produce collisions
+    break_xtick_format: str | None = None  # tick format for both panels of an
+    # x_break view, in str.format style instead of %-style: only str.format can
+    # group thousands, which the hardware axis needs for its six-figure prices
+    panel_ratio: float | None = None  # left:right panel width ratio when
+    # x_break is set. None uses RIGHT_PANEL_RATIO
+    legend_panel: str = "left"  # which panel of an x_break view draws the
+    # legend: the one whose lower-right corner covers no model's dot
 
     def split_renders(self) -> bool:
         return (
@@ -1559,6 +1576,10 @@ class PlotSpec(NamedTuple):
 
 # The plots to generate.
 PLOTS = [
+    # Spans $0-14.7 on the price axis, but only three models cost more than
+    # $6, so x_break gives those three a compressed panel of their own instead
+    # of spending half the figure on the empty stretch between $6 and $15 and
+    # piling the other thirty-six into the leftmost third.
     PlotSpec(
         "Intelligence vs. Price per Task (High Intelligence)",
         lambda m: m.intelligence >= HIGH_INTELLIGENCE_THRESHOLD,
@@ -1566,6 +1587,12 @@ PLOTS = [
         xtick_step=0.5,
         xtick_format="$%.2f",
         band_side="bottom",
+        x_break=6.0,
+        right_xtick_step=2.0,
+        # Its left panel ends at its priciest model, so the corner the legend
+        # wants is that model's dot: the legend goes to the right panel, whose
+        # bottom half is empty.
+        legend_panel="right",
     ),
     PlotSpec(
         "Intelligence vs. Price per Task (Low Cost)",
@@ -1637,6 +1664,9 @@ PLOTS = [
         xtick_step=2_000,
         band=False,
         x_break=28_000,
+        break_xtick_format="${x:,.0f}",
+        available_of=lambda m: m.available_local,
+        label_of=lambda m: _clean_label(m),
     ),
 ]
 
@@ -2409,7 +2439,7 @@ def _make_datacenter_plot(
     # Faint dotted Pareto frontier. The delta plot's x axis is not a price,
     # so it gets no frontier (spec.frontier is False).
     frontier_x, frontier_y = (
-        pareto_frontier(MODELS, spec.x_of, lambda m: m.available_datacenter)
+        pareto_frontier(MODELS, spec.x_of, spec.available_of)
         if spec.frontier
         else ([], [])
     )
@@ -2486,9 +2516,7 @@ def _make_datacenter_plot(
     ax.tick_params(labelsize=12, colors="#5b6270")
 
     # Legend: one entry per publisher actually present in this plot.
-    legend, have_unavailable = _plot_legend(
-        ax, models, available_of=lambda m: m.available_datacenter
-    )
+    legend, have_unavailable = _plot_legend(ax, models, available_of=spec.available_of)
 
     fig.tight_layout()
     fig.canvas.draw()
@@ -2507,7 +2535,7 @@ def _make_datacenter_plot(
             (left, right, icon, strike, spec.x_of(m), m.intelligence)
             for m in models
             for left, icon, right, strike in [
-                _split_icon(m, available=m.available_datacenter)
+                _split_icon(m, available=spec.available_of(m))
             ]
         ],
         marker_r_px,
@@ -2538,25 +2566,28 @@ def save_plots(fig, stem: str, fmt: Literal["png", "svg", "both"] = "both") -> N
 
 BREAK_SLASH_PX = 9  # half-length of the diagonal break slashes, in pixels
 BREAK_WSPACE = 0.06  # gap between the two panels, as a fraction of their width
-RIGHT_PANEL_RATIO = 4.5  # width ratio left:right -- Kimi K3 gets a narrow panel
+RIGHT_PANEL_RATIO = 4.5  # default left:right width ratio -- the outlier gets
+# a narrow panel, so its axis is compressed by roughly this factor
 
 
-def make_hardware_plot(spec, models, y_lim):
-    """Hardware price vs intelligence, on a broken x axis.
+def make_broken_axis_plot(spec, models, band, y_lim):
+    """Draw a view whose x span is dominated by a few outliers, on a broken axis.
 
-    The per-task price plots treat hardware as free, which is defensible only
-    for machines nobody buys for AI alone. The larger local models break that
-    assumption: the cheapest rig that runs them is $250 to $27,200, and Kimi
+    One linear axis fails when a handful of models costs an order of magnitude
+    more than the rest: either the outliers stretch the scale until every other
+    point piles up in the leftmost few percent and no label fits, or the plot
+    spends half its width on empty space. So the points at or above spec.x_break
+    get their own narrow panel, with a white gap and break slashes between the
+    two, and the right panel's x axis is compressed by spec.panel_ratio.
+
+    The hardware view is the extreme case: rigs cost $250 to $27,200, and Kimi
     K3 needs 2 TB of RAM at $320,000 -- twelve times the next most expensive
-    model, and 1,280x the cheapest. On a single linear axis Kimi K3 would
-    stretch the scale so far that every other model piles up in the leftmost
-    few percent and no label could be placed, so the points at or above
-    spec.x_break get their own panel, with a white gap and break slashes
-    between the two.
+    model, 1,280x the cheapest. The high-intelligence price view is the mild
+    one: thirty-six models under $5.16 against three between $7 and $14.67.
     """
     assert spec.x_break is not None
-    left = [m for m in models if m.hardware_cost < spec.x_break]
-    right = [m for m in models if m.hardware_cost >= spec.x_break]
+    left = [m for m in models if spec.x_of(m) < spec.x_break]
+    right = [m for m in models if spec.x_of(m) >= spec.x_break]
     if not left or not right:
         raise ValueError(
             f"{spec.stem}: x_break={spec.x_break} needs models on both sides"
@@ -2565,22 +2596,50 @@ def make_hardware_plot(spec, models, y_lim):
     fig, (ax_l, ax_r) = plt.subplots(
         1,
         2,
-        figsize=(FIG_W, FIG_H),
+        figsize=(spec.get_fig_w("both"), FIG_H),
         dpi=DPI,
         sharey=True,
-        gridspec_kw={"width_ratios": [RIGHT_PANEL_RATIO, 1]},
+        gridspec_kw={"width_ratios": [spec.panel_ratio or RIGHT_PANEL_RATIO, 1]},
     )
 
-    # Faint dotted Pareto frontier over the unbroken prices only: Kimi K3 sits
-    # left of nothing, it is dominated by MiMo-V2.6-Pro (more intelligence for
-    # 12x less hardware), so the staircase ends in the left panel and the
-    # right panel gets a bare dot.
-    if spec.frontier:
-        frontier_x, frontier_y = pareto_frontier(
-            left, spec.x_of, lambda m: m.available_local
-        )
-        if len(frontier_x) > 1:
-            ax_l.plot(
+    # Axes limits, set before placing labels (placement works in pixels).
+    left_hi = max(spec.x_of(m) for m in left)
+    # The usual right-hand padding past the last model the panel holds. When
+    # the break falls inside that padded range, round the edge up to a whole
+    # tick instead, so the axis ends on a round number with the break a tick
+    # inside it: the hardware panel stops at $30,000, not $28,016.
+    left_lim = left_hi * (1 + spec.x_pad)
+    if spec.x_break < left_lim:
+        left_lim = math.ceil(left_lim / spec.xtick_step) * spec.xtick_step
+    ax_l.set_xlim(0, left_lim)
+    r_lo = min(spec.x_of(m) for m in right)
+    r_hi = max(spec.x_of(m) for m in right)
+    r_pad = 0.18 * (r_hi - r_lo) if r_hi > r_lo else 0.18 * r_hi
+    # The panel resumes at the break, not below it: its left edge is where the
+    # left panel's axis stopped making sense.
+    ax_r.set_xlim(max(r_lo - r_pad, spec.x_break), r_hi + r_pad)
+    y_lo, y_hi = y_lim
+    ax_l.set_ylim(y_lo, y_hi)
+    ax_l.yaxis.set_major_locator(MultipleLocator(1))
+
+    # Faint dotted Pareto frontier, computed over ALL models as on every other
+    # view and clipped by each panel to its own slice of it: the staircase runs
+    # off the left panel's right edge ("continues") and resumes in the right
+    # one. A panel with no frontier point inside it draws nothing at all --
+    # Kimi K3 sits left of nothing, being dominated by MiMo-V2.6-Pro (more
+    # intelligence for 12x less hardware), so the hardware plot's right panel
+    # is a bare dot.
+    frontier_x, frontier_y = (
+        pareto_frontier(MODELS, spec.x_of, spec.available_of)
+        if spec.frontier
+        else ([], [])
+    )
+    if len(frontier_x) > 1:
+        panels = [ax_l]
+        if any(r_lo <= x <= r_hi for x in frontier_x):
+            panels.append(ax_r)
+        for ax in panels:
+            ax.plot(
                 frontier_x,
                 frontier_y,
                 linestyle=":",
@@ -2593,24 +2652,39 @@ def make_hardware_plot(spec, models, y_lim):
     _scatter_points(ax_l, left, spec.x_of)
     _scatter_points(ax_r, right, spec.x_of)
 
-    # Axes limits, set before placing labels (placement works in pixels).
-    left_hi = max(m.hardware_cost for m in left)
-    ax_l.set_xlim(0, math.ceil(left_hi * 1.06 / spec.xtick_step) * spec.xtick_step)
-    r_lo = min(m.hardware_cost for m in right)
-    r_hi = max(m.hardware_cost for m in right)
-    r_pad = 0.18 * (r_hi - r_lo) if r_hi > r_lo else 0.18 * r_hi
-    ax_r.set_xlim(r_lo - r_pad, r_hi + r_pad)
-    y_lo, y_hi = y_lim
-    ax_l.set_ylim(y_lo, y_hi)
-    ax_l.yaxis.set_major_locator(MultipleLocator(1))
+    if band is not None:
+        # The green band is a per-task price band, so it lives in the left
+        # panel only -- and only while its x range is inside the break.
+        b_lo = max(band[0], y_lo)
+        b_hi = min(band[1], y_hi)
+        if b_hi > b_lo and LOW_COST_THRESHOLD < spec.x_break:
+            ax_l.add_patch(
+                Rectangle(
+                    (0, b_lo),
+                    LOW_COST_THRESHOLD,
+                    b_hi - b_lo,
+                    facecolor="#22c55e",
+                    edgecolor="none",
+                    alpha=0.12,
+                    zorder=0,
+                )
+            )
 
-    # Thousands separators: the right panel's prices are six figures.
-    money = StrMethodFormatter("${x:,.0f}")
+    # Thousands separators: the right panel's prices can be six figures.
+    money = (
+        StrMethodFormatter(spec.break_xtick_format)
+        if spec.break_xtick_format is not None
+        else FormatStrFormatter(spec.xtick_format)
+    )
     ax_l.xaxis.set_major_locator(MultipleLocator(spec.xtick_step))
     ax_l.xaxis.set_major_formatter(money)
-    # The right panel is a fraction of the figure wide, so it gets one tick
-    # per model instead of a $20k step: six-figure labels would collide.
-    ax_r.set_xticks(sorted({m.hardware_cost for m in right}))
+    # The right panel is a fraction of the figure wide, so a view whose prices
+    # are six figures gets one tick per model instead of a fixed step: labels
+    # would collide.
+    if spec.right_xtick_step is None:
+        ax_r.set_xticks(sorted({spec.x_of(m) for m in right}))
+    else:
+        ax_r.xaxis.set_major_locator(MultipleLocator(spec.right_xtick_step))
     ax_r.xaxis.set_major_formatter(money)
 
     ax_l.set_xlabel(spec.x_label, fontsize=15, fontweight="bold", labelpad=12)
@@ -2639,8 +2713,9 @@ def make_hardware_plot(spec, models, y_lim):
         ax.tick_params(labelsize=12, colors="#5b6270")
 
     # Legend: one entry per publisher actually present in this plot.
+    legend_ax = ax_r if spec.legend_panel == "right" else ax_l
     legend, have_unavailable = _plot_legend(
-        ax_l, models, loc="lower right", available_of=lambda m: m.available_local
+        legend_ax, models, loc="lower right", available_of=spec.available_of
     )
     fig.tight_layout()
     # The gap between the panels, after tight_layout rather than in
@@ -2652,7 +2727,8 @@ def make_hardware_plot(spec, models, y_lim):
     if have_unavailable:
         for text in legend.get_texts():
             if text.get_text() == "Not publicly available":
-                _strike_text(ax_l, text, renderer, zorder=6)  # above the legend frame
+                # zorder 6: above the legend frame
+                _strike_text(legend_ax, text, renderer, zorder=6)
                 break
 
     # Break slashes: short diagonals across the bottom spine where the two
@@ -2684,12 +2760,12 @@ def make_hardware_plot(spec, models, y_lim):
                 (left_, right_, icon, strike, spec.x_of(m), m.intelligence)
                 for m in panel
                 for left_, icon, right_, strike in [
-                    _split_icon(m, _clean_label(m), available=m.available_local)
+                    _split_icon(m, spec.label_of(m), available=spec.available_of(m))
                 ]
             ],
             marker_r_px,
             extra_obstacles=(_pad(legend.get_window_extent(renderer)),)
-            if ax is ax_l
+            if ax is legend_ax
             else (),
         )
 
@@ -2910,8 +2986,10 @@ def main(argv=None):
         elif spec.band_side == "top":
             y_hi = band[1]
         if spec.x_break is not None:  # two panels, not one
-            print("Generating hardware plot:", spec.stem)
-            make_hardware_plot(spec, models, (y_lo, y_hi))
+            print("Generating broken-axis plot:", spec.stem)
+            make_broken_axis_plot(
+                spec, models, band if spec.band else None, (y_lo, y_hi)
+            )
             continue
         print("Generating datacenter plot:", spec.stem)
         make_datacenter_plots(spec, models, band if spec.band else None, (y_lo, y_hi))
