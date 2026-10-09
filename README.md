@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-10-07
+**Last updated:** 2026-10-09
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -242,9 +242,9 @@ while the latter can be as cheap as a mobile phone subscription.
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
 appreciate how much better Claude Opus 5.5 at max effort (intelligence score 58,
-$14.13/task) is compared to GPT Sol-6.1 at xhigh effort (intelligence 51, $0.50/task —
-28x cheaper), most people will have a hard time doing so. Going further down,
-GLM-5.3-Flash at high effort (intelligence 40, $0.22/task — over _sixty times_
+$12.52/task) is compared to GPT Sol-6.1 at xhigh effort (intelligence 51, $0.48/task —
+26x cheaper), most people will have a hard time doing so. Going further down,
+GLM-5.3-Flash at high effort (intelligence 40, $0.22/task — over _fifty times_
 cheaper than Opus 5.5) is visibly less capable when you give it very sophisticated
 tasks, like one-shotting a whole coding project on its own, but it remains _enough_ for
 90% of what people actually need. Even the highly specialized engineers and scientists

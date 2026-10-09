@@ -49,10 +49,16 @@ plot`, visually inspect the PNGs, `pixi r lint`).
 
 ## Reading the report
 
-- `INT!` / `TOK!` — intelligence or tokens per task no longer matches `plot.py`
-  (both keep small tolerances for AA-side rounding). `AA$!` / `SPL!` / `OR$!` / `ORP!` /
-  `VOL!` are exact: the stored values are full precision, so any nonzero difference
-  flags the row.
+- Every flag is exact — there is no tolerance anywhere. `plot.py` stores every value
+  verbatim at full precision, including the Intelligence Index (paste AA's
+  `41.807466113455`, never a rounded `41.8075`), so any nonzero difference between a
+  stored value and what AA/OR publishes now flags the row and must be applied. `INT!`
+  and `TOK!` therefore fire on sub-unit moves: AA republishes both at sub-unit
+  precision, so a 0.003-point move is a real change, not rounding noise.
+- `AA$!` compares AA's total with the **bare total** stored in `plot.py`. A model that
+  stores a `PricedTokens` split is checked stream-by-stream by `SPL!` instead: AA's
+  published total is that same sum computed in one pass, so comparing the two would
+  flag a few ULP of float noise on every run.
 - `SPL!` (AA cost split + sticker prices), `ORP!` (OR effective prices) and `VOL!`
   (weekly volume) are expected on every refresh: they move with every AA page republish
   and every rolling window. Always apply them. The OR prices are rounded to 4

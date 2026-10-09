@@ -89,8 +89,8 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     # (high) is extrapolated from the (max) record: intelligence x
     # 28.01/28.99, tokens and price x 70610/138690 (ratios from Z.ai's coding
     # scores and AA's GLM-5.3 effort split, see the README note)
-    "GLM-5.3-Flash (high)": ("glm-5-3-flash", "GLM 5.3 Flash", True),
-    "GLM-5.3-Flash (max)": ("glm-5-3-flash", "GLM 5.3 Flash", False),
+    "GLM-5.3-Flash (high)": ("glm-5-3-flash", "GLM-5.3-Flash", True),
+    "GLM-5.3-Flash (max)": ("glm-5-3-flash", "GLM-5.3-Flash", False),
     "GLM-5.3": ("glm-5-3", "GLM-5.3 (Max)", False),
     "Kimi K3": ("kimi-k3", "Kimi K3 (Max)", False),
     "Gemini 3.8 Flash": ("gemini-3-8-flash", "Gemini 3.8 Flash (High)", False),
@@ -168,27 +168,27 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     ),
     "Claude Haiku 5.5 (low)": (
         "claude-haiku-5-5-low",
-        "Claude Haiku 5.5 (Low, Default Fallback)",
+        "Claude Haiku 5.5 (Low)",
         False,
     ),
     "Claude Haiku 5.5 (medium)": (
         "claude-haiku-5-5-medium",
-        "Claude Haiku 5.5 (Medium, Default Fallback)",
+        "Claude Haiku 5.5 (Medium)",
         False,
     ),
     "Claude Haiku 5.5 (high)": (
         "claude-haiku-5-5-high",
-        "Claude Haiku 5.5 (High, Default Fallback)",
+        "Claude Haiku 5.5 (High)",
         False,
     ),
     "Claude Haiku 5.5 (xhigh)": (
         "claude-haiku-5-5-xhigh",
-        "Claude Haiku 5.5 (Xhigh, Default Fallback)",
+        "Claude Haiku 5.5 (Xhigh)",
         False,
     ),
     "Claude Haiku 5.5 (max)": (
         "claude-haiku-5-5",
-        "Claude Haiku 5.5 (Max, Default Fallback)",
+        "Claude Haiku 5.5 (Max)",
         False,
     ),
     "Ling 3.1 Flash": ("ling-3-1-flash", "Ling 3.1 Flash", False),
@@ -422,18 +422,6 @@ def _fmt_tokens(t: plot.PricedTokens) -> str:
     return f"PricedTokens({inner})"
 
 
-def _same(a: float | None, b: float | None, tol: float = 1e-9) -> bool:
-    """Equality within a relative tolerance.
-
-    plot.py derives AA's cost-per-task total by summing the split, while AA
-    computes it in one pass, so the two agree to a few ULP rather than exactly.
-    A row whose total only moves in the 16th digit is not a data change.
-    """
-    if a is None or b is None:
-        return a is b
-    return abs(a - b) <= tol * max(1.0, abs(a), abs(b))
-
-
 def aa_splits(rec: dict | None) -> tuple[plot.PricedTokens, plot.PricedTokens] | None:
     """AA page record -> (cost per task split, sticker price per 1M tokens).
 
@@ -634,17 +622,16 @@ def main() -> None:
 
         mark = ""
         if not derived:  # derived rows are extrapolations; the reminder explains
-            if new_int is not None and abs(new_int - old_int) > 0.05:
+            if new_int is not None and new_int != old_int:
                 mark += " INT!"
-            if (
-                new_tok is not None
-                and old_tok
-                and abs(new_tok - old_tok) > max(2, old_tok * 0.001)
-            ):
+            if new_tok is not None and new_tok != old_tok:
                 mark += " TOK!"
-            # exact: plot.py stores full precision, so any nonzero change means
-            # the stored value no longer matches the AA page / OR window
-            if new_aa is not None and not _same(new_aa, old_aa):
+            # exact: plot.py stores every value at full precision, so any
+            # nonzero difference means the stored value no longer matches the
+            # AA page / OR window. AA$! only compares bare totals: a stored
+            # split is already checked stream-by-stream by SPL!, and AA's own
+            # total is that sum computed in one pass, i.e. a few ULP away.
+            if new_aa is not None and old_cost is None and new_aa != old_aa:
                 mark += " AA$!"
             if new_sess is not None and new_sess != old_sess:
                 mark += " OR$!"
@@ -669,7 +656,7 @@ def main() -> None:
         )
         if mark:
             lines = []
-            if new_int is not None and abs(new_int - old_int) > 0.05:
+            if new_int is not None and new_int != old_int:
                 # intelligence is the 3rd positional argument, so it cannot be
                 # pasted as a kwarg line
                 lines.append(
@@ -685,7 +672,7 @@ def main() -> None:
                 # the split replaces the bare total: it is the same money, itemized
                 lines.append(f"    aa_cost_per_task={_fmt_tokens(new_cost)},")
                 lines.append(f"    aa_sticker_price={_fmt_tokens(new_sticker)},")
-            elif new_aa is not None and not _same(new_aa, old_aa):
+            elif new_aa is not None and old_cost is None and new_aa != old_aa:
                 lines.append(f"    aa_cost_per_task={new_aa!r},")
             if (new_eff_in, new_eff_out) != (old_eff_in, old_eff_out):
                 lines.append(f"    or_eff_input_price={new_eff_in!r},")
