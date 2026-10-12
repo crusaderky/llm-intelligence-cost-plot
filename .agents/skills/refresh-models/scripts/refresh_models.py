@@ -86,6 +86,7 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "Hy3": ("hy3", "Hy3", False),
     "Hy4 preview": ("", "", False),  # not on AA yet: manual entry
     "Muse Spark 1.3": ("muse-spark-1-3", "Muse Spark 1.3 (Max)", False),
+    "Muse Wonder": ("muse-wonder", "Muse Wonder (Max)", False),
     # (high) is extrapolated from the (max) record: intelligence x
     # 28.01/28.99, tokens and price x 70610/138690 (ratios from Z.ai's coding
     # scores and AA's GLM-5.3 effort split, see the README note)
