@@ -208,8 +208,8 @@ rapidly:
 | RAM | Hardware | Price | Models |
 | --- | --- | --- | --- |
 | 4 GB unified | Mobile phone | ~$250 | MiniCPM5-2B |
-| 16 GB unified | Strix Point laptop | ~$1,000 | K2 Horizon 7B |
-| 16 GB VRAM + 32 GB host | PC with RTX 5060 Ti | ~$2,300 | Qwen3.8-Flash Coder ([Strata](https://github.com/Niko1221/Strata))<br>Ternary-Bonsai-2<br>Occamy-1.0<br> |
+| 16 GB unified | Strix Point laptop | ~$1,000 | Ternary-Bonsai-2<br>K2 Horizon 7B |
+| 16 GB VRAM + 32 GB host | PC with RTX 5060 Ti | ~$2,300 | Qwen3.8-Flash Coder ([Strata](https://github.com/Niko1221/Strata))<br>Occamy-1.0 |
 | 24 GB VRAM + 32 GB host | PC with RTX 3090 | ~$2,600 (used) | Qwen-3.8-27B |
 | 16 GB VRAM + 64 GB host | PC with RTX 5060 Ti | ~$2,700 | Qwen3.8-Flash ([Strata](https://github.com/Niko1221/Strata)) |
 | 128 GB unified | Strix Halo 128 GB<br>DGX Spark (128 GB)<br>Mac Studio M5 Max 128 GB<br>Mac Studio M5 Ultra 96 GB<br>MacBook Pro M5 Max 128 GB | $3,800<br>$5,000<br>$5,100<br>$5,400<br>$7,000 | Qwen3.8-Flash (llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [DwarfStar](https://dwarfstar.sh/))|

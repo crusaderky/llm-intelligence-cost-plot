@@ -2067,8 +2067,7 @@ z
    </g>
    <g id="line2d_105">
     <path d="M 68.38933 930.061221 
-L 104.143806 724.48591 
-L 166.11823 464.454091 
+L 104.143806 464.454091 
 L 180.420021 238.477409 
 L 542.732041 188.29612 
 L 1067.131017 113.221853 
@@ -2096,8 +2095,8 @@ L 792.982475 247.73262
 " style="fill: none; stroke: #9aa1ad; stroke-width: 0.8; stroke-linecap: square"/>
    </g>
    <g id="line2d_110">
-    <path d="M 172.802275 464.454091 
-L 173.23823 464.454091 
+    <path d="M 110.82785 464.454091 
+L 111.263806 464.454091 
 " style="fill: none; stroke: #9aa1ad; stroke-width: 0.8; stroke-linecap: square"/>
    </g>
    <g id="line2d_111">
@@ -2200,7 +2199,7 @@ z
      <use xlink:href="#C1_0_e3a6dd5e81" x="166.11823" y="494.350569" style="fill: #ffffff; stroke: #43674c; stroke-width: 1.5"/>
     </g>
     <g clip-path="url(#p134d9038a6)">
-     <use xlink:href="#C1_0_e3a6dd5e81" x="166.11823" y="464.454091" style="fill: #ffffff; stroke: #d6409f; stroke-width: 1.5"/>
+     <use xlink:href="#C1_0_e3a6dd5e81" x="104.143806" y="464.454091" style="fill: #ffffff; stroke: #d6409f; stroke-width: 1.5"/>
     </g>
     <g clip-path="url(#p134d9038a6)">
      <use xlink:href="#C1_0_e3a6dd5e81" x="1067.131017" y="125.289453" style="fill: #ffffff; stroke: #66b7fb; stroke-width: 1.5"/>
@@ -2781,7 +2780,7 @@ z
    </g>
    <g id="text_60">
     <!-- Ternary-Bonsai-2 -->
-    <g style="fill: #1f2328" transform="translate(176.11823 467.831552) scale(0.13 -0.13)">
+    <g style="fill: #1f2328" transform="translate(114.143806 467.831552) scale(0.13 -0.13)">
      <defs>
       <path id="DejaVuSans-37" d="M -19 4666 
 L 3928 4666 
@@ -2878,7 +2877,7 @@ z
 " style="stroke: #b45309"/>
     </defs>
     <g>
-     <use xlink:href="#md943215de3" x="291.44198" y="464.454091" style="fill: #fbbf24; stroke: #b45309"/>
+     <use xlink:href="#md943215de3" x="229.467556" y="464.454091" style="fill: #fbbf24; stroke: #b45309"/>
     </g>
    </g>
    <g id="text_61">

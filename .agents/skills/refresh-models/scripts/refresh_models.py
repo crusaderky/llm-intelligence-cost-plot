@@ -95,7 +95,6 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "GLM-5.3": ("glm-5-3", "GLM-5.3 (Max)", False),
     "Kimi K3": ("kimi-k3", "Kimi K3 (Max)", False),
     "Gemini 3.8 Flash": ("gemini-3-8-flash", "Gemini 3.8 Flash (High)", False),
-    # not on OpenRouter yet, so the refresh reports it with no session data
     "Gemini 4 Argon (high)": ("gemini-4-argon", "Gemini 4 Argon (High)", False),
     "Grok 4.7 (high)": ("grok-4-7-high", "Grok 4.7 (High)", False),
     "Grok 4.7 (xhigh)": ("grok-4-7", "Grok 4.7 (Xhigh)", False),

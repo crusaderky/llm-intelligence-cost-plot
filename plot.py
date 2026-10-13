@@ -611,8 +611,8 @@ MODELS = [
         30.8827,
         ProviderType.LOCAL,
         aa_tok_per_task=66797,
-        local_speed=LocalSpeed(prefill=963, decode=73),
-        hardware_cost=2300,
+        local_speed=LocalSpeed(prefill=949, decode=55),
+        hardware_cost=1000,
         estimated=True,
     ),
     Model(
@@ -625,7 +625,7 @@ MODELS = [
             0.04967406603399954, 0.05070581107333271, 0.2717961254229642
         ),
         aa_sticker_price=PricedTokens(0.15, 0.47, 0.016),
-        local_speed=LocalSpeed(prefill=2100, decode=75),
+        local_speed=LocalSpeed(prefill=2000, decode=84),
         hardware_cost=2600,
     ),
     # --- Datacenter models (price per task = AA's token mix priced at OR's
@@ -872,9 +872,6 @@ MODELS = [
         or_eff_input_price=0.3556,
         or_eff_output_price=4.128,
     ),
-    # AA badges it "Not publicly available" (released 2026-09-30, no provider serves
-    # it), and OpenRouter has no permaslug for it, so there is no session cost to
-    # rescale by: the price stays AA's sticker figure unscaled.
     Model(
         "Google",
         "Gemini 4 Argon (high)",
@@ -885,7 +882,11 @@ MODELS = [
             1.0554022379429868, 0.6155762620764799, 0.3193438792795405
         ),
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
-        available_datacenter=False,
+        or_slug="google/gemini-4-argon-20261013",
+        # Released 2026-10-13 on OR: one day of trailing-week pricing, no
+        # coding-harness session cost and no weekly ranking row yet.
+        or_eff_input_price=0.8256,
+        or_eff_output_price=10.23,
         available_local=False,
     ),
     Model(
