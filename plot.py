@@ -278,12 +278,34 @@ PUBLISHERS = {
 
 class LocalHardware(NamedTuple):
     name: str
-    peak_power_draw: int  # Watts under max load
-    idle_power_draw: int  # Watts when idling
+    idle_power_draw: int | None = None  # Watts when idling
+    peak_power_draw: int | None = None  # Watts under max load
+    price: int | None = None  # Up-front expense
+
+    @property
+    def delta_power_draw(self) -> int:
+        assert self.idle_power_draw is not None
+        assert self.peak_power_draw is not None
+        return self.peak_power_draw - self.idle_power_draw
+
+    def cluster(self, count: int, extra_price: int = 0) -> LocalHardware:
+        if self.price is None and extra_price == 0:
+            price = None
+        else:
+            price = (self.price or 0) * count + extra_price
+        return LocalHardware(
+            f"{self.name} x{count}",
+            self.idle_power_draw * count if self.idle_power_draw is not None else None,
+            self.peak_power_draw * count if self.peak_power_draw is not None else None,
+            price,
+        )
 
 
-RTX3090 = LocalHardware("RTX 3090", 350, 43)
-STRIX_HALO = LocalHardware("Strix Halo 128GB", 170, 11)
+RTX3090 = LocalHardware("RTX 3090", 43, 350)
+STRIX_HALO = LocalHardware("Strix Halo 128GB", 11, 170, 3800)
+GORGON_HALO = LocalHardware("Gorgon Halo", price=6800)
+DGX_SPARK = LocalHardware("DGX Spark", price=5000)
+TENSTORRENT = LocalHardware("TensTorrent Galaxy Blackhole", price=160_000)
 
 # Residential electricity, weighted by population, May 2026 (USD/KWh)
 # https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a
@@ -373,13 +395,19 @@ class Model:
     or_eff_output_price: float | None = field(default=None, kw_only=True)
     # Local models: measured throughput on `hardware` (None = RTX3090).
     local_speed: LocalSpeed | None = field(default=None, kw_only=True)
+    # The rig the model runs on. Local models: the measurement rig
+    # (None = RTX3090). Datacenter models: the cheapest local rig that
+    # can run the model, from the README's "Larger local models" table;
+    # only its price is read, as the hardware-cost plot's x.
     hardware: LocalHardware | None = field(default=None, kw_only=True)
     # One-off USD price of the cheapest hardware that can run the model
-    # locally, from the README's "Larger local models" table. Independent of
-    # the per-task price (which is electricity only): this is the machine, not
-    # the power bill. None = no table entry, so the model is left off the
-    # hardware-cost plot.
-    hardware_cost: float | None = field(default=None, kw_only=True)
+    # locally, from the README's "Larger local models" table. Independent
+    # of the per-task price (which is electricity only): this is the
+    # machine, not the power bill. Overrides hardware.price when present,
+    # which is how local models measured on the RTX3090 plot at the price
+    # of the cheaper rig they actually run on (a phone, a laptop). None =
+    # no table entry, so the model is left off the hardware-cost plot.
+    hardware_price_override: int | None = field(default=None, kw_only=True)
     # Not on AA: the point is extrapolated/estimated. Rendered as a hollow
     # circle, with a matching "Estimated (not on AA)" legend entry.
     estimated: bool = field(default=False, kw_only=True)
@@ -480,8 +508,7 @@ class Model:
                 tokens.input_ / self.local_speed.prefill
                 + tokens.output / self.local_speed.decode
             )
-            power_draw = self.hardware.peak_power_draw - self.hardware.idle_power_draw
-            kwh_per_task = power_draw * sec_per_task / 3_600_000
+            kwh_per_task = self.hardware.delta_power_draw * sec_per_task / 3_600_000
             return kwh_per_task * US_ELECTRICITY_PRICE
 
         tokens = self.aa_token_counts()
@@ -503,6 +530,19 @@ class Model:
         """
         assert self.provider_type is ProviderType.DATACENTER
         return 100 * (self.price_per_task() / self.aa_total_cost_per_task() - 1)
+
+    def hardware_price(self) -> int | None:
+        """One-off USD price of the cheapest local hardware that can run
+        the model, for the hardware-cost plot: hardware_price_override overrides
+        hardware.price when present. None = no entry, so the model is
+        left off that plot.
+        """
+        if self.hardware_price_override is not None:
+            return self.hardware_price_override
+        elif self.hardware is not None:
+            return self.hardware.price
+        else:
+            return None
 
 
 MODELS = [
@@ -527,9 +567,14 @@ MODELS = [
     #   are recorded for reference; neither prices the plot.
     # - local: local_speed, both rates on real hardware. The prefill rate is a
     #   guesstimate at 10x the decode rate until it gets measured.
-    # - hardware_cost: one-off price of the cheapest rig in the README's
-    #   "Larger local models" table that fits the model; set only for the
-    #   models that table names.
+    # - hardware: datacenter models the README's "Larger local models"
+    #   table names get the cheapest rig that fits them
+    #   (DGX_SPARK.cluster(...) and friends); their price tags the
+    #   hardware-cost plot. Local models get the measurement rig
+    #   (None = RTX3090).
+    # - hardware_price_override: one-off price override for the same plot, for the
+    #   local models whose cheapest rig is not a hardware entry (phones,
+    #   laptops, prebuilt PCs); overrides hardware.price when present.
     # See .agents/skills/refresh-models for how to re-fetch these numbers.
     # --- Local models (price per task = electricity) ---
     Model(
@@ -539,7 +584,7 @@ MODELS = [
         ProviderType.LOCAL,
         aa_tok_per_task=21834,
         local_speed=LocalSpeed(prefill=7460, decode=200),
-        hardware_cost=250,
+        hardware_price_override=250,
     ),
     Model(
         "Alibaba",
@@ -552,7 +597,7 @@ MODELS = [
         # price; 0.0 in the cached slot of both splits means "never caches"
         aa_sticker_price=PricedTokens(0.375, 2.25, 0.0),
         local_speed=LocalSpeed(prefill=2215, decode=150),
-        hardware_cost=2300,
+        hardware_price_override=2300,
     ),
     # Not on AA: intelligence = linear interpolation of median of self-published
     # benchmark scores vs. known intelligence index scores.
@@ -564,7 +609,7 @@ MODELS = [
         ProviderType.LOCAL,
         aa_tok_per_task=34594 * 1.23,
         local_speed=LocalSpeed(prefill=2345, decode=134),
-        hardware_cost=2300,
+        hardware_price_override=2300,
         estimated=True,
     ),
     Model(
@@ -578,7 +623,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(0.32499999999999996, 1.35, 0.04),
         local_speed=LocalSpeed(prefill=938, decode=124),
-        hardware_cost=2600,
+        hardware_price_override=2600,
     ),
     Model(
         "Institute of Foundation Models",
@@ -587,7 +632,7 @@ MODELS = [
         ProviderType.LOCAL,
         aa_tok_per_task=72163,
         local_speed=LocalSpeed(prefill=3430, decode=104),
-        hardware_cost=1000,
+        hardware_price_override=1000,
     ),
     Model(
         "Alibaba",
@@ -600,7 +645,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(0.5, 3.0, 0.1),
         local_speed=LocalSpeed(prefill=963, decode=57),
-        hardware_cost=2600,
+        hardware_price_override=2600,
     ),
     # Not on AA: intelligence = 0.9165 x Qwen3.8-27B, the 91.65% of BF16 that
     # ByteShape measured for this ternary quant (see README note); tokens per
@@ -612,7 +657,7 @@ MODELS = [
         ProviderType.LOCAL,
         aa_tok_per_task=66797,
         local_speed=LocalSpeed(prefill=949, decode=55),
-        hardware_cost=1000,
+        hardware_price_override=1000,
         estimated=True,
     ),
     Model(
@@ -626,7 +671,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(0.15, 0.47, 0.016),
         local_speed=LocalSpeed(prefill=2000, decode=84),
-        hardware_cost=2600,
+        hardware_price_override=2700,
     ),
     # --- Datacenter models (price per task = AA's token mix priced at OR's
     # effective input/output prices) ---
@@ -668,7 +713,8 @@ MODELS = [
         39.456167472527,
         ProviderType.DATACENTER,
         aa_tok_per_task=88574,
-        hardware_cost=15300,
+        # 384 GB unified: 3x DGX Spark
+        hardware=DGX_SPARK.cluster(3, extra_price=300),
         aa_cost_per_task=PricedTokens(
             0.10051303480135712, 0.10628879819362691, 0.058423437101084455
         ),
@@ -728,7 +774,8 @@ MODELS = [
         or_toks_served=7358279515016,
         or_eff_input_price=0.08063,
         or_eff_output_price=2.45,
-        hardware_cost=21200,
+        # 512 GB unified: 4x DGX Spark + QFP28 switch
+        hardware=DGX_SPARK.cluster(4, extra_price=1200),
         estimated=True,
     ),
     Model(
@@ -820,7 +867,8 @@ MODELS = [
         or_toks_served=12237204935035,
         or_eff_input_price=0.05057,
         or_eff_output_price=0.5124,
-        hardware_cost=10200,
+        # 256 GB unified: 2x DGX Spark
+        hardware=DGX_SPARK.cluster(2, extra_price=200),
     ),
     Model(
         "Z AI",
@@ -832,7 +880,8 @@ MODELS = [
             0.17082790879500323, 0.3129615000082585, 1.5218481062416964
         ),
         aa_sticker_price=PricedTokens(1.4, 4.4, 0.26),
-        hardware_cost=21200,
+        # 512 GB unified: 4x DGX Spark + QFP28 switch
+        hardware=DGX_SPARK.cluster(4, extra_price=1200),
         or_slug="z-ai/glm-5.3-20260816",
         or_session_cost_10_49_turns=0.35979856,
         or_toks_served=3786138998573,
@@ -849,7 +898,8 @@ MODELS = [
             0.47145748156727935, 0.7268284815216798, 0.8018463373535905
         ),
         aa_sticker_price=PricedTokens(3.0, 15.0, 0.3),
-        hardware_cost=320_000,
+        # 2 TB VRAM: 2x TensTorrent Galaxy Blackhole
+        hardware=TENSTORRENT.cluster(2),
         or_slug="moonshotai/kimi-k3-20260715",
         or_session_cost_10_49_turns=0.7259414,
         or_toks_served=2150367904784,
@@ -932,7 +982,8 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(1.0, 2.7, 0.1),
         available_local=False,
-        hardware_cost=15300,
+        # 384 GB unified: 3x DGX Spark
+        hardware=DGX_SPARK.cluster(3, extra_price=300),
         or_slug="stepfun/step-5-preview-20261008",
         or_eff_input_price=0.09146,
         or_eff_output_price=2.7,
@@ -948,7 +999,8 @@ MODELS = [
             0.022603503620440366, 0.02179886644361893, 0.017973304690042755
         ),
         aa_sticker_price=PricedTokens(0.14, 0.28, 0.0028),
-        hardware_cost=6800,
+        # 192 GB unified
+        hardware=GORGON_HALO,
         or_slug="xiaomi/mimo-v2.6-flash-20260921",
         or_session_cost_10_49_turns=0.033839771666666664,
         or_toks_served=11457378265672,
@@ -965,7 +1017,8 @@ MODELS = [
             0.057833820951334845, 0.055919859445151064, 0.01946950897564899
         ),
         aa_sticker_price=PricedTokens(0.435, 0.87, 0.0036),
-        hardware_cost=27200,
+        # 640 GB unified: 5x DGX Spark + 2x QFP28 switch
+        hardware=DGX_SPARK.cluster(5, extra_price=2200),
         or_slug="xiaomi/mimo-v2.6-pro-20260921",
         or_session_cost_10_49_turns=0.10222659333333334,
         or_toks_served=1278518290939,
@@ -1459,7 +1512,8 @@ MODELS = [
         "Ling 3.1 Flash",
         41.0906200397391,
         ProviderType.DATACENTER,
-        hardware_cost=15300,
+        # 384 GB unified: 3x DGX Spark
+        hardware=DGX_SPARK.cluster(3, extra_price=300),
         aa_tok_per_task=102140,
         aa_cost_per_task=PricedTokens(
             0.3497615699262885, 0.09192623037914029, 0.5599150798944313
@@ -1467,12 +1521,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.3, 0.9, 0.06),
         or_slug="inclusionai/ling-3.1-flash-20261002",
         or_toks_served=629522457118,
-        # Currently free but rate-limited and effectively unusable on OpenRouter
-        # use AA pricing only
-        # or_eff_input_price=0.0,
-        # or_eff_output_price=0.0,
-        available_datacenter=False,
-        available_local=False,
+        or_eff_input_price=0.0584,
+        or_eff_output_price=0.515,
     ),
     Model(
         "Mistral",
@@ -1492,7 +1542,8 @@ MODELS = [
         or_eff_output_price=2.187,
         available_datacenter=True,
         available_local=False,
-        hardware_cost=27200,
+        # 640 GB unified: 5x DGX Spark + 2x QFP28 switch
+        hardware=DGX_SPARK.cluster(5, extra_price=2200),
     ),
 ]
 
@@ -1682,9 +1733,9 @@ PLOTS = [
     # own instead of squashing the other ten models into the leftmost 8%.
     PlotSpec(
         "Intelligence vs. Hardware price",
-        lambda m: m.hardware_cost is not None,
+        lambda m: m.hardware_price() is not None,
         "local_hardware",
-        x_of=lambda m: m.hardware_cost,
+        x_of=Model.hardware_price,
         x_label="Hardware price, one-off (USD)",
         xtick_step=2_000,
         band=False,
