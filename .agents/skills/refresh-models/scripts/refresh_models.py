@@ -70,7 +70,6 @@ AUTH_PATHS = [
 AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     # base name: (aa_page_slug, aa_record_name, derived_intelligence?)
     "MiniCPM5-2B": ("minicpm5-2b", "MiniCPM5-2B", False),
-    "Muse Glimmer": ("muse-glimmer", "Muse Glimmer (High)", False),
     "Qwen3.6-35B-A3B": ("qwen3-6-35b-a3b", "Qwen3.6 35B A3B (Reasoning)", False),
     "Qwen3.8-27B": ("qwen3-8-27b", "Qwen3.8 27B (Xhigh)", False),
     "Ternary-Bonsai-2": ("", "", False),  # not on AA: manual entry

@@ -613,19 +613,6 @@ MODELS = [
         estimated=True,
     ),
     Model(
-        "Meta",
-        "Muse Glimmer",
-        17.4754176089465,
-        ProviderType.LOCAL,
-        aa_tok_per_task=13925,
-        aa_cost_per_task=PricedTokens(
-            0.013893052794893865, 0.0187990159196835, 0.024014277935722587
-        ),
-        aa_sticker_price=PricedTokens(0.32499999999999996, 1.35, 0.04),
-        local_speed=LocalSpeed(prefill=938, decode=124),
-        hardware_price_override=2600,
-    ),
-    Model(
         "Institute of Foundation Models",
         "K2 Horizon 7B",
         20.5958819421354,
