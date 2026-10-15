@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-10-12
+**Last updated:** 2026-10-15
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -212,22 +212,17 @@ rapidly:
 | 16 GB VRAM + 32 GB host | PC with RTX 5060 Ti | ~$2,300 | Qwen3.8-Flash Coder (IQ3_XXS REAP50 on [Strata](https://github.com/Niko1221/Strata))<br>Occamy-1.0 (IQ4_XS) |
 | 24 GB VRAM + 32 GB host | PC with RTX 3090 | ~$2,600 (used) | Qwen-3.8-27B (IQ4_XS) |
 | 16 GB VRAM + 64 GB host | PC with RTX 5060 Ti | ~$2,700 | Qwen3.8-Flash (IQ3_XXS on [Strata](https://github.com/Niko1221/Strata)) |
-| 128 GB unified | Strix Halo 128 GB<br>DGX Spark (128 GB)<br>Mac Studio M5 Max 128 GB<br>Mac Studio M5 Ultra 96 GB<br>MacBook Pro M5 Max 128 GB | $3,100<br>$5,000<br>$5,100<br>$5,400<br>$7,000 | GLM-5.3-Flash (IQ3_XXS)<br>Qwen3.8-Flash (Q4_K_M on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [DwarfStar](https://dwarfstar.sh/)) |
-| 192 GB unified | Gorgon Halo | $6,800 | MiMo-v2.6-Flash (MXFP4 QAT) |
-| 256 GB unified | 2x DGX Spark<br>Mac Studio M5 Ultra 256 GB | $10,200<br>$11,300 | Ling 3.1 Flash (IQ3_XXS) |
-| 384 GB unified | 3x DGX Spark | $15,300 | DeepSeek-V4.1-Flash (MXFP4 QAT) <br>GLM-5.3 (Q3_K_XL)<br>Step 5 Preview (Q4_K_M) |
+| 128 GB unified | Strix Halo 128 GB<br>DGX Spark (128 GB)<br>Mac Studio M5 Max 128 GB<br>Mac Studio M5 Ultra 96 GB<br>MacBook Pro M5 Max 128 GB | $3,100<br>$5,000<br>$5,100<br>$5,400<br>$7,000 | GLM-5.3-Flash (IQ3_XXS)<br>MiMo-v2.6-Flash (3.0bpw)<br>Qwen3.8-Flash (Q4_K_M on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [DwarfStar](https://dwarfstar.sh/)) |
+| 192 GB unified | Gorgon Halo | $6,800 | - |
+| 256 GB unified | 2x DGX Spark<br>Mac Studio M5 Ultra 256 GB | $10,200<br>$11,300 | DeepSeek-V4.1-Flash (GSQ-RCO 3.0bpw)<br>Ling 3.1 Flash (IQ3_XXS) |
+| 384 GB unified | 3x DGX Spark | $15,300 | GLM-5.3 (Q3_K_XL)<br>Step 5 Preview (Q4_K_M)<br>MiMo-v2.6-Pro (3.0 bpw) |
 | 512 GB unified | 4x DGX Spark + QFP28 switch<br>2x Mac Studio M5 Ultra 256 GB<br>Mac studio M5 Ultra 512 GB | $21,200<br>$22,600<br>T.B.A. | Hy4 preview (Q4_K_M) |
-| 640 GB unified | 5x DGX Spark + 2x QFP28 switch | $27,200 | MiMo-v2.6-Pro (MXFP4 QAT)<br>Mistral 4 Large Preview (Q4_K_M) |
+| 640 GB unified | 5x DGX Spark + 2x QFP28 switch | $27,200 | Mistral 4 Large Preview (Q4_K_M) |
 | 2 TB VRAM | 2x TensTorrent Galaxy Blackhole | $320,000 | Kimi K3 (MXFP4 QAT) |
 
-The same models on a hardware-cost axis instead of a per-task one. Each point
-sits at the cheapest rig in the table above that can run the model, so the
-electricity prices on the other plots — fractions of a cent a task — vanish next
-to the machine. The curve is over almost immediately: $250 of hardware buys
-more intelligence than $27,000 does, and Kimi K3 is off the right edge of the
-plot entirely, needing $320,000 of hardware for less intelligence than
-MiMo-V2.6-Pro delivers for $27,200. The x axis breaks before it, so the left
-panel is $0-$30,000 and the right panel holds Kimi K3 alone, on its own scale.
+The same models on a hardware-cost axis at the highest available quantization that
+doesn't incur in major degradation. Running electricity prices are negligible in
+comparison.
 
 <a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/plots/local_hardware.svg"><img src="plots/local_hardware.png" alt="Intelligence vs. Hardware Price (Larger Local Models)"></a>
 
@@ -242,8 +237,8 @@ while the latter can be as cheap as a mobile phone subscription.
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
 appreciate how much better Claude Opus 5.5 at max effort (intelligence score 58,
-$12.10/task) is compared to GPT Sol-6.1 at xhigh effort (intelligence 51, $0.48/task —
-25x cheaper), most people will have a hard time doing so. Going further down,
+$11.77/task) is compared to GPT Sol-6.1 at xhigh effort (intelligence 51, $0.53/task —
+22x cheaper), most people will have a hard time doing so. Going further down,
 GLM-5.3-Flash at high effort (intelligence 40, $0.22/task — over _fifty times_
 cheaper than Opus 5.5) is visibly less capable when you give it very sophisticated
 tasks, like one-shotting a whole coding project on its own, but it remains _enough_ for

@@ -624,11 +624,11 @@ MODELS = [
     Model(
         "Alibaba",
         "Qwen3.8-27B",
-        33.6962858057476,
+        33.6762858057476,
         ProviderType.LOCAL,
-        aa_tok_per_task=66797,
+        aa_tok_per_task=66783,
         aa_cost_per_task=PricedTokens(
-            0.432331423090756, 0.20039241455380952, 0.3745911160120289
+            0.432548886590756, 0.20034969155380952, 0.3745911160120289
         ),
         aa_sticker_price=PricedTokens(0.5, 3.0, 0.1),
         local_speed=LocalSpeed(prefill=963, decode=57),
@@ -642,7 +642,7 @@ MODELS = [
         "Ternary-Bonsai-2",
         30.8827,
         ProviderType.LOCAL,
-        aa_tok_per_task=66797,
+        aa_tok_per_task=66783,
         local_speed=LocalSpeed(prefill=949, decode=55),
         hardware_price_override=1000,
         estimated=True,
@@ -674,8 +674,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.15, 0.47, 0.016),
         or_slug="qwen/qwen3.8-flash-20260826",
         or_session_cost_10_49_turns=0.04462325833333333,
-        or_toks_served=454913442680,
-        or_eff_input_price=0.03867,
+        or_toks_served=511594592057,
+        or_eff_input_price=0.03476,
         or_eff_output_price=0.4696,
     ),
     Model(
@@ -690,8 +690,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 6.0, 0.25),
         or_slug="qwen/qwen3.8-max-20260902",
         or_session_cost_10_49_turns=0.7519853750000001,
-        or_toks_served=271880921383,
-        or_eff_input_price=0.3792,
+        or_toks_served=293442104152,
+        or_eff_input_price=0.3931,
         or_eff_output_price=6.0,
     ),
     Model(
@@ -700,17 +700,16 @@ MODELS = [
         39.456167472527,
         ProviderType.DATACENTER,
         aa_tok_per_task=88574,
-        # 384 GB unified: 3x DGX Spark
-        hardware=DGX_SPARK.cluster(3, extra_price=300),
+        hardware=DGX_SPARK.cluster(2, extra_price=100),  # 256GB @ GSQ-RCO 3.0bpw
         aa_cost_per_task=PricedTokens(
             0.10051303480135712, 0.10628879819362691, 0.058423437101084455
         ),
         aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
         or_slug="deepseek/deepseek-v4.1-flash-20260910",
         or_session_cost_10_49_turns=0.04967970125,
-        or_toks_served=40975669296796,
-        or_eff_input_price=0.0242,
-        or_eff_output_price=0.7704,
+        or_toks_served=37432648238230,
+        or_eff_input_price=0.02359,
+        or_eff_output_price=0.7969,
     ),
     Model(
         "Tencent",
@@ -724,9 +723,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.136, 0.5549999999999999, 0.034),
         or_slug="tencent/hy3-20260706",
         or_session_cost_10_49_turns=0.0505326,
-        or_toks_served=2513801139700,
-        or_eff_input_price=0.04091,
-        or_eff_output_price=0.5094,
+        or_toks_served=3215887186759,
+        or_eff_input_price=0.04111,
+        or_eff_output_price=0.5142,
     ),
     # Guesstimate - not on AA. Intelligence is extrapolated from Tencent's own
     # agentic-benchmark chart for Hy4 preview
@@ -777,8 +776,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(1.25, 4.25, 0.15),
         or_slug="meta/muse-spark-1.3-20260902",
         or_session_cost_10_49_turns=0.5707469,
-        or_toks_served=481360041639,
-        or_eff_input_price=0.4184,
+        or_toks_served=534684467417,
+        or_eff_input_price=0.3655,
         or_eff_output_price=4.25,
     ),
     Model(
@@ -793,14 +792,14 @@ MODELS = [
         aa_sticker_price=PricedTokens(1.25, 4.25, 0.15),
         or_slug="meta/muse-spark-1.3-contributor-20260902",
         or_session_cost_10_49_turns=0.03282698675,
-        or_toks_served=2265923509804,
-        or_eff_input_price=0.0364,
+        or_toks_served=3001995289904,
+        or_eff_input_price=0.01952,
         or_eff_output_price=0.1996,
         trains_on_your_data=True,
     ),
-    # Released 2026-10-12: one day of trailing-week OR data so far, and it is too
-    # new to appear in OR's coding-harness session-cost or weekly-volume rankings
-    # yet. Served only by Meta's own endpoint, at an 86% cache hit rate. AA's
+    # Released 2026-10-12: still too new for OR's coding-harness session-cost
+    # ranking, but a weekly-volume row has appeared. Served only by Meta's own
+    # endpoint, at an 86% cache hit rate. AA's
     # other record for it, "Muse Wonder Full (Max)" (55.8021199855616, 53754
     # tok/task), publishes no pricing at all, so it cannot be plotted.
     Model(
@@ -814,7 +813,8 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
         or_slug="meta/muse-wonder-20261012",
-        or_eff_input_price=0.7154,
+        or_toks_served=118883984584,
+        or_eff_input_price=0.7875,
         or_eff_output_price=20.0,
     ),
     Model(
@@ -829,14 +829,14 @@ MODELS = [
         aa_cost_per_task=PricedTokens(
             0.0217437763348598 * 70610 / 138690,
             0.034336576028258216 * 70610 / 138690,
-            0.19717920806761985 * 70610 / 138690,
+            0.22751447084725368 * 70610 / 138690,
         ),
-        aa_sticker_price=PricedTokens(0.15, 0.5, 0.026),
+        aa_sticker_price=PricedTokens(0.15, 0.5, 0.03),
         or_slug="z-ai/glm-5.3-flash-20260826",
-        or_session_cost_10_49_turns=0.04299919175,
-        or_toks_served=10843334454956,
-        or_eff_input_price=0.05157,
-        or_eff_output_price=0.5326,
+        or_session_cost_10_49_turns=0.04570376375,
+        or_toks_served=12940775886034,
+        or_eff_input_price=0.05134,
+        or_eff_output_price=0.5072,
         estimated=True,
     ),
     Model(
@@ -846,14 +846,14 @@ MODELS = [
         ProviderType.DATACENTER,
         aa_tok_per_task=68673,
         aa_cost_per_task=PricedTokens(
-            0.0217437763348598, 0.034336576028258216, 0.19717920806761985
+            0.0217437763348598, 0.034336576028258216, 0.22751447084725368
         ),
-        aa_sticker_price=PricedTokens(0.15, 0.5, 0.026),
+        aa_sticker_price=PricedTokens(0.15, 0.5, 0.03),
         or_slug="z-ai/glm-5.3-flash-20260826",
         or_session_cost_10_49_turns=0.04570376375,
-        or_toks_served=12237204935035,
-        or_eff_input_price=0.05057,
-        or_eff_output_price=0.5124,
+        or_toks_served=12940775886034,
+        or_eff_input_price=0.05134,
+        or_eff_output_price=0.5072,
         hardware=STRIX_HALO,  # 128GB @ IQ3_XXS
     ),
     Model(
@@ -870,9 +870,9 @@ MODELS = [
         hardware=DGX_SPARK.cluster(3, extra_price=300),  # 384 GB @ Q3_K_XL
         or_slug="z-ai/glm-5.3-20260816",
         or_session_cost_10_49_turns=0.35979856,
-        or_toks_served=3786138998573,
-        or_eff_input_price=0.2214,
-        or_eff_output_price=4.523,
+        or_toks_served=4427889715785,
+        or_eff_input_price=0.247,
+        or_eff_output_price=4.444,
     ),
     Model(
         "Moonshot AI",
@@ -888,9 +888,9 @@ MODELS = [
         hardware=TENSTORRENT.cluster(2),
         or_slug="moonshotai/kimi-k3-20260715",
         or_session_cost_10_49_turns=0.7259414,
-        or_toks_served=2150367904784,
-        or_eff_input_price=0.5877,
-        or_eff_output_price=15.0,
+        or_toks_served=2626486952678,
+        or_eff_input_price=0.5378,
+        or_eff_output_price=14.81,
     ),
     Model(
         "Google",
@@ -904,9 +904,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.75, 3.75, 0.075),
         or_slug="google/gemini-3.8-flash-20260902",
         or_session_cost_10_49_turns=0.27960199750000003,
-        or_toks_served=2048992466065,
-        or_eff_input_price=0.3556,
-        or_eff_output_price=4.128,
+        or_toks_served=1975403749599,
+        or_eff_input_price=0.3487,
+        or_eff_output_price=4.16,
     ),
     Model(
         "Google",
@@ -919,11 +919,10 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         or_slug="google/gemini-4-argon-20261013",
-        # Released 2026-10-13 on OR: one day of trailing-week pricing, no
-        # coding-harness session cost and no weekly ranking row yet.
-        or_eff_input_price=0.8256,
-        or_eff_output_price=10.23,
-        available_local=False,
+        # Released 2026-10-13 on OR: no coding-harness session cost yet.
+        or_toks_served=191119588664,
+        or_eff_input_price=0.5365,
+        or_eff_output_price=10.78,
     ),
     Model(
         "SpaceXAI",
@@ -937,9 +936,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 6.0, 0.5),
         or_slug="x-ai/grok-4.7-20260916",
         or_session_cost_10_49_turns=1.0399751,
-        or_toks_served=651588019161,
-        or_eff_input_price=0.8139,
-        or_eff_output_price=6.283,
+        or_toks_served=592585788697,
+        or_eff_input_price=0.79,
+        or_eff_output_price=6.254,
     ),
     Model(
         "SpaceXAI",
@@ -953,9 +952,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 6.0, 0.5),
         or_slug="x-ai/grok-4.7-20260916",
         or_session_cost_10_49_turns=1.0399751,
-        or_toks_served=651588019161,
-        or_eff_input_price=0.8139,
-        or_eff_output_price=6.283,
+        or_toks_served=592585788697,
+        or_eff_input_price=0.79,
+        or_eff_output_price=6.254,
     ),
     Model(
         "StepFun",
@@ -967,13 +966,12 @@ MODELS = [
             0.23538385680255072, 0.1731895812858314, 0.6178334256800233
         ),
         aa_sticker_price=PricedTokens(1.0, 2.7, 0.1),
-        available_local=False,
         # 384 GB unified: 3x DGX Spark
         hardware=DGX_SPARK.cluster(3, extra_price=300),
         or_slug="stepfun/step-5-preview-20261008",
-        or_eff_input_price=0.09146,
+        or_eff_input_price=0.09265,
         or_eff_output_price=2.7,
-        or_toks_served=8836310984404,
+        or_toks_served=18789275801470,
     ),
     Model(
         "Xiaomi",
@@ -985,12 +983,11 @@ MODELS = [
             0.022603503620440366, 0.02179886644361893, 0.017973304690042755
         ),
         aa_sticker_price=PricedTokens(0.14, 0.28, 0.0028),
-        # 192 GB unified
-        hardware=GORGON_HALO,
+        hardware=STRIX_HALO,  # 128GB @ 3.0bpw
         or_slug="xiaomi/mimo-v2.6-flash-20260921",
         or_session_cost_10_49_turns=0.033839771666666664,
-        or_toks_served=11457378265672,
-        or_eff_input_price=0.01294,
+        or_toks_served=11460949511450,
+        or_eff_input_price=0.01346,
         or_eff_output_price=0.2799,
     ),
     Model(
@@ -1003,12 +1000,11 @@ MODELS = [
             0.057833820951334845, 0.055919859445151064, 0.01946950897564899
         ),
         aa_sticker_price=PricedTokens(0.435, 0.87, 0.0036),
-        # 640 GB unified: 5x DGX Spark + 2x QFP28 switch
-        hardware=DGX_SPARK.cluster(5, extra_price=2200),
+        hardware=DGX_SPARK.cluster(3, extra_price=300),  # 384GB @ 3.0bpw
         or_slug="xiaomi/mimo-v2.6-pro-20260921",
         or_session_cost_10_49_turns=0.10222659333333334,
-        or_toks_served=1278518290939,
-        or_eff_input_price=0.04112,
+        or_toks_served=1578457145280,
+        or_eff_input_price=0.04059,
         or_eff_output_price=0.8696,
     ),
     Model(
@@ -1023,9 +1019,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="openai/gpt-6-luna-20260922",
         or_session_cost_10_49_turns=0.0281983835,
-        or_toks_served=7112195705621,
-        or_eff_input_price=0.03718,
-        or_eff_output_price=0.482,
+        or_toks_served=7106864030389,
+        or_eff_input_price=0.03729,
+        or_eff_output_price=0.4959,
     ),
     Model(
         "OpenAI",
@@ -1039,9 +1035,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="openai/gpt-6-luna-20260922",
         or_session_cost_10_49_turns=0.0281983835,
-        or_toks_served=7112195705621,
-        or_eff_input_price=0.03718,
-        or_eff_output_price=0.482,
+        or_toks_served=7106864030389,
+        or_eff_input_price=0.03729,
+        or_eff_output_price=0.4959,
     ),
     Model(
         "OpenAI",
@@ -1055,9 +1051,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="openai/gpt-6-luna-20260922",
         or_session_cost_10_49_turns=0.0281983835,
-        or_toks_served=7112195705621,
-        or_eff_input_price=0.03718,
-        or_eff_output_price=0.482,
+        or_toks_served=7106864030389,
+        or_eff_input_price=0.03729,
+        or_eff_output_price=0.4959,
     ),
     Model(
         "OpenAI",
@@ -1071,9 +1067,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="openai/gpt-6-luna-20260922",
         or_session_cost_10_49_turns=0.0281983835,
-        or_toks_served=7112195705621,
-        or_eff_input_price=0.03718,
-        or_eff_output_price=0.482,
+        or_toks_served=7106864030389,
+        or_eff_input_price=0.03729,
+        or_eff_output_price=0.4959,
     ),
     Model(
         "OpenAI",
@@ -1087,9 +1083,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="openai/gpt-6-luna-20260922",
         or_session_cost_10_49_turns=0.0281983835,
-        or_toks_served=7112195705621,
-        or_eff_input_price=0.03718,
-        or_eff_output_price=0.482,
+        or_toks_served=7106864030389,
+        or_eff_input_price=0.03729,
+        or_eff_output_price=0.4959,
     ),
     Model(
         "OpenAI",
@@ -1103,9 +1099,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         or_slug="openai/gpt-6.1-sol-20260929",
         or_session_cost_10_49_turns=0.4493659925,
-        or_toks_served=2125596047068,
-        or_eff_input_price=0.4045,
-        or_eff_output_price=9.85,
+        or_toks_served=2304401041388,
+        or_eff_input_price=0.4655,
+        or_eff_output_price=9.928,
     ),
     Model(
         "OpenAI",
@@ -1119,9 +1115,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         or_slug="openai/gpt-6.1-sol-20260929",
         or_session_cost_10_49_turns=0.4493659925,
-        or_toks_served=2125596047068,
-        or_eff_input_price=0.4045,
-        or_eff_output_price=9.85,
+        or_toks_served=2304401041388,
+        or_eff_input_price=0.4655,
+        or_eff_output_price=9.928,
     ),
     Model(
         "OpenAI",
@@ -1135,9 +1131,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         or_slug="openai/gpt-6.1-sol-20260929",
         or_session_cost_10_49_turns=0.4493659925,
-        or_toks_served=2125596047068,
-        or_eff_input_price=0.4045,
-        or_eff_output_price=9.85,
+        or_toks_served=2304401041388,
+        or_eff_input_price=0.4655,
+        or_eff_output_price=9.928,
     ),
     Model(
         "OpenAI",
@@ -1151,9 +1147,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         or_slug="openai/gpt-6.1-sol-20260929",
         or_session_cost_10_49_turns=0.4493659925,
-        or_toks_served=2125596047068,
-        or_eff_input_price=0.4045,
-        or_eff_output_price=9.85,
+        or_toks_served=2304401041388,
+        or_eff_input_price=0.4655,
+        or_eff_output_price=9.928,
     ),
     Model(
         "OpenAI",
@@ -1167,9 +1163,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         or_slug="openai/gpt-6.1-sol-20260929",
         or_session_cost_10_49_turns=0.4493659925,
-        or_toks_served=2125596047068,
-        or_eff_input_price=0.4045,
-        or_eff_output_price=9.85,
+        or_toks_served=2304401041388,
+        or_eff_input_price=0.4655,
+        or_eff_output_price=9.928,
     ),
     Model(
         "OpenAI",
@@ -1183,9 +1179,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(10.0, 50.0, 1.0),
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.84614935,
-        or_toks_served=582923841121,
-        or_eff_input_price=2.594,
-        or_eff_output_price=56.2,
+        or_toks_served=511164868301,
+        or_eff_input_price=2.491,
+        or_eff_output_price=53.96,
     ),
     Model(
         "OpenAI",
@@ -1199,9 +1195,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(10.0, 50.0, 1.0),
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.84614935,
-        or_toks_served=582923841121,
-        or_eff_input_price=2.594,
-        or_eff_output_price=56.2,
+        or_toks_served=511164868301,
+        or_eff_input_price=2.491,
+        or_eff_output_price=53.96,
     ),
     Model(
         "OpenAI",
@@ -1215,9 +1211,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(10.0, 50.0, 1.0),
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.84614935,
-        or_toks_served=582923841121,
-        or_eff_input_price=2.594,
-        or_eff_output_price=56.2,
+        or_toks_served=511164868301,
+        or_eff_input_price=2.491,
+        or_eff_output_price=53.96,
     ),
     Model(
         "OpenAI",
@@ -1231,9 +1227,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(10.0, 50.0, 1.0),
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.84614935,
-        or_toks_served=582923841121,
-        or_eff_input_price=2.594,
-        or_eff_output_price=56.2,
+        or_toks_served=511164868301,
+        or_eff_input_price=2.491,
+        or_eff_output_price=53.96,
     ),
     Model(
         "OpenAI",
@@ -1247,9 +1243,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(10.0, 50.0, 1.0),
         or_slug="openai/gpt-6-astra-20260903",
         or_session_cost_10_49_turns=2.84614935,
-        or_toks_served=582923841121,
-        or_eff_input_price=2.594,
-        or_eff_output_price=56.2,
+        or_toks_served=511164868301,
+        or_eff_input_price=2.491,
+        or_eff_output_price=53.96,
     ),
     Model(
         "Anthropic",
@@ -1263,8 +1259,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
         or_session_cost_10_49_turns=0.6731425566666666,
-        or_toks_served=2430492313340,
-        or_eff_input_price=0.5064,
+        or_toks_served=2707394666320,
+        or_eff_input_price=0.4628,
         or_eff_output_price=10.01,
     ),
     Model(
@@ -1279,8 +1275,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
         or_session_cost_10_49_turns=0.6731425566666666,
-        or_toks_served=2430492313340,
-        or_eff_input_price=0.5064,
+        or_toks_served=2707394666320,
+        or_eff_input_price=0.4628,
         or_eff_output_price=10.01,
     ),
     Model(
@@ -1295,8 +1291,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
         or_session_cost_10_49_turns=0.6731425566666666,
-        or_toks_served=2430492313340,
-        or_eff_input_price=0.5064,
+        or_toks_served=2707394666320,
+        or_eff_input_price=0.4628,
         or_eff_output_price=10.01,
     ),
     Model(
@@ -1311,8 +1307,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
         or_session_cost_10_49_turns=0.6731425566666666,
-        or_toks_served=2430492313340,
-        or_eff_input_price=0.5064,
+        or_toks_served=2707394666320,
+        or_eff_input_price=0.4628,
         or_eff_output_price=10.01,
     ),
     Model(
@@ -1327,8 +1323,8 @@ MODELS = [
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
         or_slug="anthropic/claude-sonnet-5.5-20260928",
         or_session_cost_10_49_turns=0.6731425566666666,
-        or_toks_served=2430492313340,
-        or_eff_input_price=0.5064,
+        or_toks_served=2707394666320,
+        or_eff_input_price=0.4628,
         or_eff_output_price=10.01,
     ),
     Model(
@@ -1343,9 +1339,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
         or_slug="anthropic/claude-opus-5.5-20260921",
         or_session_cost_10_49_turns=1.4390117666666669,
-        or_toks_served=5025145057335,
-        or_eff_input_price=0.7813,
-        or_eff_output_price=20.14,
+        or_toks_served=5648520399528,
+        or_eff_input_price=0.7536,
+        or_eff_output_price=20.29,
     ),
     Model(
         "Anthropic",
@@ -1359,9 +1355,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
         or_slug="anthropic/claude-opus-5.5-20260921",
         or_session_cost_10_49_turns=1.4390117666666669,
-        or_toks_served=5025145057335,
-        or_eff_input_price=0.7813,
-        or_eff_output_price=20.14,
+        or_toks_served=5648520399528,
+        or_eff_input_price=0.7536,
+        or_eff_output_price=20.29,
     ),
     Model(
         "Anthropic",
@@ -1375,9 +1371,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
         or_slug="anthropic/claude-opus-5.5-20260921",
         or_session_cost_10_49_turns=1.4390117666666669,
-        or_toks_served=5025145057335,
-        or_eff_input_price=0.7813,
-        or_eff_output_price=20.14,
+        or_toks_served=5648520399528,
+        or_eff_input_price=0.7536,
+        or_eff_output_price=20.29,
     ),
     Model(
         "Anthropic",
@@ -1391,9 +1387,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
         or_slug="anthropic/claude-opus-5.5-20260921",
         or_session_cost_10_49_turns=1.4390117666666669,
-        or_toks_served=5025145057335,
-        or_eff_input_price=0.7813,
-        or_eff_output_price=20.14,
+        or_toks_served=5648520399528,
+        or_eff_input_price=0.7536,
+        or_eff_output_price=20.29,
     ),
     Model(
         "Anthropic",
@@ -1407,9 +1403,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
         or_slug="anthropic/claude-opus-5.5-20260921",
         or_session_cost_10_49_turns=1.4390117666666669,
-        or_toks_served=5025145057335,
-        or_eff_input_price=0.7813,
-        or_eff_output_price=20.14,
+        or_toks_served=5648520399528,
+        or_eff_input_price=0.7536,
+        or_eff_output_price=20.29,
     ),
     # Released on 2026-10-07: one day of trailing-week pricing data so far, no
     # coding-harness session cost or weekly tokens served yet.
@@ -1425,9 +1421,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="anthropic/claude-haiku-5.5-20261007",
         or_session_cost_10_49_turns=0.042970817999999994,
-        or_eff_input_price=0.08406,
-        or_eff_output_price=0.7192,
-        or_toks_served=1108450212279,
+        or_eff_input_price=0.08315,
+        or_eff_output_price=0.7165,
+        or_toks_served=1990213651659,
     ),
     Model(
         "Anthropic",
@@ -1441,9 +1437,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="anthropic/claude-haiku-5.5-20261007",
         or_session_cost_10_49_turns=0.042970817999999994,
-        or_eff_input_price=0.08406,
-        or_eff_output_price=0.7192,
-        or_toks_served=1108450212279,
+        or_eff_input_price=0.08315,
+        or_eff_output_price=0.7165,
+        or_toks_served=1990213651659,
     ),
     Model(
         "Anthropic",
@@ -1457,9 +1453,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="anthropic/claude-haiku-5.5-20261007",
         or_session_cost_10_49_turns=0.042970817999999994,
-        or_eff_input_price=0.08406,
-        or_eff_output_price=0.7192,
-        or_toks_served=1108450212279,
+        or_eff_input_price=0.08315,
+        or_eff_output_price=0.7165,
+        or_toks_served=1990213651659,
     ),
     Model(
         "Anthropic",
@@ -1473,9 +1469,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="anthropic/claude-haiku-5.5-20261007",
         or_session_cost_10_49_turns=0.042970817999999994,
-        or_eff_input_price=0.08406,
-        or_eff_output_price=0.7192,
-        or_toks_served=1108450212279,
+        or_eff_input_price=0.08315,
+        or_eff_output_price=0.7165,
+        or_toks_served=1990213651659,
     ),
     Model(
         "Anthropic",
@@ -1489,9 +1485,9 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
         or_slug="anthropic/claude-haiku-5.5-20261007",
         or_session_cost_10_49_turns=0.042970817999999994,
-        or_eff_input_price=0.08406,
-        or_eff_output_price=0.7192,
-        or_toks_served=1108450212279,
+        or_eff_input_price=0.08315,
+        or_eff_output_price=0.7165,
+        or_toks_served=1990213651659,
     ),
     Model(
         "InclusionAI",
@@ -1499,32 +1495,31 @@ MODELS = [
         41.0906200397391,
         ProviderType.DATACENTER,
         hardware=DGX_SPARK.cluster(2, extra_price=100),  # 256 GB @ IQ3_XXS
-        aa_tok_per_task=102140,
+        aa_tok_per_task=101987,
         aa_cost_per_task=PricedTokens(
-            0.3497615699262885, 0.09192623037914029, 0.5599150798944313
+            0.3490765826791074, 0.09178851278823119, 0.5587788604620494
         ),
         aa_sticker_price=PricedTokens(0.3, 0.9, 0.06),
         or_slug="inclusionai/ling-3.1-flash-20261002",
-        or_toks_served=629522457118,
-        or_eff_input_price=0.0584,
-        or_eff_output_price=0.515,
+        or_toks_served=608002389121,
+        or_eff_input_price=0.01502,
+        or_eff_output_price=0.1183,
     ),
     Model(
         "Mistral",
         "Mistral Large 4 Preview",
         38.3770408917494,
         ProviderType.DATACENTER,
-        aa_tok_per_task=69330,
+        aa_tok_per_task=69464,
         aa_cost_per_task=PricedTokens(
-            0.26824226061275014, 0.2897992456331666, 0.5737175470549178
+            0.26874547775614793, 0.29035965633316657, 0.5749966143719745
         ),
         aa_sticker_price=PricedTokens(1.36, 4.18, 0.14),
-        # Released on 2026-10-06: only two days of trailing-week data so far and
-        # no OR coding-harness session cost yet.
+        # Released on 2026-10-06: no OR coding-harness session cost yet.
         or_slug="mistralai/mistral-large-4-0-20261006",
-        or_toks_served=103350273305,
-        or_eff_input_price=0.2184,
-        or_eff_output_price=2.187,
+        or_toks_served=198141852482,
+        or_eff_input_price=0.2017,
+        or_eff_output_price=2.179,
         available_datacenter=True,
         available_local=False,
         # 640 GB unified: 5x DGX Spark + 2x QFP28 switch
