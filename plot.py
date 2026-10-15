@@ -302,7 +302,7 @@ class LocalHardware(NamedTuple):
 
 
 RTX3090 = LocalHardware("RTX 3090", 43, 350)
-STRIX_HALO = LocalHardware("Strix Halo 128GB", 11, 170, 3800)
+STRIX_HALO = LocalHardware("Strix Halo 128GB", price=3100)
 GORGON_HALO = LocalHardware("Gorgon Halo", price=6800)
 DGX_SPARK = LocalHardware("DGX Spark", price=5000)
 TENSTORRENT = LocalHardware("TensTorrent Galaxy Blackhole", price=160_000)
@@ -854,8 +854,7 @@ MODELS = [
         or_toks_served=12237204935035,
         or_eff_input_price=0.05057,
         or_eff_output_price=0.5124,
-        # 256 GB unified: 2x DGX Spark
-        hardware=DGX_SPARK.cluster(2, extra_price=200),
+        hardware=STRIX_HALO,  # 128GB @ IQ3_XXS
     ),
     Model(
         "Z AI",
@@ -867,8 +866,8 @@ MODELS = [
             0.17082790879500323, 0.3129615000082585, 1.5218481062416964
         ),
         aa_sticker_price=PricedTokens(1.4, 4.4, 0.26),
-        # 512 GB unified: 4x DGX Spark + QFP28 switch
-        hardware=DGX_SPARK.cluster(4, extra_price=1200),
+        # 384 GB unified: 3x DGX Spark
+        hardware=DGX_SPARK.cluster(3, extra_price=300),  # 384 GB @ Q3_K_XL
         or_slug="z-ai/glm-5.3-20260816",
         or_session_cost_10_49_turns=0.35979856,
         or_toks_served=3786138998573,
@@ -1499,8 +1498,7 @@ MODELS = [
         "Ling 3.1 Flash",
         41.0906200397391,
         ProviderType.DATACENTER,
-        # 384 GB unified: 3x DGX Spark
-        hardware=DGX_SPARK.cluster(3, extra_price=300),
+        hardware=DGX_SPARK.cluster(2, extra_price=100),  # 256 GB @ IQ3_XXS
         aa_tok_per_task=102140,
         aa_cost_per_task=PricedTokens(
             0.3497615699262885, 0.09192623037914029, 0.5599150798944313
