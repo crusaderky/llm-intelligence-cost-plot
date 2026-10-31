@@ -77,7 +77,11 @@ name:
 - `⚡` → lightning bolt icon (local electricity cost)
 - `trains_on_your_data=True` → thief mask icon (provider trains on your data); excluded
   from the Pareto frontier
-- `available=False` → grey strikethrough text; excluded from the Pareto frontier
+- `available_datacenter=False` / `available_local=False` → grey strikethrough text in the
+  views that flag governs (all price views use `available_datacenter`, the hardware view
+  uses `available_local`, via `PlotSpec.available_of`); excluded from the Pareto frontier
+  and given a "Not publicly available" legend entry
+- `estimated=True` → hollow dot (data not published by AA: extrapolated, or hand-entered)
 
 A publisher appearing for the first time must be added to `PUBLISHERS` with its
 artificialanalysis.ai color, or the script KeyErrors.

@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-10-15
+**Last updated:** 2026-10-31
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -59,9 +59,9 @@ models.
 
 A good rule of thumb for reading the intelligence axis: a one-point difference is
 unlikely to be noticeable by most, while a 5-point gap is substantial. It's important to
-point out that an intelligence score of 39, which is the rock bottom in this first plot,
-is above what the smartest models in the world could deliver in April 2026 (Opus 4.7 and
-GPT-5.5, score 38).
+point out that an intelligence score of 31, which is the rock bottom in this first plot,
+is what the smartest models in the world in April 2026, GPT-5.5 and Opus 4.7, could
+deliver.
 
 Models marked with a thief mask symbol
 (<img src="static/thief_mask.png" alt="[thief mask]" height="15" style="vertical-align: middle">)
@@ -118,8 +118,13 @@ absent as they have no sticker price to compare with.
   [Tencent's own agentic-benchmark chart](https://hy.tencent.ai/research/hy4-preview).
   Its intelligence score was calculated by mapping the delta on the _self-published_
   benchmarks onto the AA Intelligence Index of the models it is compared against.
-- Extrapolated [Occamy-1.0](https://huggingface.co/Accio-Lab/occamy-1.0), in the same
-  way as Hy4.
+- MiniCPM5-2B, Qwen3.6-35B-A3B, Qwen3.8-Flash, K2 Horizon 7B and Ling 3.1 Flash: AA's
+  October 2026 rebuild (v4.3 → v5) dropped their score but still publishes their
+  individual benchmark results, so their v5 score is regressed from those benchmarks
+  instead: a ridge regression of the index on the benchmark scores of the
+  re-benchmarked models that report the same ones (leave-one-out MAE 1.6-2.5 points).
+  Ling 3.1 Flash uses only the nine benchmarks it shares with its successor, the 1019
+  record AA kept; Qwen3.8-Flash only those it shares with Qwen3.8 Max and Qwen3.8 27B.
 
 ## Cost calculation for datacenter models
 
@@ -139,7 +144,7 @@ output tokens = AA $/task[output] / AA sticker output price
 ```
 
 An agentic task caches aggressively, so most input tokens are cache hits. Opus 5.5 at
-max effort, for example, spends 12.1M cached input tokens against 294k uncached ones.
+max effort, for example, spends 23.7M cached input tokens against 458k uncached ones.
 
 **Step 2 — OpenRouter's real prices.** The spot price of the cheapest provider is far
 too volatile to plot (it moves wildly within hours), and the cheapest provider is
@@ -172,10 +177,10 @@ calculated as follows:
   plus the uncached input tokens from the same breakdown the datacenter models use.
   Cache hits are free on your own machine, so they are excluded.
 - AA publishes no breakdown for a few of these models (MiniCPM5-2B, K2 Horizon 7B,
-  Occamy-1.0, Ternary-Bonsai-2). For those, the uncached input tokens are estimated as
-  5.72× the output tokens, which is the median of that ratio over the 33 models AA
-  does break down. It is a crude guess: the real ratio is about 2 for a max-effort
-  task and about 12 for a low-effort one.
+  Ternary-Bonsai-2). For those, the uncached input tokens are estimated as 3.85× the
+  output tokens, which is the median of that ratio over the 50 models AA does break
+  down. It is a crude guess: the real ratio runs from 2 to 95, depending mostly on how
+  much of the task's context the model got served out of cache.
 - Crudely observe prefill and decode speed (tok/s) on local hardware. All measurements
   were taken on the same RTX 3090 video card from 2020, which today is relatively
   affordable at ~$1,400 (used).
@@ -209,16 +214,15 @@ rapidly:
 | --- | --- | --- | --- |
 | 4 GB unified | Mobile phone | ~$250 | MiniCPM5-2B (Q4_K_M) |
 | 16 GB unified | Strix Point laptop | ~$1,000 | Ternary-Bonsai-2<br>K2 Horizon 7B (Q6_K_M) |
-| 16 GB VRAM + 32 GB host | PC with RTX 5060 Ti | ~$2,300 | Qwen3.8-Flash Coder (IQ3_XXS REAP50 on [Strata](https://github.com/Niko1221/Strata))<br>Occamy-1.0 (IQ4_XS) |
+| 16 GB VRAM + 32 GB host | PC with RTX 5060 Ti | ~$2,300 | Qwen3.8-Flash Coder (IQ3_XXS REAP50 on [Strata](https://github.com/Niko1221/Strata))<br>Qwen3.6-35B-A3B (Q4) |
 | 24 GB VRAM + 32 GB host | PC with RTX 3090 | ~$2,600 (used) | Qwen-3.8-27B (IQ4_XS) |
 | 16 GB VRAM + 64 GB host | PC with RTX 5060 Ti | ~$2,700 | Qwen3.8-Flash (IQ3_XXS on [Strata](https://github.com/Niko1221/Strata)) |
 | 128 GB unified | Strix Halo 128 GB<br>DGX Spark (128 GB)<br>Mac Studio M5 Max 128 GB<br>Mac Studio M5 Ultra 96 GB<br>MacBook Pro M5 Max 128 GB | $3,100<br>$5,000<br>$5,100<br>$5,400<br>$7,000 | GLM-5.3-Flash (IQ3_XXS)<br>MiMo-v2.6-Flash (3.0bpw)<br>Qwen3.8-Flash (Q4_K_M on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [DwarfStar](https://dwarfstar.sh/)) |
-| 192 GB unified | Gorgon Halo | $6,800 | - |
-| 256 GB unified | 2x DGX Spark<br>Mac Studio M5 Ultra 256 GB | $10,200<br>$11,300 | DeepSeek-V4.1-Flash (GSQ-RCO 3.0bpw)<br>Ling 3.1 Flash (IQ3_XXS) |
-| 384 GB unified | 3x DGX Spark | $15,300 | GLM-5.3 (Q3_K_XL)<br>Step 5 Preview (Q4_K_M)<br>MiMo-v2.6-Pro (3.0 bpw) |
+| 192 GB unified | Gorgon Halo | $6,800 | MiniMax M3.1 Flash (IQ3_XXS) |
+| 256 GB unified | 2x DGX Spark<br>Mac Studio M5 Ultra 256 GB | $10,200<br>$11,300 | DeepSeek V4.1 Flash 1017 (GSQ-RCO 3.0bpw)<br>Ling 3.1 Flash 1019 (IQ3_XXS) |
+| 384 GB unified | 3x DGX Spark | $15,300 | GLM-5.3 (Q3_K_XL)<br>Step 5 Preview (Q4_K_M)<br>MiMo-v2.6-Pro (3.0 bpw)<br>Mistral Large 4 (Q2_K_XL) |
 | 512 GB unified | 4x DGX Spark + QFP28 switch<br>2x Mac Studio M5 Ultra 256 GB<br>Mac studio M5 Ultra 512 GB | $21,200<br>$22,600<br>T.B.A. | Hy4 preview (Q4_K_M) |
-| 640 GB unified | 5x DGX Spark + 2x QFP28 switch | $27,200 | Mistral 4 Large Preview (Q4_K_M) |
-| 2 TB VRAM | 2x TensTorrent Galaxy Blackhole | $320,000 | Kimi K3 (MXFP4 QAT) |
+| 2 TB VRAM | 2x TensTorrent Galaxy Blackhole | $320,000 | Kimi K3.1 Pro (MXFP4 QAT) |
 
 The same models on a hardware-cost axis at the highest available quantization that
 doesn't incur in major degradation. Running electricity prices are negligible in
@@ -237,12 +241,12 @@ while the latter can be as cheap as a mobile phone subscription.
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
 appreciate how much better Claude Opus 5.5 at max effort (intelligence score 58,
-$11.77/task) is compared to GPT Sol-6.1 at xhigh effort (intelligence 51, $0.53/task —
-22x cheaper), most people will have a hard time doing so. Going further down,
-GLM-5.3-Flash at high effort (intelligence 40, $0.22/task — over _fifty times_
-cheaper than Opus 5.5) is visibly less capable when you give it very sophisticated
-tasks, like one-shotting a whole coding project on its own, but it remains _enough_ for
-90% of what people actually need. Even the highly specialized engineers and scientists
-mentioned above don't actually need the extra intelligence for a lot of what they do.
-Finally, an enthusiast gamer can run Qwen3.8-Flash (intelligence 40, $0.03/task in
-electricity) on a computer they already own.
+$21.03/task) is compared to GPT-6.1 Sol at xhigh effort (intelligence 52, $1.20/task —
+18x cheaper), most people will have a hard time doing so. Going further down,
+GLM-5.3-Flash at high effort (intelligence 27, $0.48/task — over _forty times_ cheaper
+than Opus 5.5) is visibly less capable when you give it very sophisticated tasks, like
+one-shotting a whole coding project on its own, but it remains _enough_ for 90% of what
+people actually need. Even the highly specialized engineers and scientists mentioned
+above don't actually need the extra intelligence for a lot of what they do. Finally, an
+enthusiast gamer can run Qwen3.8-Flash (intelligence 30, $0.04/task in electricity) on
+a computer they already own.

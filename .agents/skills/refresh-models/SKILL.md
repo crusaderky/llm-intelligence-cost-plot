@@ -86,13 +86,33 @@ plot`, visually inspect the PNGs, `pixi r lint`).
     cost and weekly volume. Watch out: two rows can share a display name.
   - Local models: update `intelligence` and `aa_tok_per_task`; keep
     `local_speed=LocalSpeed(prefill=…, decode=…)` and `hardware` (measured on real
-    hardware, never from AA), but do add `aa_cost_per_task` / `aa_sticker_price` when
-    AA publishes them — the electricity cost uses the real uncached input token count
-    instead of `LOCAL_INPUT_TOKEN_RATIO ×` the output count. `Ternary-Bonsai-2` and
-    `Occamy-1.0` are not on AA at all — manual entry, no refresh.
+    hardware, never from AA), but do add `aa_cost_per_task` / `aa_sticker_price` when AA
+    publishes them — the electricity cost uses the real uncached input token count
+    instead of `LOCAL_INPUT_TOKEN_RATIO ×` the output count. `Ternary-Bonsai-2` is not
+    on AA at all — manual entry, no refresh.
   - A model AA has retired (no record on its page any more) cannot be refreshed; drop
     the row rather than freezing its numbers. `Claude Sonnet 5.5 (low)` was dropped for
     this reason.
+  - **2026-10, AA rebuilt the Intelligence Index**: it re-benchmarked only a subset of
+    models, and a record it left without an index publishes neither a task cost nor a
+    token count any more. The refresh prints
+    `(AA has no index for this model since the 2026-10 rebuild: stored values are manual
+    estimates)` and skips the row: `plot.py` keeps it with `estimated=True` (hollow
+    dot, out of the Pareto frontier) and values extrapolated from the pre-rebuild ones
+    — intelligence and tokens per task from a fit of the new index on the old one over
+    the rows that kept both (log-log for intelligence, linear for tokens; the current
+    constants and fits are in the README bullet). AA may still publish the model's
+    sticker prices; if so the task cost is the estimated token mix at those prices, so
+    it still re-prices at OR's real prices. These rows are currently MiniCPM5-2B,
+    Qwen3.6-35B-A3B, Qwen3.8-Flash, K2 Horizon 7B and Ling 3.1 Flash.
+  - Rows whose AA record is gone *and* whose display name stems into another record
+    (as `Ling 3.1 Flash` did into `Ling 3.1 Flash 1019`) must be pinned to `("", "")`
+    in `AA_LOOKUPS`, or `pick_record`'s stem fallback will silently refresh them with
+    the successor's numbers.
+  - Local-only rows with no OR presence (`Ling 3.1 Flash 1019`) plot at AA's posted
+    price and carry `available_datacenter=False`, so they render greyed out on the
+    price plots. Models OR carries no chart for are reported as
+    `(no usable OR price: plots at AA's price)`.
 - `pixi r plot` reprints the recomputed displayed price per task of every model
   (AA's cost per task -> displayed price, the relative delta, and the OR $/M pair), so
   use it to sanity check the numbers.

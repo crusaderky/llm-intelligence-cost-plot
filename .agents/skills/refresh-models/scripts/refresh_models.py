@@ -73,16 +73,14 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "Qwen3.6-35B-A3B": ("qwen3-6-35b-a3b", "Qwen3.6 35B A3B (Reasoning)", False),
     "Qwen3.8-27B": ("qwen3-8-27b", "Qwen3.8 27B (Xhigh)", False),
     "Ternary-Bonsai-2": ("", "", False),  # not on AA: manual entry
-    "Occamy-1.0": ("", "", False),  # not on AA: manual entry
     "Qwen3.8-Flash": ("qwen3-8-flash-next", "Qwen3.8-Flash-Next", False),
     "K2 Horizon 7B": ("k2-horizon-7b", "K2 Horizon 7B", False),
     "Qwen3.8 Max (0902)": ("qwen3-8-max", "Qwen3.8 Max (0902)", False),
-    "DeepSeek V4.1 Flash": (
-        "deepseek-v4-1-flash",
-        "DeepSeek V4.1 Flash (Max)",
+    "DeepSeek V4.1 Flash 1017": (
+        "deepseek-v4-1-flash-1017",
+        "DeepSeek V4.1 Flash 1017 (Max)",
         False,
     ),
-    "Hy3": ("hy3", "Hy3", False),
     "Hy4 preview": ("", "", False),  # not on AA yet: manual entry
     "Muse Spark 1.3": ("muse-spark-1-3", "Muse Spark 1.3 (Max)", False),
     "Muse Wonder": ("muse-wonder", "Muse Wonder (Max)", False),
@@ -92,13 +90,14 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "GLM-5.3-Flash (high)": ("glm-5-3-flash", "GLM-5.3-Flash", True),
     "GLM-5.3-Flash (max)": ("glm-5-3-flash", "GLM-5.3-Flash", False),
     "GLM-5.3": ("glm-5-3", "GLM-5.3 (Max)", False),
-    "Kimi K3": ("kimi-k3", "Kimi K3 (Max)", False),
-    "Gemini 3.8 Flash": ("gemini-3-8-flash", "Gemini 3.8 Flash (High)", False),
+    "Kimi K3.1 Pro": ("kimi-k3-1-pro", "Kimi K3.1 Pro", False),
     "Gemini 4 Argon (high)": ("gemini-4-argon", "Gemini 4 Argon (High)", False),
     "Grok 4.7 (high)": ("grok-4-7-high", "Grok 4.7 (High)", False),
     "Grok 4.7 (xhigh)": ("grok-4-7", "Grok 4.7 (Xhigh)", False),
     "MiMo-V2.6-Flash": ("mimo-v2-6-flash", "MiMo-V2.6-Flash", False),
     "MiMo-V2.6-Pro": ("mimo-v2-6-pro", "MiMo-V2.6-Pro", False),
+    "MiniMax-M3.1-Flash": ("minimax-m3-1-flash", "MiniMax-M3.1-Flash", False),
+    "Gemini 4 Carbon": ("gemini-4-carbon", "Gemini 4 Carbon (High)", False),
     "GPT-6 Luna (low)": ("gpt-6-luna-low", "GPT-6 Luna (Low)", False),
     "GPT-6 Luna (medium)": ("gpt-6-luna-medium", "GPT-6 Luna (Medium)", False),
     "GPT-6 Luna (high)": ("gpt-6-luna-high", "GPT-6 Luna (High)", False),
@@ -190,8 +189,11 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
         "Claude Haiku 5.5 (Max)",
         False,
     ),
-    "Ling 3.1 Flash": ("ling-3-1-flash", "Ling 3.1 Flash", False),
-    "Mistral Large 4 Preview": ("mistral-large-4", "Mistral Large 4 Preview", False),
+    # AA's 2026-10 index rebuild dropped the pre-1019 Ling record (the 1019 is
+    # the one AA kept for the Ling page, and it is local-only).
+    "Ling 3.1 Flash": ("", "", False),  # not on AA (index dropped): manual
+    "Ling 3.1 Flash 1019": ("ling-3-1-flash-1019", "Ling 3.1 Flash 1019", False),
+    "Mistral Large 4": ("mistral-large-4", "Mistral Large 4 (High)", False),
 }
 
 
@@ -572,6 +574,17 @@ def main() -> None:
         if rec is None and not slug:
             name = plot._pad_cell(m.name[:30], 30)
             print(f"{name}   (not on AA: intelligence + tokens are manual)")
+            continue
+        if rec is None:
+            # AA has the page but no usable record: since the 2026-10 index
+            # rebuild it drops the Intelligence Index (and with it the task
+            # cost and token count) of the models it did not re-benchmark.
+            # Nothing here can be refreshed; the stored numbers are estimates.
+            name = plot._pad_cell(m.name[:30], 30)
+            print(
+                f"{name}   (AA has no index for this model since the 2026-10 "
+                f"rebuild: stored values are manual estimates)"
+            )
             continue
         if rec is not None and rec.get("_matched_name") not in (None, rec_name):
             print(
