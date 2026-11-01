@@ -241,12 +241,12 @@ while the latter can be as cheap as a mobile phone subscription.
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
 appreciate how much better Claude Opus 5.5 at max effort (intelligence score 58,
-$21.03/task) is compared to GPT-6.1 Sol at xhigh effort (intelligence 52, $1.20/task —
-18x cheaper), most people will have a hard time doing so. Going further down,
-GLM-5.3-Flash at high effort (intelligence 27, $0.48/task — over _forty times_ cheaper
-than Opus 5.5) is visibly less capable when you give it very sophisticated tasks, like
-one-shotting a whole coding project on its own, but it remains _enough_ for 90% of what
-people actually need. Even the highly specialized engineers and scientists mentioned
-above don't actually need the extra intelligence for a lot of what they do. Finally, an
-enthusiast gamer can run Qwen3.8-Flash (intelligence 30, $0.04/task in electricity) on
-a computer they already own.
+$21.03/task) is compared to GPT-6.1 Sol at max effort (intelligence 54, $1.69/task — 12x
+cheaper), most people will have a hard time doing so. Going further down, GPT-6.1 Sol at
+low effort (intelligence 34, $0.19/task — _over 100 times cheaper than Opus 5.5_) is
+visibly less capable when you give it very sophisticated tasks, like one-shotting a
+whole coding project on its own, but it remains _enough_ for 90% of what people actually
+need. Even the highly specialized engineers and scientists mentioned above don't
+actually need the extra intelligence for a lot of what they do. Finally, an enthusiast
+gamer can run Qwen3.8-Flash (intelligence 28) on a computer they already own for the
+cost of electricity ($0.04/task).

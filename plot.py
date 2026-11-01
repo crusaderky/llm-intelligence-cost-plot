@@ -1078,6 +1078,83 @@ MODELS = [
         or_eff_input_price=0.03672,
         or_eff_output_price=0.4989,
     ),
+    # GPT-6.1 Terra released 2026-10-26, after OR's session-cost window rolled
+    # (windowEnd 2026-10-25), so it carries no session-cost figure yet.
+    Model(
+        "OpenAI",
+        "GPT-6.1 Terra (low)",
+        29.2169280792131,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=4422,
+        aa_cost_per_task=PricedTokens(
+            0.03421288115320557, 0.022110861337539173, 0.015013819560952543
+        ),
+        aa_sticker_price=PricedTokens(1.0, 5.0, 0.05),
+        or_slug="openai/gpt-6.1-terra-20261026",
+        or_toks_served=480462358049,
+        or_eff_input_price=0.2054,
+        or_eff_output_price=5.126,
+    ),
+    Model(
+        "OpenAI",
+        "GPT-6.1 Terra (medium)",
+        38.1152076677975,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=10875,
+        aa_cost_per_task=PricedTokens(
+            0.06293867838538772, 0.05437731370395206, 0.051488590294554354
+        ),
+        aa_sticker_price=PricedTokens(1.0, 5.0, 0.05),
+        or_slug="openai/gpt-6.1-terra-20261026",
+        or_toks_served=480462358049,
+        or_eff_input_price=0.2054,
+        or_eff_output_price=5.126,
+    ),
+    Model(
+        "OpenAI",
+        "GPT-6.1 Terra (high)",
+        42.3344508712563,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=16746,
+        aa_cost_per_task=PricedTokens(
+            0.08723872309895113, 0.08373238661179763, 0.08830853690622348
+        ),
+        aa_sticker_price=PricedTokens(1.0, 5.0, 0.05),
+        or_slug="openai/gpt-6.1-terra-20261026",
+        or_toks_served=480462358049,
+        or_eff_input_price=0.2054,
+        or_eff_output_price=5.126,
+    ),
+    Model(
+        "OpenAI",
+        "GPT-6.1 Terra (xhigh)",
+        44.950051789066,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=26200,
+        aa_cost_per_task=PricedTokens(
+            0.12107684361417946, 0.1309982959158254, 0.14861386213662026
+        ),
+        aa_sticker_price=PricedTokens(1.0, 5.0, 0.05),
+        or_slug="openai/gpt-6.1-terra-20261026",
+        or_toks_served=480462358049,
+        or_eff_input_price=0.2054,
+        or_eff_output_price=5.126,
+    ),
+    Model(
+        "OpenAI",
+        "GPT-6.1 Terra (max)",
+        50.9765188577015,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=59883,
+        aa_cost_per_task=PricedTokens(
+            0.23526757467699644, 0.2994158235895208, 0.4264246328151169
+        ),
+        aa_sticker_price=PricedTokens(1.0, 5.0, 0.05),
+        or_slug="openai/gpt-6.1-terra-20261026",
+        or_toks_served=480462358049,
+        or_eff_input_price=0.2054,
+        or_eff_output_price=5.126,
+    ),
     Model(
         "OpenAI",
         "GPT-6.1 Sol (low)",

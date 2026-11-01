@@ -103,6 +103,11 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "GPT-6 Luna (high)": ("gpt-6-luna-high", "GPT-6 Luna (High)", False),
     "GPT-6 Luna (xhigh)": ("gpt-6-luna-xhigh", "GPT-6 Luna (Xhigh)", False),
     "GPT-6 Luna (max)": ("gpt-6-luna", "GPT-6 Luna (Max)", False),
+    "GPT-6.1 Terra (low)": ("gpt-6-1-terra-low", "GPT-6.1 Terra (Low)", False),
+    "GPT-6.1 Terra (medium)": ("gpt-6-1-terra-medium", "GPT-6.1 Terra (Medium)", False),
+    "GPT-6.1 Terra (high)": ("gpt-6-1-terra-high", "GPT-6.1 Terra (High)", False),
+    "GPT-6.1 Terra (xhigh)": ("gpt-6-1-terra-xhigh", "GPT-6.1 Terra (Xhigh)", False),
+    "GPT-6.1 Terra (max)": ("gpt-6-1-terra", "GPT-6.1 Terra (Max)", False),
     "GPT-6.1 Sol (low)": ("gpt-6-1-sol-low", "GPT-6.1 Sol (Low)", False),
     "GPT-6.1 Sol (medium)": ("gpt-6-1-sol-medium", "GPT-6.1 Sol (Medium)", False),
     "GPT-6.1 Sol (high)": ("gpt-6-1-sol-high", "GPT-6.1 Sol (High)", False),
@@ -114,6 +119,31 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "GPT-6 Astra (xhigh)": ("gpt-6-astra-xhigh", "GPT-6 Astra (Xhigh)", False),
     "GPT-6 Astra (max)": ("gpt-6-astra", "GPT-6 Astra (Max)", False),
     "Step 5 Preview": ("step-5", "Step 5 Preview", False),
+    "Claude Haiku 5.5 (low)": (
+        "claude-haiku-5-5-low",
+        "Claude Haiku 5.5 (Low)",
+        False,
+    ),
+    "Claude Haiku 5.5 (medium)": (
+        "claude-haiku-5-5-medium",
+        "Claude Haiku 5.5 (Medium)",
+        False,
+    ),
+    "Claude Haiku 5.5 (high)": (
+        "claude-haiku-5-5-high",
+        "Claude Haiku 5.5 (High)",
+        False,
+    ),
+    "Claude Haiku 5.5 (xhigh)": (
+        "claude-haiku-5-5-xhigh",
+        "Claude Haiku 5.5 (Xhigh)",
+        False,
+    ),
+    "Claude Haiku 5.5 (max)": (
+        "claude-haiku-5-5",
+        "Claude Haiku 5.5 (Max)",
+        False,
+    ),
     "Claude Sonnet 5.5 (low)": (
         "claude-sonnet-5-5-low",
         "Claude Sonnet 5.5 (Low, Default Fallback)",
@@ -162,31 +192,6 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "Claude Opus 5.5 (max)": (
         "claude-opus-5-5",
         "Claude Opus 5.5 (Max, Default Fallback)",
-        False,
-    ),
-    "Claude Haiku 5.5 (low)": (
-        "claude-haiku-5-5-low",
-        "Claude Haiku 5.5 (Low)",
-        False,
-    ),
-    "Claude Haiku 5.5 (medium)": (
-        "claude-haiku-5-5-medium",
-        "Claude Haiku 5.5 (Medium)",
-        False,
-    ),
-    "Claude Haiku 5.5 (high)": (
-        "claude-haiku-5-5-high",
-        "Claude Haiku 5.5 (High)",
-        False,
-    ),
-    "Claude Haiku 5.5 (xhigh)": (
-        "claude-haiku-5-5-xhigh",
-        "Claude Haiku 5.5 (Xhigh)",
-        False,
-    ),
-    "Claude Haiku 5.5 (max)": (
-        "claude-haiku-5-5",
-        "Claude Haiku 5.5 (Max)",
         False,
     ),
     # AA's 2026-10 index rebuild dropped the pre-1019 Ling record (the 1019 is
