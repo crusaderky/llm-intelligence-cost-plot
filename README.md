@@ -216,12 +216,12 @@ rapidly:
 | 16 GB unified | Strix Point laptop | ~$1,000 | Ternary-Bonsai-2<br>K2 Horizon 7B (Q6_K_M) |
 | 16 GB VRAM + 32 GB host | PC with RTX 5060 Ti | ~$2,300 | Qwen3.8-Flash Coder (IQ3_XXS REAP50 on [Strata](https://github.com/Niko1221/Strata))<br>Qwen3.6-35B-A3B (Q4) |
 | 24 GB VRAM + 32 GB host | PC with RTX 3090 | ~$2,600 (used) | Qwen-3.8-27B (IQ4_XS) |
-| 16 GB VRAM + 64 GB host | PC with RTX 5060 Ti | ~$2,700 | Qwen3.8-Flash (IQ3_XXS on [Strata](https://github.com/Niko1221/Strata)) |
-| 128 GB unified | Strix Halo 128 GB<br>DGX Spark (128 GB)<br>Mac Studio M5 Max 128 GB<br>Mac Studio M5 Ultra 96 GB<br>MacBook Pro M5 Max 128 GB | $3,100<br>$5,000<br>$5,100<br>$5,400<br>$7,000 | GLM-5.3-Flash (IQ3_XXS)<br>MiMo-v2.6-Flash (3.0bpw)<br>Qwen3.8-Flash (Q4_K_M on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [DwarfStar](https://dwarfstar.sh/)) |
+| 16 GB VRAM + 48 GB host | PC with RTX 5060 Ti | ~$2,700 | Qwen3.8-Flash (IQ3_XXS on [Strata](https://github.com/Niko1221/Strata)) |
+| 128 GB unified | Strix Halo 128 GB<br>Mac Studio M5 Max 128 GB<br>Mac Studio M5 Ultra 96 GB<br>MacBook Pro M5 Max 128 GB<br>DGX Spark (128 GB) | $3,100<br>$5,100<br>$5,400<br>$7,000<br>$7,900 | GLM-5.3-Flash (IQ3_XXS)<br>MiMo-v2.6-Flash (3.0bpw)<br>Qwen3.8-Flash (Q4_K_M on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [DwarfStar](https://dwarfstar.sh/)) |
 | 192 GB unified | Gorgon Halo | $6,800 | MiniMax M3.1 Flash (IQ3_XXS) |
-| 256 GB unified | 2x DGX Spark<br>Mac Studio M5 Ultra 256 GB | $10,200<br>$11,300 | DeepSeek V4.1 Flash 1017 (GSQ-RCO 3.0bpw)<br>Ling 3.1 Flash 1019 (IQ3_XXS) |
-| 384 GB unified | 3x DGX Spark | $15,300 | GLM-5.3 (Q3_K_XL)<br>Step 5 Preview (Q4_K_M)<br>MiMo-v2.6-Pro (3.0 bpw)<br>Mistral Large 4 (Q2_K_XL) |
-| 512 GB unified | 4x DGX Spark + QFP28 switch<br>2x Mac Studio M5 Ultra 256 GB<br>Mac studio M5 Ultra 512 GB | $21,200<br>$22,600<br>T.B.A. | Hy4 preview (Q4_K_M) |
+| 256 GB unified | Mac Studio M5 Ultra 256 GB<br>2x DGX Spark | $11,300<br>$15,900 | DeepSeek V4.1 Flash 1017 (GSQ-RCO 3.0bpw)<br>Ling 3.1 Flash 1019 (IQ3_XXS) |
+| 384 GB unified | 3x DGX Spark | $24,000 | GLM-5.3 (Q3_K_XL)<br>Step 5 Preview (Q4_K_M)<br>MiMo-v2.6-Pro (3.0 bpw)<br>Mistral Large 4 (Q2_K_XL) |
+| 512 GB unified | 2x Mac Studio M5 Ultra 256 GB<br>4x DGX Spark + QFP28 switch<br>Mac studio M5 Ultra 512 GB | $22,600<br>$32,800<br>T.B.A. | Hy4 preview (Q4_K_M) |
 | 2 TB VRAM | 2x TensTorrent Galaxy Blackhole | $320,000 | Kimi K3.1 Pro (MXFP4 QAT) |
 
 The same models on a hardware-cost axis at the highest available quantization that

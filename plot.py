@@ -304,7 +304,7 @@ class LocalHardware(NamedTuple):
 RTX3090 = LocalHardware("RTX 3090", 43, 350)
 STRIX_HALO = LocalHardware("Strix Halo 128GB", price=3100)
 GORGON_HALO = LocalHardware("Gorgon Halo", price=6800)
-DGX_SPARK = LocalHardware("DGX Spark", price=5000)
+DGX_SPARK = LocalHardware("DGX Spark", price=7900)
 TENSTORRENT = LocalHardware("TensTorrent Galaxy Blackhole", price=160_000)
 
 # Residential electricity, weighted by population, May 2026 (USD/KWh)
@@ -653,7 +653,7 @@ MODELS = [
         aa_cost_per_task=PricedTokens(0.077, 0.079, 0.42),
         aa_sticker_price=PricedTokens(0.15, 0.47, 0.016),
         local_speed=LocalSpeed(prefill=2000, decode=84),
-        hardware_price_override=2700,
+        hardware_price_override=2700,  # 5060 Ti 16GB + 48GB RAM (Strata)
         estimated=True,
     ),
     # --- Datacenter models (price per task = AA's token mix priced at OR's
@@ -867,6 +867,7 @@ MODELS = [
         or_toks_served=2027545111583,
         or_eff_input_price=0.3111,
         or_eff_output_price=10.08,
+        available_local=False,
     ),
     Model(
         "Google",
@@ -1793,7 +1794,7 @@ PLOTS = [
         x_label="Hardware price, one-off (USD)",
         xtick_step=2_000,
         band=False,
-        x_break=28_000,
+        x_break=35_000,
         break_xtick_format="${x:,.0f}",
         available_of=lambda m: m.available_local,
         label_of=lambda m: _clean_label(m),
@@ -2710,10 +2711,11 @@ def make_broken_axis_plot(spec, models, band, y_lim):
     get their own narrow panel, with a white gap and break slashes between the
     two, and the right panel's x axis is compressed by spec.panel_ratio.
 
-    The hardware view is the extreme case: rigs cost $250 to $27,200, and Kimi
-    K3 needs 2 TB of RAM at $320,000 -- twelve times the next most expensive
-    model, 1,280x the cheapest. The high-intelligence price view is the mild
-    one: thirty-six models under $5.16 against three between $7 and $14.67.
+    The hardware view is the extreme case: rigs cost $250 to $24,000, and Kimi
+    K3 needs 2 TB of RAM at $320,000 -- ten times the next most expensive model
+    (Hy4 preview on 4x DGX Spark, $32,800), 1,280x the cheapest. The
+    high-intelligence price view is the mild one: thirty-two models between
+    $0.14 and $12.76 against three between $21.03 and $32.48.
     """
     assert spec.x_break is not None
     left = [m for m in models if spec.x_of(m) < spec.x_break]
@@ -2737,7 +2739,7 @@ def make_broken_axis_plot(spec, models, band, y_lim):
     # The usual right-hand padding past the last model the panel holds. When
     # the break falls inside that padded range, round the edge up to a whole
     # tick instead, so the axis ends on a round number with the break a tick
-    # inside it: the hardware panel stops at $30,000, not $28,016.
+    # inside it: the high-intelligence panel stops at $14, not $13.14.
     left_lim = left_hi * (1 + spec.x_pad)
     if spec.x_break < left_lim:
         left_lim = math.ceil(left_lim / spec.xtick_step) * spec.xtick_step
