@@ -576,20 +576,67 @@ MODELS = [
     #   laptops, prebuilt PCs); overrides hardware.price when present.
     # See .agents/skills/refresh-models for how to re-fetch these numbers.
     # --- Local models (price per task = electricity) ---
+    # Guesstimate - AA's October 2026 rebuild (v4.3 -> v5) dropped the Intelligence
+    # Index of this model and of the two below it, while still publishing their
+    # individual benchmark scores. Re-estimated in November 2026 by comparing those
+    # scores with GPT-6 Luna (low), GPT-6 Luna (medium), Muse Glimmer and
+    # Granite 4.2 3B, the four scored models of the same class:
+    # AA's v5 index is a linear function of its nine constituent benchmarks, so
+    # regressing the published index on the z-scored constituents of the 91 models
+    # AA still scores recovers it exactly - rmse 0.47, R^2 0.999, weights 3.0
+    # (Terminal-Bench Science), 2.6 (TerminalBench 4.0), 2.2 (FrontierCode 2.0,
+    # AA-Briefcase), 2.0 (HLE-Diamond, CritPT v2 Hard), 1.4 (Omniscience), 1.2
+    # (AutomationBench-AA), 0.2 (GDP-PDF), intercept 31.6.
+    # AA publishes three of the nine for these models today (four for K2 Horizon
+    # 7B): AutomationBench-AA is the record's automationBenchPartialScore,
+    # TerminalBench 4.0 its terminalBench40, GDP-PDF its gdpPdfAllPass, and
+    # Terminal-Bench Science its terminalBenchScience. AA-Briefcase and
+    # Omniscience survive the rebuild unchanged and are read from AA's pre-rebuild
+    # record of the same model: across the 88 models AA scored in both revisions,
+    # its re-run of AA-Briefcase moved the Elo by sd 7.7 (0.04 index points) and
+    # Omniscience by sd 2.9 (0.17 points), so the old number is the current one.
+    # What is left to invent is what the rebuild introduced and AA never ran on
+    # these models - FrontierCode 2.0, HLE-Diamond, CritPT v2 Hard, and Terminal-
+    # Bench Science for the two smaller ones. Each is imputed by a ridge fit
+    # (alpha 0.1) on the eight benchmarks all three targets and all four anchors
+    # report - GDPVal, HLE, LCR, SciCode, CritPT, AutomationBench-AA, TerminalBench
+    # 4.0, GDP-PDF - weighted by a Gaussian kernel of bandwidth 1.25 z so that the
+    # neighbouring models, not the frontier ones, set the slope. Pushing the
+    # completed nine-vector through the map above gives the index.
+    # Anchors as the check: each of the four, sent through the same pipeline with
+    # its own constituent scores hidden and itself left out of every fit, comes back
+    # at 10.75 (published 9.67), 17.73 (18.30), 7.13 (6.34) and 3.80 (4.72) - MAE
+    # 0.84, worst 1.08, and 0.83 / worst 0.93 in the two smaller models' information
+    # state. Leave-one-out over the 24 scored models below index 22
+    # misses by 1.0-1.1 points on average (+0.25 bias), so quote +/-1.1.
+    # Robustness: adding GPQA / TerminalBench 2.1 / tau-banking / MMMU-Pro / MLCR
+    # moves each estimate by <= 0.3, the bandwidth 0.9-1.8 by <= 0.5; trusting no
+    # pre-rebuild data at all reads 12.1, 10.2 and 6.7 instead.
+    # 5.9 reads between its anchors: it beats Granite 4.2 3B (4.72) on every shared
+    # benchmark but a tie on TerminalBench 4.0 - GDPVal 715 vs 209, LCR 0.59 vs
+    # 0.24, AA-Briefcase Elo 419 vs 99 - and trails Muse Glimmer (6.34) on every
+    # benchmark they share except Omniscience, where it reports -11.7 against
+    # Glimmer's -32.9. That single win is what keeps it just below rather than
+    # well below.
     Model(
         "OpenBMB",
         "MiniCPM5-2B",
-        6.09,
+        5.9,
         ProviderType.LOCAL,
         aa_tok_per_task=38473,
         local_speed=LocalSpeed(prefill=7460, decode=200),
         hardware_price_override=250,
         estimated=True,
     ),
+    # 8.9 sits just under GPT-6 Luna (low) (9.67), whose AutomationBench-AA (0.120
+    # vs 0.052), GDPVal (1040 vs 899) and Omniscience (-9.2 vs -22.2) it loses to,
+    # and just above Muse Glimmer (6.34) on the strength of AA-Briefcase Elo (708 vs
+    # 478), Omniscience (-22.2 vs -32.9) and GDPVal (899 vs 792), even though it
+    # trails Glimmer on AutomationBench-AA, LCR, SciCode, GDP-PDF and CritPT.
     Model(
         "Alibaba",
         "Qwen3.6-35B-A3B",
-        10.65,
+        8.9,
         ProviderType.LOCAL,
         aa_tok_per_task=57589,
         aa_cost_per_task=PricedTokens(0.66, 0.13, 0.0),
@@ -600,10 +647,15 @@ MODELS = [
         hardware_price_override=2300,  # RTX 3090 + 32 GB RAM
         estimated=True,
     ),
+    # 11.7 clears GPT-6 Luna (low) (9.67) because it beats it on AutomationBench-AA
+    # (0.209 vs 0.120), AA-Briefcase Elo (1018 vs 740) and TerminalBench 4.0
+    # (0.010 vs 0.000), and stays well under GPT-6 Luna (medium) (18.30), which is
+    # ahead of it on every benchmark the two share. Its Terminal-Bench Science of
+    # 0.0 is AA's own measurement, not an imputation.
     Model(
         "Institute of Foundation Models",
         "K2 Horizon 7B",
-        10.17,
+        11.7,
         ProviderType.LOCAL,
         aa_tok_per_task=113872,
         local_speed=LocalSpeed(prefill=3430, decode=104),

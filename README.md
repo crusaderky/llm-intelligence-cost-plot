@@ -120,15 +120,12 @@ absent as they have no sticker price to compare with.
   benchmarks onto the AA Intelligence Index of GLM-5.3.
 - Extrapolated heavily quantized DeepSeek that fits on a 128GB PC from [Unsloth
   benchmarks](https://unsloth.ai/docs/models/deepseek-v4.1-flash)
-- Extrapolated Qwen3.8-Flash intelligence by comparing its available individual
+- Extrapolated intelligence for Qwen3.8-Flash by comparing its available individual
   benchmarks with those of GLM-5.3-Flash and MiMo-V2.6-Flash
-- MiniCPM5-2B, Qwen3.6-35B-A3B, K2 Horizon 7B and Ling 3.1 Flash: AA's
-  October 2026 rebuild (v4.3 → v5) dropped their score but still publishes their
-  individual benchmark results, so their v5 score is regressed from those benchmarks
-  instead: a ridge regression of the index on the benchmark scores of the
-  re-benchmarked models that report the same ones (leave-one-out MAE 1.6-2.5 points).
-  Ling 3.1 Flash uses only the nine benchmarks it shares with its successor, the 1019
-  record AA kept.
+- Extrapolated intelligence for MiniCPM5-2B, Qwen3.6-35B-A3B and K2 Horizon 7B by comparison with neighbouring models GPT-6 Luna
+  (low), GPT-6 Luna (medium), Muse Glimmer and Granite 4.2 3B, for which the intelligence score is available.3
+- Ling 3.1 Flash (early checkpoint, datacenter only): intelligence score regressed from
+  the benchmarks it shares with its successor, Ling 3.1 Flash 1019 (local only).
 
 ## Cost calculation for datacenter models
 
