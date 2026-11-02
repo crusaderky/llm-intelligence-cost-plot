@@ -118,6 +118,8 @@ absent as they have no sticker price to compare with.
   [Tencent's own agentic-benchmark chart](https://hy.tencent.ai/research/hy4-preview).
   Its intelligence score was calculated by mapping the delta on the _self-published_
   benchmarks onto the AA Intelligence Index of the models it is compared against.
+- Extrapolated heavily quantized DeepSeek that fits on a 128GB PC from [Unsloth
+  benchmarks](https://unsloth.ai/docs/models/deepseek-v4.1-flash)
 - MiniCPM5-2B, Qwen3.6-35B-A3B, Qwen3.8-Flash, K2 Horizon 7B and Ling 3.1 Flash: AA's
   October 2026 rebuild (v4.3 → v5) dropped their score but still publishes their
   individual benchmark results, so their v5 score is regressed from those benchmarks
@@ -196,16 +198,18 @@ it needs to run longer to complete the same tasks.
 
 ## Larger local models
 
-Not including the cost of hardware stops being defensible once you upgrade beyond 64 GB
+Not including the cost of hardware stops being defensible once you upgrade beyond 48 GB
 RAM, as almost nobody needs that much RAM if not for AI.
 
-Qwen3.8-Flash needs, as a minimum, 12 GB VRAM and 64 GB host RAM to run locally, which
+Qwen3.8-Flash needs, as a minimum, 16 GB VRAM and 48 GB host RAM to run locally, which
 doubles as a very desirable general purpose/gaming PC costing ~$2,700 new and easily
 found for less on the used market. It appears twice on the plot: once with datacenter
-pricing and once with the ⚡ symbol for local electricity cost. The next (and, according
-to real user experience instead of benchmarks, very arguable) upgrade is GLM-5.3-Flash,
-which requires a 128GB Strix Halo worth $3,100 and which doesn't enable anything other
-than AI models in the ~300B-parameter class.
+pricing and once with the ⚡ symbol for local electricity cost. The next upgrade is
+DeepSeek V4.1 Flash, which requires much more generous VRAM and host RAM sizes which
+don't enable anything other than large AI models. While it still appears on the
+price/task plots as electricity only, one needs to keep in mind that the hardware can't
+be possibly treated as free; once it's factored in the datacenter offering becomes much
+cheaper overall.
 
 The following models _can_ be run locally, but their up-front hardware cost grows very
 rapidly:
@@ -214,15 +218,17 @@ rapidly:
 | --- | --- | --- | --- |
 | 4 GB unified | Mobile phone | ~$250 | MiniCPM5-2B (Q4_K_M) |
 | 16 GB unified | Strix Point laptop | ~$1,000 | Ternary-Bonsai-2<br>K2 Horizon 7B (Q6_K_M) |
-| 16 GB VRAM + 32 GB host | PC with RTX 5060 Ti | ~$2,300 | Qwen3.8-Flash Coder (IQ3_XXS REAP50 on [Strata](https://github.com/Niko1221/Strata))<br>Qwen3.6-35B-A3B (Q4) |
-| 24 GB VRAM + 32 GB host | PC with RTX 3090 | ~$2,600 (used) | Qwen-3.8-27B (IQ4_XS) |
-| 16 GB VRAM + 48 GB host | PC with RTX 5060 Ti | ~$2,700 | Qwen3.8-Flash (IQ3_XXS on [Strata](https://github.com/Niko1221/Strata)) |
-| 128 GB unified | Strix Halo 128 GB<br>Mac Studio M5 Max 128 GB<br>Mac Studio M5 Ultra 96 GB<br>MacBook Pro M5 Max 128 GB<br>DGX Spark (128 GB) | $3,100<br>$5,100<br>$5,400<br>$7,000<br>$7,900 | GLM-5.3-Flash (IQ3_XXS)<br>MiMo-v2.6-Flash (3.0bpw)<br>Qwen3.8-Flash (Q4_K_M on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [DwarfStar](https://dwarfstar.sh/)) |
-| 192 GB unified | Gorgon Halo | $6,800 | MiniMax M3.1 Flash (IQ3_XXS) |
-| 256 GB unified | Mac Studio M5 Ultra 256 GB<br>2x DGX Spark | $11,300<br>$15,900 | DeepSeek V4.1 Flash 1017 (GSQ-RCO 3.0bpw)<br>Ling 3.1 Flash 1019 (IQ3_XXS) |
+| 24 GB VRAM + 32 GB host | PC with RTX 3090 | ~$2,400 (used) | Qwen-3.8-27B (IQ4_XS) |
+| 16 GB VRAM + 48 GB host | PC with RTX 5060 Ti | ~$2,700 | Qwen3.8-Flash (Gyro-M on [Strata](https://github.com/Niko1221/Strata)) |
+| 32 GB VRAM + 128 GB host | PC with R9700 | ~$5,500 | DeepSeek V4.1 Flash (UD-IQ1_M on [Strata](https://github.com/Niko1221/Strata))<br>Any model from the 128 GB unified row below |
+| 32 GB VRAM + 192 GB host | PC with R9700 | ~$6,400 | DeepSeek V4.1 Flash (UD-Q2_K_XL on [Strata](https://github.com/Niko1221/Strata))<br>MiniMax M3.1 Flash (UD-Q3_X_XL) |
+| 96 GB unified | Mac Studio M5 Ultra 96 GB | $5,400 | Qwen3.8-Flash (Q4_K_M on [DwarfStar](https://dwarfstar.sh/)) |
+| 128 GB unified | Strix Halo 128 GB<br>Mac Studio M5 Max 128 GB<br>MacBook Pro M5 Max 128 GB<br>DGX Spark | $3,100<br>$5,100<br>$7,000<br>$7,900 | GLM-5.3-Flash (IQ3_XXS)<br>MiMo-v2.6-Flash (3.0bpw)<br>Qwen3.8-Flash (Q4_K_M on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [Gufo](https://github.com/gufo-org/gufo/) / [DwarfStar](https://dwarfstar.sh/)) |
+| 192 GB unified | Gorgon Halo | $6,800 | MiniMax M3.1 Flash (UD-IQ3_XXS) |
+| 256 GB unified | Mac Studio M5 Ultra 256 GB<br>2x DGX Spark | $11,300<br>$15,900 | Ling 3.1 Flash 1019 (IQ3_XXS) |
 | 384 GB unified | 3x DGX Spark | $24,000 | GLM-5.3 (Q3_K_XL)<br>Step 5 Preview (Q4_K_M)<br>MiMo-v2.6-Pro (3.0 bpw)<br>Mistral Large 4 (Q2_K_XL) |
-| 512 GB unified | 2x Mac Studio M5 Ultra 256 GB<br>4x DGX Spark + QFP28 switch<br>Mac studio M5 Ultra 512 GB | $22,600<br>$32,800<br>T.B.A. | Hy4 preview (Q4_K_M) |
-| 2 TB VRAM | 2x TensTorrent Galaxy Blackhole | $320,000 | Kimi K3.1 Pro (MXFP4 QAT) |
+| 512 GB unified | 2x Mac Studio M5 Ultra 256 GB<br>Mac studio M5 Ultra 512 GB<br>4x DGX Spark + QSFP28 switch | $22,600<br>$23,000<br>$32,800 | Hy4 preview (Q4_K_M) |
+| 1 TB unified | 8x DGX Spark + QSFP-DD switch | $64,600 | Kimi K3.1 Pro (UD-Q2_K_XL) |
 
 The same models on a hardware-cost axis at the highest available quantization that
 doesn't incur in major degradation. Running electricity prices are negligible in

@@ -302,10 +302,9 @@ class LocalHardware(NamedTuple):
 
 
 RTX3090 = LocalHardware("RTX 3090", 43, 350)
-STRIX_HALO = LocalHardware("Strix Halo 128GB", price=3100)
+STRIX_HALO = LocalHardware("Strix Halo", price=3100)
 GORGON_HALO = LocalHardware("Gorgon Halo", price=6800)
 DGX_SPARK = LocalHardware("DGX Spark", price=7900)
-TENSTORRENT = LocalHardware("TensTorrent Galaxy Blackhole", price=160_000)
 
 # Residential electricity, weighted by population, May 2026 (USD/KWh)
 # https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a
@@ -598,7 +597,7 @@ MODELS = [
         # price; 0.0 in the cached slot of both splits means "never caches"
         aa_sticker_price=PricedTokens(0.375, 2.25, 0.0),
         local_speed=LocalSpeed(prefill=2215, decode=150),
-        hardware_price_override=2300,
+        hardware_price_override=2300,  # RTX 3090 + 32 GB RAM
         estimated=True,
     ),
     Model(
@@ -622,7 +621,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(0.5, 3.0, 0.1),
         local_speed=LocalSpeed(prefill=963, decode=57),
-        hardware_price_override=2600,
+        hardware_price_override=2400,
     ),
     # Not on AA: intelligence = 0.9165 x Qwen3.8-27B, the 91.65% of BF16 that
     # ByteShape measured for this ternary quant (see README note); tokens per
@@ -653,7 +652,7 @@ MODELS = [
         aa_cost_per_task=PricedTokens(0.077, 0.079, 0.42),
         aa_sticker_price=PricedTokens(0.15, 0.47, 0.016),
         local_speed=LocalSpeed(prefill=2000, decode=84),
-        hardware_price_override=2700,  # 5060 Ti 16GB + 48GB RAM (Strata)
+        hardware_price_override=2700,  # 5060 Ti 16 GiB + 48 GiB RAM (Strata Gyro-M)
         estimated=True,
     ),
     # --- Datacenter models (price per task = AA's token mix priced at OR's
@@ -689,13 +688,13 @@ MODELS = [
         or_eff_input_price=0.4618,
         or_eff_output_price=6.0,
     ),
+    # Datacenter version (MXFP4 QAT)
     Model(
         "DeepSeek",
         "DeepSeek V4.1 Flash 1017",
-        32.4896393532027,
+        32.4896393532027,  # measured 87.49 / 87.68; well within noise levels
         ProviderType.DATACENTER,
         aa_tok_per_task=138962,
-        hardware=DGX_SPARK.cluster(2, extra_price=100),  # 256GB @ GSQ-RCO 3.0bpw
         aa_cost_per_task=PricedTokens(
             0.2571473726554651, 0.16675404706375513, 0.1782037281167598
         ),
@@ -705,6 +704,39 @@ MODELS = [
         or_toks_served=45531764896971,
         or_eff_input_price=0.01374,
         or_eff_output_price=0.6671,
+    ),
+    # Local degraded model
+    Model(
+        "DeepSeek",
+        "DeepSeek V4.1 Flash 1017 (UD-IQ1_M)",
+        32.4896393532027 * 85.55 / 87.68,
+        ProviderType.LOCAL,
+        # https://unsloth.ai/docs/models/deepseek-v4.1-flash#quantization-increases-reasoning-lengths
+        aa_tok_per_task=138962 * 2.8 / 1.5,
+        aa_cost_per_task=PricedTokens(
+            0.2571473726554651, 0.16675404706375513 * 2.8 / 1.5, 0.1782037281167598
+        ),
+        aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
+        # From https://github.com/Niko1221/Strata
+        local_speed=LocalSpeed(prefill=320, decode=21),
+        hardware_price_override=5500,  # R9700 + 128 GiB RAM (Strata UD-IQ1_M)
+        estimated=True,
+    ),
+    # Local model with quality indistinguishable from full size
+    Model(
+        "DeepSeek",
+        "DeepSeek V4.1 Flash 1017 (UD-Q2_K_XL)",
+        32.4896393532027,
+        ProviderType.LOCAL,
+        # https://unsloth.ai/docs/models/deepseek-v4.1-flash#quantization-increases-reasoning-lengths
+        aa_tok_per_task=138962 * 2.1 / 1.5,
+        aa_cost_per_task=PricedTokens(
+            0.2571473726554651, 0.16675404706375513 * 2.1 / 1.5, 0.1782037281167598
+        ),
+        # From https://github.com/Niko1221/Strata
+        local_speed=LocalSpeed(prefill=320, decode=21),
+        aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
+        hardware_price_override=6400,  # R9700 + 192 GiB RAM (Strata UD-Q2_K_XL)
     ),
     # Guesstimate - not on AA. Intelligence is extrapolated from Tencent's own
     # agentic-benchmark table for Hy4 preview
@@ -741,7 +773,7 @@ MODELS = [
         or_toks_served=9328184117722,
         or_eff_input_price=0.08251,
         or_eff_output_price=2.461,
-        # 512 GB unified: 4x DGX Spark + QFP28 switch
+        # 512 GiB unified: 4x DGX Spark + QSFP28 switch
         hardware=DGX_SPARK.cluster(4, extra_price=1200),
         estimated=True,
     ),
@@ -830,7 +862,7 @@ MODELS = [
         or_toks_served=16114898531407,
         or_eff_input_price=0.0555,
         or_eff_output_price=0.4022,
-        hardware=STRIX_HALO,  # 128GB @ IQ3_XXS
+        hardware=STRIX_HALO,  # IQ3_XXS
     ),
     Model(
         "Z AI",
@@ -842,8 +874,8 @@ MODELS = [
             0.35155644931635205, 0.5235406213267805, 4.134167531076821
         ),
         aa_sticker_price=PricedTokens(1.4, 4.4, 0.26),
-        # 384 GB unified: 3x DGX Spark
-        hardware=DGX_SPARK.cluster(3, extra_price=300),  # 384 GB @ Q3_K_XL
+        # 384 GiB unified: 3x DGX Spark
+        hardware=DGX_SPARK.cluster(3, extra_price=300),  # Q3_K_XL
         or_slug="z-ai/glm-5.3-20260816",
         or_session_cost_10_49_turns=0.23486830749999998,
         or_toks_served=4624467648995,
@@ -860,8 +892,8 @@ MODELS = [
             0.8567468935932564, 0.722389702315149, 2.1020636936657997
         ),
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
-        # 2 TB VRAM: 2x TensTorrent Galaxy Blackhole
-        hardware=TENSTORRENT.cluster(2),
+        # 1 TB VRAM: 8x DGX Spark + 4-ports 400G switch + 2x 400G to 4x100G cables
+        hardware=DGX_SPARK.cluster(8, extra_price=1200 + 100 * 2),
         or_slug="moonshotai/kimi-k3.1-pro-20261023",
         or_session_cost_10_49_turns=0.7731025,
         or_toks_served=2027545111583,
@@ -941,7 +973,7 @@ MODELS = [
             0.5051213025810452, 0.30637676984880086, 1.5337544881906702
         ),
         aa_sticker_price=PricedTokens(1.0, 2.7, 0.1),
-        # 384 GB unified: 3x DGX Spark
+        # 384 GiB unified: 3x DGX Spark
         hardware=DGX_SPARK.cluster(3, extra_price=300),
         or_slug="stepfun/step-5-preview-20261008",
         or_eff_input_price=0.1451,
@@ -958,7 +990,7 @@ MODELS = [
             0.04318792692902057, 0.03690574314577558, 0.0484362007653506
         ),
         aa_sticker_price=PricedTokens(0.14, 0.28, 0.0028),
-        hardware=STRIX_HALO,  # 128GB @ 3.0bpw
+        hardware=STRIX_HALO,  # 3.0bpw
         or_slug="xiaomi/mimo-v2.6-flash-20260921",
         or_session_cost_10_49_turns=0.032001587,
         or_toks_served=3112844448487,
@@ -975,7 +1007,7 @@ MODELS = [
             0.10909531014918307, 0.10533362295314275, 0.04275142965643572
         ),
         aa_sticker_price=PricedTokens(0.435, 0.87, 0.0036),
-        hardware=DGX_SPARK.cluster(3, extra_price=300),  # 384GB @ 3.0bpw
+        hardware=DGX_SPARK.cluster(3, extra_price=300),  # 3.0bpw
         or_slug="xiaomi/mimo-v2.6-pro-20260921",
         or_session_cost_10_49_turns=0.08885833666666666,
         or_toks_served=1367409821449,
@@ -997,7 +1029,7 @@ MODELS = [
         or_toks_served=5043048014940,
         or_eff_input_price=0.02346,
         or_eff_output_price=0.5789,
-        hardware=GORGON_HALO,
+        hardware_price_override=6400,  # R9700 + 192 GB RAM (UD-Q3_XL)
     ),
     Model(
         "OpenAI",
@@ -1589,7 +1621,7 @@ MODELS = [
             1.1261695939526823, 0.20223972528697784, 1.8567356990981327
         ),
         aa_sticker_price=PricedTokens(0.3, 0.9, 0.06),
-        # 256 GB unified: 2x DGX Spark + QFP28 switch
+        # 256 GiB unified: 2x DGX Spark
         hardware=DGX_SPARK.cluster(2, extra_price=100),
         # OpenRouter still only lists the older checkpoint
         available_datacenter=False,
@@ -1609,7 +1641,7 @@ MODELS = [
         or_toks_served=126255230209,
         or_eff_input_price=0.2015,
         or_eff_output_price=3.517,
-        hardware=DGX_SPARK.cluster(3, extra_price=300),  # 384GB @ UD-Q2_K_XL
+        hardware=DGX_SPARK.cluster(3, extra_price=300),  # UD-Q2_K_XL
     ),
 ]
 
@@ -1890,12 +1922,12 @@ EFFORT_TAGS = frozenset({"minimal", "low", "medium", "high", "xhigh", "max"})
 def _clean_label(m: Model) -> str:
     """Model name without its reasoning-effort or hardware tag.
 
-    "GLM-5.3-Flash (max)" -> "GLM-5.3-Flash", and "Qwen3.8-Flash (Strix Halo
-    128GB ⚡)" -> "Qwen3.8-Flash ⚡": the effort suffix and the hardware name
-    Model.__post_init__ splices in are dropped, but the ⚡ itself is kept so
-    the local-electricity marker still renders (the plots have a legend entry
-    for it). A parenthetical that is part of the model's real name -- a release
-    date, or any word outside EFFORT_TAGS -- stays.
+    "GLM-5.3-Flash (max)" -> "GLM-5.3-Flash", and "Qwen3.8-Flash (Strix Halo ⚡)" ->
+    "Qwen3.8-Flash ⚡": the effort suffix and the hardware name Model.__post_init__
+    splices in are dropped, but the ⚡ itself is kept so the local-electricity marker
+    still renders (the plots have a legend entry for it). A parenthetical that is part
+    of the model's real name -- a release date, or any word outside EFFORT_TAGS --
+    stays.
     """
     name, bolt = m.name, ""
     if "⚡" in name:
