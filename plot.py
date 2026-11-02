@@ -717,8 +717,8 @@ MODELS = [
             0.2571473726554651, 0.16675404706375513 * 2.8 / 1.5, 0.1782037281167598
         ),
         aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
-        # From https://github.com/Niko1221/Strata
-        local_speed=LocalSpeed(prefill=320, decode=21),
+        # From https://github.com/Niko1221/Strata @ 2.0bpw; UD-IQ1_M is 1.95bpw
+        local_speed=LocalSpeed(prefill=320, decode=21 * 2.0 / 1.95),
         hardware_price_override=5500,  # R9700 + 128 GiB RAM (Strata UD-IQ1_M)
         estimated=True,
     ),
@@ -733,8 +733,8 @@ MODELS = [
         aa_cost_per_task=PricedTokens(
             0.2571473726554651, 0.16675404706375513 * 2.1 / 1.5, 0.1782037281167598
         ),
-        # From https://github.com/Niko1221/Strata
-        local_speed=LocalSpeed(prefill=320, decode=21),
+        # From https://github.com/Niko1221/Strata @ 2.0bpw; UD-Q2_K_XL is 2.81bpw
+        local_speed=LocalSpeed(prefill=320, decode=21 * 2.0 / 2.8),
         aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
         hardware_price_override=6400,  # R9700 + 192 GiB RAM (Strata UD-Q2_K_XL)
     ),
