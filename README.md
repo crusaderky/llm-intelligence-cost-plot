@@ -120,13 +120,15 @@ absent as they have no sticker price to compare with.
   benchmarks onto the AA Intelligence Index of GLM-5.3.
 - Extrapolated heavily quantized DeepSeek that fits on a 128GB PC from [Unsloth
   benchmarks](https://unsloth.ai/docs/models/deepseek-v4.1-flash)
-- MiniCPM5-2B, Qwen3.6-35B-A3B, Qwen3.8-Flash, K2 Horizon 7B and Ling 3.1 Flash: AA's
+- Extrapolated Qwen3.8-Flash intelligence by comparing its available individual
+  benchmarks with those of GLM-5.3-Flash and MiMo-V2.6-Flash
+- MiniCPM5-2B, Qwen3.6-35B-A3B, K2 Horizon 7B and Ling 3.1 Flash: AA's
   October 2026 rebuild (v4.3 → v5) dropped their score but still publishes their
   individual benchmark results, so their v5 score is regressed from those benchmarks
   instead: a ridge regression of the index on the benchmark scores of the
   re-benchmarked models that report the same ones (leave-one-out MAE 1.6-2.5 points).
   Ling 3.1 Flash uses only the nine benchmarks it shares with its successor, the 1019
-  record AA kept; Qwen3.8-Flash only those it shares with Qwen3.8 Max and Qwen3.8 27B.
+  record AA kept.
 
 ## Cost calculation for datacenter models
 
@@ -254,5 +256,5 @@ visibly less capable when you give it very sophisticated tasks, like one-shottin
 whole coding project on its own, but it remains _enough_ for 90% of what people actually
 need. Even the highly specialized engineers and scientists mentioned above don't
 actually need the extra intelligence for a lot of what they do. Finally, an enthusiast
-gamer can run Qwen3.8-Flash (intelligence 28) on a computer they already own for the
+gamer can run Qwen3.8-Flash (intelligence 27) on a computer they already own for the
 cost of electricity ($0.04/task).
