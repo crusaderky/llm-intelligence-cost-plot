@@ -117,7 +117,7 @@ absent as they have no sticker price to compare with.
 - Extrapolated Hy4 preview, which ArtificialAnalysis has not measured yet, from
   [Tencent's own agentic-benchmark chart](https://hy.tencent.ai/research/hy4-preview).
   Its intelligence score was calculated by mapping the delta on the _self-published_
-  benchmarks onto the AA Intelligence Index of the models it is compared against.
+  benchmarks onto the AA Intelligence Index of GLM-5.3.
 - Extrapolated heavily quantized DeepSeek that fits on a 128GB PC from [Unsloth
   benchmarks](https://unsloth.ai/docs/models/deepseek-v4.1-flash)
 - MiniCPM5-2B, Qwen3.6-35B-A3B, Qwen3.8-Flash, K2 Horizon 7B and Ling 3.1 Flash: AA's

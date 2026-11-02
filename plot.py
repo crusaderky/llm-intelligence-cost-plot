@@ -741,16 +741,34 @@ MODELS = [
     # Guesstimate - not on AA. Intelligence is extrapolated from Tencent's own
     # agentic-benchmark table for Hy4 preview
     # (https://hy.tencent.ai/research/hy4-preview, also in the model card's
-    # benchmark appendix): per benchmark, OLS of the six comparison models' AA
-    # Intelligence Index on their score in that table, inverted at Hy4 preview's
-    # score and averaged over the 12 headline benchmarks gives 35.8 (sd 4.1
-    # across those 12; the pooled z-score form of the same fit also gives 35.8).
-    # Three of the six anchors lost their AA score in the 2026-10 rebuild (Kimi
-    # K3 (Max), GPT-5.6 Sol (Max), Claude Opus 5 (Max)); theirs are regressed
-    # from benchmarks like the rows above: 32.4, 46.0 and 43.5 (moving any of
-    # the three by 3 points shifts the mean by less than 0.7). The anchors are
-    # the versions the chart ran, not their successors (its Qwen3.8 Max is 0803,
-    # the AA record used here is 0902), so the estimate is "as of the chart".
+    # benchmark appendix; the chart plots the starred "own testing" values, so
+    # all seven models ran the same harness). Anchored on GLM-5.3: per
+    # benchmark, the slope of the six comparison models' AA Intelligence Index
+    # on their score in that table, applied to Hy4 preview's difference from
+    # GLM-5.3's 31.65 and averaged, gives 32.4 over the 12 headline benchmarks
+    # and 31.8 over the 42 rows GLM-5.3 reports (pooled z-score form: 32.1 and
+    # 31.5). Take 32.0, with +/-4 uncertainty.
+    # GLM-5.3 is the anchor to use because on Tencent's battery the two models
+    # are indistinguishable: Hy4 preview is ahead on 7 of the 12 headline
+    # benchmarks and behind on 5, its mean difference is +0.23 points, and over
+    # the 38 rows all seven models report its mean z-score gap to GLM-5.3 is
+    # +0.02 - closer than GLM-5.3 is to any other anchor on that measure.
+    # Not the method this row had before, which inverted the same fit at Hy4
+    # preview's own score: pooled over benchmarks that is the six anchors' mean
+    # index (35.0) plus slope x Hy4 preview's mean z (+0.08), so it measured the
+    # anchor set rather than the model and put Hy4 preview 4.2 points above
+    # GLM-5.3 on a 0.2-point benchmark edge. Inverted on the anchors
+    # themselves that fit is wrong by MAE 4.3 (up to 8.4 on GPT-5.6 Sol; mean
+    # R^2 0.58): the anchors span 23.1-46.0 in the index but only 6-12 points on
+    # a benchmark, so ~5 index points ride on a single benchmark point and the
+    # +-1-point wobble between Hy4 preview and GLM-5.3 reads as +-5.
+    # Robust to the three anchors that lost their AA score in the 2026-10 rebuild
+    # and whose index is regressed here (Kimi K3 (Max) 32.4, GPT-5.6 Sol (Max)
+    # 46.0, Claude Opus 5 (Max) 43.5): they enter only through the slope, and
+    # moving all three by 5 points shifts the estimate by less than 0.5. The
+    # anchors are the versions the chart ran, not their successors (its Qwen3.8
+    # Max is 0803, the AA record used here is 0902), so the estimate is "as of
+    # the chart".
     # Price per task: no AA breakdown exists for a model AA has not measured,
     # so there is no token mix to reprice; aa_cost_per_task carries the
     # guesstimate below and the delta plot reads 0%, like the other estimated
@@ -764,7 +782,7 @@ MODELS = [
     Model(
         "Tencent",
         "Hy4 preview",
-        35.8,
+        32.0,
         ProviderType.DATACENTER,
         aa_tok_per_task=74628,
         aa_cost_per_task=0.9461563312,
