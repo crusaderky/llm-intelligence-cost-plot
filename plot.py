@@ -1790,6 +1790,12 @@ class PlotSpec(NamedTuple):
     png_x_pad: float | None = None  # x_pad for the PNG render, when it needs
     # its own margin (a fraction that reads as inches on the wide SVG is a
     # handful of pixels on the 26in PNG, where it clips the rightmost dot)
+    png_label_slots: int | None = None  # PNG-only: try just the first N entries
+    # of CANDIDATES for every label, and drop a label outright when all N are
+    # taken. No leader lines, no far queues: the screen-sized view stays
+    # readable by leaving a crowded model unnamed instead of dragging its name
+    # across the plot. Only applies to a spec drawn separately for the PNG
+    # (see split_renders); a shared png+svg figure can't differ between them.
     easter_eggs: tuple[tuple[float, str], ...] = ()  # (x, slogan) shouts in
     # the background of the SVG only. Newlines are kept, to wrap a long
     # slogan instead of letting it run into its neighbour.
@@ -1882,6 +1888,7 @@ PLOTS = [
         fig_w=2200.0,
         png_fig_w=FIG_W,
         png_xtick_step=1.0,
+        png_label_slots=4,
         x_pad=0.002,  # ~$0.03 past Sonnet 5.5 (max); the PNG needs the
         # default 0.03, where 0.002 would cut that dot in half
         png_x_pad=0.03,
@@ -2155,13 +2162,26 @@ def _strike_text(ax, text, renderer, color=UNAVAILABLE_COLOR, zorder=4):
     )
 
 
-def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
+def place_labels(
+    ax,
+    fig,
+    points,
+    marker_r_px,
+    extra_obstacles=(),
+    max_candidates=None,
+    drop_unplaceable=False,
+):
     """points: [(left, right, icon, strike, x, y)] in data coords -- icon is
     None, "bolt", or "mask"; the icon is drawn as a colored vector marker
     between the left and right text halves, so e.g. "(RTX 3090 ⚡)" keeps its
     parens. strike=True (the view's availability flag is False) renders the
     text dark grey with a strikethrough and no icon. Adds annotations,
     auto-placed.
+
+    max_candidates: use only the first N entries of CANDIDATES, skipping the
+    crowd-specific reordering. drop_unplaceable: with such a cap, a label with
+    no collision-free slot is omitted entirely (no text, no icon, no leader,
+    and no obstacle for the others) rather than placed on top of something.
 
     Placement runs in rounds: a greedy sequential pass, then repair rounds in
     which every label re-chooses its spot around everyone else's position, so
@@ -2210,7 +2230,9 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
         # Right of the point is always tried first, then left; the stacked
         # far slots are the fallback once those collide.
         cands = CANDIDATES
-        if crowd[i]:
+        if max_candidates is not None:
+            cands = CANDIDATES[:max_candidates]
+        elif crowd[i]:
             near = [
                 c for c in CANDIDATES if abs(c[1]) < CROWD_OFFSET and c[3] == "center"
             ]
@@ -2323,7 +2345,10 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
                 return result
             if best is None or score < best[0]:
                 best = result
-        return best
+        # Capped search: nothing in the allowed slots is collision-free, so the
+        # label is either dropped (drop_unplaceable) or placed at the least bad
+        # spot.
+        return None if drop_unplaceable else best
 
     # Round 0: greedy sequential pass (already-placed labels and leader lines
     # are obstacles).
@@ -2333,6 +2358,8 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
     for i in order:
         b = choose(i, obstacles, leaders)
         placed[i] = b
+        if b is None:  # dropped label: reserves no space
+            continue
         obstacles.append(b[1])
         if b[7] is not None:
             leaders.append(b[7])
@@ -2344,6 +2371,8 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
         crosses = 0
         for i in range(len(points)):
             for j in range(i + 1, len(points)):
+                if state[i] is None or state[j] is None:
+                    continue
                 a = tuple(v + PAD_PX * s_ for v, s_ in zip(state[i][1], (1, 1, -1, -1)))
                 b2 = tuple(
                     v + PAD_PX * s_ for v, s_ in zip(state[j][1], (1, 1, -1, -1))
@@ -2369,19 +2398,29 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
     for _round in range(40):
         for i in order:
             others = [j for j in range(len(points)) if j != i]
-            obs = list(extra_obstacles) + [placed[j][1] for j in others]
-            other_leaders = [placed[j][7] for j in others if placed[j][7] is not None]
+            obs = list(extra_obstacles) + [
+                placed[j][1] for j in others if placed[j] is not None
+            ]
+            other_leaders = [
+                placed[j][7]
+                for j in others
+                if placed[j] is not None and placed[j][7] is not None
+            ]
             placed[i] = choose(i, obs, other_leaders)
         label_collisions = any(
             _overlap_area(placed[i][1], placed[j][1]) > 4 * PAD_PX * PAD_PX
             for i in range(len(points))
             for j in range(i + 1, len(points))
+            if placed[i] is not None and placed[j] is not None
         )
         leader_collisions = any(
             _segments_cross(placed[i][7], placed[j][7])
             for i in range(len(points))
             for j in range(i + 1, len(points))
-            if placed[i][7] is not None and placed[j][7] is not None
+            if placed[i] is not None
+            and placed[j] is not None
+            and placed[i][7] is not None
+            and placed[j][7] is not None
         )
         if not label_collisions and not leader_collisions:
             break
@@ -2403,6 +2442,8 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
         for i in range(len(points)):
             for j in range(i + 1, len(points)):
                 title = ax.get_title(loc="left") or ax.get_title() or "?"
+                if placed[i] is None or placed[j] is None:
+                    continue
                 a = tuple(
                     v + PAD_PX * s_ for v, s_ in zip(placed[i][1], (1, 1, -1, -1))
                 )
@@ -2429,6 +2470,8 @@ def place_labels(ax, fig, points, marker_r_px, extra_obstacles=()):
     inv = ax.transData.inverted()
     for i in order:
         left, right, icon, strike, x, y = points[i]
+        if placed[i] is None:  # dropped by the candidate cap: draw nothing
+            continue
         _, bb, left_x0, vc, icon_cx, right_x0, _, leader = placed[i]
         color = UNAVAILABLE_COLOR if strike else "#1f2328"
         ((tx, ty),) = inv.transform([(left_x0, vc)])
@@ -2804,6 +2847,8 @@ def _make_datacenter_plot(
         ],
         marker_r_px,
         extra_obstacles=(legend_box,),
+        max_candidates=spec.png_label_slots if fmt == "png" else None,
+        drop_unplaceable=spec.png_label_slots is not None and fmt == "png",
     )
     save_plots(fig, spec.stem, fmt)
 
