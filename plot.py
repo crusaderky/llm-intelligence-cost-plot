@@ -1062,23 +1062,7 @@ MODELS = [
     ),
     Model(
         "SpaceXAI",
-        "Grok 4.7 (high)",
-        35.0122962959703,
-        ProviderType.DATACENTER,
-        aa_tok_per_task=89127,
-        aa_cost_per_task=PricedTokens(
-            2.0291417754743226, 0.5347630546437767, 3.6196907352584797
-        ),
-        aa_sticker_price=PricedTokens(2.0, 6.0, 0.5),
-        or_slug="x-ai/grok-4.7-20260916",
-        or_session_cost_10_49_turns=1.08409582,
-        or_toks_served=314487440557,
-        or_eff_input_price=0.7877,
-        or_eff_output_price=6.284,
-    ),
-    Model(
-        "SpaceXAI",
-        "Grok 4.7 (xhigh)",
+        "Grok 4.7",
         34.3350117067196,
         ProviderType.DATACENTER,
         aa_tok_per_task=92970,
