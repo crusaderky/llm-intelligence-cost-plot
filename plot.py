@@ -260,6 +260,7 @@ PUBLISHERS = {
     "Google": "#34A853",
     "InclusionAI": "#4fb5ff",
     "Institute of Foundation Models": "#1521a9",
+    "Liquid AI": "#000000",
     "Meta": "#0089f4",
     "MiniMax": "#EB3568",
     "Mistral": "#f32e02",
@@ -576,8 +577,52 @@ MODELS = [
     #   laptops, prebuilt PCs); overrides hardware.price when present.
     # See .agents/skills/refresh-models for how to re-fetch these numbers.
     # --- Local models (price per task = electricity) ---
+    # Guesstimate - not on AA at all: ArtificialAnalysis has no record of LFM3-1.7B
+    # and the free API does not list it, so its index comes from the benchmark table
+    # at tinyleague.nunodonato.com plus AA's published indices of its neighbours:
+    # Nemotron 3 Nano 4B 1.82, Mistral Small 4 4.30, Granite 4.2 3B 4.72, Granite
+    # 4.2 8B 5.10, Nemotron 3.5 Lightning 5.53, Command A+ 6.24, Muse Glimmer 6.34,
+    # anchored by the inferred indices of Qwen3.6 35B A3B and K2 Horizon 7B below.
+    # Only the columns AA itself measures are comparable across the two sources -
+    # tinyleague's HLE, AA-LCR, SciCode, GPQA, Terminal-Bench 2.1 and
+    # AutomationBench reproduce AA's own numbers to 1-2 points on every model both
+    # list, while tau-bench, BFCL, SWE-bench, MRCR and GDPval are vendor-run or
+    # differently scaled and were dropped. LFM3's AA-measured columns (HLE 7.17,
+    # AA-LCR 52.8, SciCode 28.5, GPQA 63.4, Terminal-Bench 2.1 12.9, Omniscience Elo
+    # +0.5) sit between Granite 4.2 3B and Granite 4.2 8B: a least-squares line on
+    # their mean z-scored value, monotone interpolation on it and Gaussian-kernel
+    # neighbour averaging all place it at 4.7-6.4, leave-one-out MAE 1.1-1.5.
+    # That knowledge-only 5.4 ignores why the model exists: tau3-bench 68.0 is the
+    # best score in tinyleague's whole 36-model table, ahead of Qwen3.8-27B's 48.0,
+    # and 11.2 of AA's 17.0 constituent weight sits in agentic benchmarks
+    # (Terminal-Bench Science 3.0, TerminalBench 4.0 2.6, AA-Briefcase 2.2,
+    # FrontierCode 2.0, AutomationBench-AA 1.2) that every AA-scored model of this
+    # size measures at exactly 0. Assuming AA would give LFM3 mid-range scores of
+    # its class there (AA-Briefcase Elo 310 -> 450, AutomationBench-AA 2% -> 5%,
+    # TerminalBench 4.0 0 -> 0.005) and pushing the nine-vector through AA's own
+    # linear map gives 7.0. Tau3 is a weak lever, not a strong one: Granite 4.2 8B
+    # reports 58.1 on the same column while AA measures it at 2.1% AutomationBench-AA
+    # and index 5.10. LFM3's own AutomationBench 41.3% is refused outright - AA
+    # measures 20.9% for K2 Horizon 7B and 40.5% for GPT-6 Luna (medium), so that is
+    # another harness, not a better model; believed, it reads 11.4. Quote +/-1.5.
+    # Tokens per task: AA publishes none for this model, so 34286 is Granite 4.2
+    # 3B's - the closest AA-scored model of the class. The other tiny model AA
+    # scores, Nemotron 3 Nano 4B, spends only 11648 because it answers lazily.
+    # Both speed figures are hand-entered guesstimates; tinyleague's
+    # memory-bandwidth estimate for a 1.7B on an RTX 4090 is 148 tok/s decode,
+    # 101 tok/s at 128K context.
+    Model(
+        "Liquid AI",
+        "LFM3-1.7B",
+        7.0,
+        ProviderType.LOCAL,
+        aa_tok_per_task=34286,
+        local_speed=LocalSpeed(prefill=14000, decode=250),
+        hardware_price_override=250,  # 4 GB unified: a phone, see README's table
+        estimated=True,
+    ),
     # Guesstimate - AA's October 2026 rebuild (v4.3 -> v5) dropped the Intelligence
-    # Index of this model and of the two below it, while still publishing their
+    # Index of this model and of the one below it, while still publishing their
     # individual benchmark scores. Re-estimated in November 2026 by comparing those
     # scores with GPT-6 Luna (low), GPT-6 Luna (medium), Muse Glimmer and
     # Granite 4.2 3B, the four scored models of the same class:
@@ -597,8 +642,8 @@ MODELS = [
     # Omniscience by sd 2.9 (0.17 points), so the old number is the current one.
     # What is left to invent is what the rebuild introduced and AA never ran on
     # these models - FrontierCode 2.0, HLE-Diamond, CritPT v2 Hard, and Terminal-
-    # Bench Science for the two smaller ones. Each is imputed by a ridge fit
-    # (alpha 0.1) on the eight benchmarks all three targets and all four anchors
+    # Bench Science for the smaller one. Each is imputed by a ridge fit
+    # (alpha 0.1) on the eight benchmarks both targets and all four anchors
     # report - GDPVal, HLE, LCR, SciCode, CritPT, AutomationBench-AA, TerminalBench
     # 4.0, GDP-PDF - weighted by a Gaussian kernel of bandwidth 1.25 z so that the
     # neighbouring models, not the frontier ones, set the slope. Pushing the
@@ -606,28 +651,11 @@ MODELS = [
     # Anchors as the check: each of the four, sent through the same pipeline with
     # its own constituent scores hidden and itself left out of every fit, comes back
     # at 10.75 (published 9.67), 17.73 (18.30), 7.13 (6.34) and 3.80 (4.72) - MAE
-    # 0.84, worst 1.08, and 0.83 / worst 0.93 in the two smaller models' information
-    # state. Leave-one-out over the 24 scored models below index 22
+    # 0.84, worst 1.08. Leave-one-out over the 24 scored models below index 22
     # misses by 1.0-1.1 points on average (+0.25 bias), so quote +/-1.1.
     # Robustness: adding GPQA / TerminalBench 2.1 / tau-banking / MMMU-Pro / MLCR
     # moves each estimate by <= 0.3, the bandwidth 0.9-1.8 by <= 0.5; trusting no
-    # pre-rebuild data at all reads 12.1, 10.2 and 6.7 instead.
-    # 5.9 reads between its anchors: it beats Granite 4.2 3B (4.72) on every shared
-    # benchmark but a tie on TerminalBench 4.0 - GDPVal 715 vs 209, LCR 0.59 vs
-    # 0.24, AA-Briefcase Elo 419 vs 99 - and trails Muse Glimmer (6.34) on every
-    # benchmark they share except Omniscience, where it reports -11.7 against
-    # Glimmer's -32.9. That single win is what keeps it just below rather than
-    # well below.
-    Model(
-        "OpenBMB",
-        "MiniCPM5-2B",
-        5.9,
-        ProviderType.LOCAL,
-        aa_tok_per_task=38473,
-        local_speed=LocalSpeed(prefill=7460, decode=200),
-        hardware_price_override=250,
-        estimated=True,
-    ),
+    # pre-rebuild data at all reads 12.1 and 10.2 instead.
     # 8.9 sits just under GPT-6 Luna (low) (9.67), whose AutomationBench-AA (0.120
     # vs 0.052), GDPVal (1040 vs 899) and Omniscience (-9.2 vs -22.2) it loses to,
     # and just above Muse Glimmer (6.34) on the strength of AA-Briefcase Elo (708 vs

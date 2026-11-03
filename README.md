@@ -114,18 +114,21 @@ absent as they have no sticker price to compare with.
   effort levels
 - Extrapolated Ternary-Bonsai-2's intelligence as ~92% of Qwen3.8-27B's, as reported
   by [ByteShape](https://byteshape.com/blogs/Qwen3.8-27B/)
-- Extrapolated Hy4 preview, which ArtificialAnalysis has not measured yet, from
-  [Tencent's own agentic-benchmark chart](https://hy.tencent.ai/research/hy4-preview).
-  Its intelligence score was calculated by mapping the delta on the _self-published_
-  benchmarks onto the AA Intelligence Index of GLM-5.3.
 - Extrapolated heavily quantized DeepSeek that fits on a 128GB PC from [Unsloth
-  benchmarks](https://unsloth.ai/docs/models/deepseek-v4.1-flash)
+  benchmarks](https://unsloth.ai/docs/models/deepseek-v4.1-flash).
 - Extrapolated intelligence for Qwen3.8-Flash by comparing its available individual
-  benchmarks with those of GLM-5.3-Flash and MiMo-V2.6-Flash
-- Extrapolated intelligence for MiniCPM5-2B, Qwen3.6-35B-A3B and K2 Horizon 7B by comparison with neighbouring models GPT-6 Luna
-  (low), GPT-6 Luna (medium), Muse Glimmer and Granite 4.2 3B, for which the intelligence score is available.3
-- Ling 3.1 Flash (early checkpoint, datacenter only): intelligence score regressed from
+  benchmarks with those of GLM-5.3-Flash and MiMo-V2.6-Flash.
+- Extrapolated intelligence for Qwen3.6-35B-A3B and K2 Horizon 7B by comparing their
+  available individual benchmarks with those of GPT-6 Luna (low), GPT-6 Luna (medium),
+  Muse Glimmer and Granite 4.2 3B.
+- Extrapolated intelligence for Ling 3.1 Flash (early checkpoint, datacenter only) from
   the benchmarks it shares with its successor, Ling 3.1 Flash 1019 (local only).
+- Extrapolated intelligence for LFM3-1.7B, which AA does not list at all, from its
+  individual benchmark scores at [Tiny League](https://tinyleague.nunodonato.com/) read
+  against AA's scores of the models around it.
+- Extrapolated Hy4 preview, which AA does not list at all, by mapping [Tencent's
+  self-published benchmark chart](https://hy.tencent.ai/research/hy4-preview) onto the
+  AA Intelligence Index of GLM-5.3.
 
 ## Cost calculation for datacenter models
 
@@ -177,7 +180,7 @@ calculated as follows:
   artificialanalysis.ai](https://artificialanalysis.ai/#intelligence-comparison-tabs),
   plus the uncached input tokens from the same breakdown the datacenter models use.
   Cache hits are free on your own machine, so they are excluded.
-- AA publishes no breakdown for a few of these models (MiniCPM5-2B, K2 Horizon 7B,
+- AA publishes no breakdown for a few of these models (LFM3-1.7B, K2 Horizon 7B,
   Ternary-Bonsai-2). For those, the uncached input tokens are estimated as 3.85× the
   output tokens, which is the median of that ratio over the 50 models AA does break
   down. It is a crude guess: the real ratio runs from 2 to 95, depending mostly on how
@@ -215,7 +218,7 @@ rapidly:
 
 | RAM | Hardware | Price | Models |
 | --- | --- | --- | --- |
-| 4 GB unified | Mobile phone | ~$250 | MiniCPM5-2B (Q4_K_M) |
+| 4 GB unified | Mobile phone | ~$250 | LFM3-1.7B (Q6_K_S) |
 | 16 GB unified | Strix Point laptop | ~$1,000 | Ternary-Bonsai-2<br>K2 Horizon 7B (Q6_K_M) |
 | 24 GB VRAM + 32 GB host | PC with RTX 3090 | ~$2,400 (used) | Qwen-3.8-27B (IQ4_XS) |
 | 16 GB VRAM + 48 GB host | PC with RTX 5060 Ti | ~$2,700 | Qwen3.8-Flash (Gyro-M on [Strata](https://github.com/Niko1221/Strata)) |
