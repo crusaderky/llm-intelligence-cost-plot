@@ -341,9 +341,9 @@ class LocalHardware(NamedTuple):
 
 
 RTX3090 = LocalHardware("RTX 3090", 43, 350)
-STRIX_HALO = LocalHardware("Strix Halo", price=3100)
-GORGON_HALO = LocalHardware("Gorgon Halo", price=6800)
-DGX_SPARK = LocalHardware("DGX Spark", price=7900)
+STRIX_HALO = LocalHardware("Strix Halo", 15, 140, price=3100)  # Bosgame
+GORGON_HALO = LocalHardware("Gorgon Halo", 15, 140, price=6200)  # Bosgame
+DGX_SPARK = LocalHardware("DGX Spark", price=7900)  # Asus Ascent GX10
 
 # Residential electricity, weighted by population, May 2026 (USD/KWh)
 # https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a
@@ -854,11 +854,13 @@ MODELS = [
         or_eff_input_price=0.01374,
         or_eff_output_price=0.6671,
     ),
-    # Local degraded model
+    # Local model
     Model(
         "DeepSeek",
-        "DeepSeek V4.1 Flash 1017 (UD-IQ1_M)",
-        32.4896393532027 * 85.55 / 87.68,
+        "DeepSeek V4.1 Flash 1017",
+        # https://unsloth.ai/docs/models/deepseek-v4.1-flash
+        # Average recovery over 14 benchmarks
+        32.4896393532027 * 0.975,
         ProviderType.LOCAL,
         # https://unsloth.ai/docs/models/deepseek-v4.1-flash#quantization-increases-reasoning-lengths
         aa_tok_per_task=138962 * 2.8 / 1.5,
@@ -867,25 +869,9 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
         # From https://github.com/Niko1221/Strata @ 2.0bpw; UD-IQ1_M is 1.95bpw
-        local_speed=LocalSpeed(prefill=320, decode=21 * 2.0 / 1.95),
+        local_speed=LocalSpeed(prefill=320, decode=21),
         hardware_price_override=5500,  # R9700 + 128 GiB RAM (Strata UD-IQ1_M)
         estimated=True,
-    ),
-    # Local model with quality indistinguishable from full size
-    Model(
-        "DeepSeek",
-        "DeepSeek V4.1 Flash 1017 (UD-Q2_K_XL)",
-        32.4896393532027,
-        ProviderType.LOCAL,
-        # https://unsloth.ai/docs/models/deepseek-v4.1-flash#quantization-increases-reasoning-lengths
-        aa_tok_per_task=138962 * 2.1 / 1.5,
-        aa_cost_per_task=PricedTokens(
-            0.2571473726554651, 0.16675404706375513 * 2.1 / 1.5, 0.1782037281167598
-        ),
-        # From https://github.com/Niko1221/Strata @ 2.0bpw; UD-Q2_K_XL is 2.81bpw
-        local_speed=LocalSpeed(prefill=320, decode=21 * 2.0 / 2.8),
-        aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
-        hardware_price_override=6400,  # R9700 + 192 GiB RAM (Strata UD-Q2_K_XL)
     ),
     # Guesstimate - not on AA. Intelligence is extrapolated from Tencent's own
     # agentic-benchmark table for Hy4 preview
@@ -1180,7 +1166,7 @@ MODELS = [
         or_toks_served=5043048014940,
         or_eff_input_price=0.02346,
         or_eff_output_price=0.5789,
-        hardware_price_override=6400,  # R9700 + 192 GB RAM (UD-Q3_XL)
+        hardware=GORGON_HALO,
     ),
     Model(
         "OpenAI",

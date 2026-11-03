@@ -226,7 +226,7 @@ rapidly:
 | 32 GB VRAM + 192 GB host | PC with R9700 | ~$6,400 | DeepSeek V4.1 Flash (UD-Q2_K_XL on [Strata](https://github.com/Niko1221/Strata))<br>MiniMax M3.1 Flash (UD-Q3_X_XL) |
 | 96 GB unified | Mac Studio M5 Ultra 96 GB | $5,400 | Qwen3.8-Flash (Q4_K_M on [DwarfStar](https://dwarfstar.sh/)) |
 | 128 GB unified | Strix Halo 128 GB<br>Mac Studio M5 Max 128 GB<br>MacBook Pro M5 Max 128 GB<br>DGX Spark | $3,100<br>$5,100<br>$7,000<br>$7,900 | GLM-5.3-Flash (IQ3_XXS)<br>MiMo-v2.6-Flash (3.0bpw)<br>Qwen3.8-Flash (Q4_K_M on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [Gufo](https://github.com/gufo-org/gufo/) / [DwarfStar](https://dwarfstar.sh/)) |
-| 192 GB unified | Gorgon Halo | $6,800 | MiniMax M3.1 Flash (UD-IQ3_XXS) |
+| 192 GB unified | Gorgon Halo | $6,200 | DeepSeek V4.1 Flash (UD-IQ2_XXS)<br>MiniMax M3.1 Flash (UD-IQ3_XXS) |
 | 256 GB unified | Mac Studio M5 Ultra 256 GB<br>2x DGX Spark | $11,300<br>$15,900 | Ling 3.1 Flash 1019 (IQ3_XXS) |
 | 384 GB unified | 3x DGX Spark | $24,000 | GLM-5.3 (Q3_K_XL)<br>Step 5 Preview (Q4_K_M)<br>MiMo-v2.6-Pro (3.0 bpw)<br>Mistral Large 4 (Q2_K_XL) |
 | 512 GB unified | 2x Mac Studio M5 Ultra 256 GB<br>Mac studio M5 Ultra 512 GB<br>4x DGX Spark + QSFP28 switch | $22,600<br>$23,000<br>$32,800 | Hy4 preview (Q4_K_M) |
