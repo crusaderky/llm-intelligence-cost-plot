@@ -55,9 +55,13 @@ and a legend lists only the publishers present in each plot.
 
 Label placement is automatic: the script measures each label's real rendered
 size and tries a list of candidate positions around its dot, keeping the
-first that collides with nothing already placed. So MODELS only needs
-publisher / name / intelligence / provider type plus the raw cost inputs --
-just add rows and re-run.
+first that collides with nothing already placed. A label is also required to
+respect its dot's height order relative to the labels beside it, so a stack of
+labels never reads as the wrong model, and a final pass slides every label to
+the nearest free height above or below its own dot so nothing stays parked a
+slot away from its point -- see place_labels. So MODELS only needs publisher /
+name / intelligence / provider type plus the raw cost inputs -- just add rows
+and re-run.
 """
 
 from __future__ import annotations
@@ -98,10 +102,35 @@ EGG_COLOR = "#5b6270"  # the tick-label grey, only bigger
 EGG_ALPHA = 0.25
 UNAVAILABLE_COLOR = "#4b5563"  # dark grey for unavailable labels
 LEADER_MIN = 8  # draw a leader once the label sits this far off the dot
+LEADER_CLEAR_PX = 8  # ... and keep this much daylight between a leader line and
+# every other model's dot: a leader grazing a marker reads as pointing at it
 CROWD_X = 200  # px window used to decide a point is "in a cluster"
 CROWD_Y = 60
 CROWD_OFFSET = 23  # clustered labels sit at least this far out (points),
 # so their leader lines are long enough to follow
+CROWD_NEAR = 15  # ... except for the mid-height slots at +-16pt: a stacked
+# neighbour often needs exactly that much clearance, and rounding up to 23 is
+# what walked whole clusters into far-away stacks
+
+# Order rule (see place_labels misreads()): a label may not stack above the
+# label of a lower dot, or the reader pairs the upper label with the upper dot
+# and reads the wrong model. It applies only to pairs that the eye reads as a
+# column: dots closer in height than ORDER_TIE_PX are a tie (either stacking is
+# honest), dots more than ORDER_DOT_DX apart horizontally are paired with their
+# label by proximity, and labels more than ORDER_X_PX apart horizontally are
+# read as separate entries. A stricter, global version of the rule is
+# unsatisfiable wherever dots sit closer together than a label is tall.
+ORDER_TIE_PX = 4
+ORDER_DOT_DX = 80
+ORDER_X_PX = 10
+
+# Settle pass (see place_labels settle_pass()): after the repair rounds, each
+# label slides toward its own dot to the nearest height that is still clean, so
+# a label never stays parked a slot away from its dot just because a neighbour
+# held the closer spot at the time it was placed. SETTLE_MAX_PX caps how far
+# that search looks (a label further than this from its dot is stranded for a
+# reason the repair rounds already found).
+SETTLE_MAX_PX = 200
 
 # Bottom of the high-intelligence plot
 HIGH_INTELLIGENCE_THRESHOLD = 31
@@ -120,6 +149,15 @@ CANDIDATES = [
     (10, -9, "left", "top"),
     (-10, 9, "right", "bottom"),
     (-10, -9, "right", "top"),
+    # A step between "touching the dot" and "a full leader-length away":
+    # stacked neighbours often need exactly this much clearance, and rounding
+    # up to 23pt is what walked whole clusters into far-away stacks.
+    (0, 16, "center", "bottom"),
+    (0, -16, "center", "top"),
+    (10, 15, "left", "bottom"),
+    (10, -15, "left", "top"),
+    (-10, 15, "right", "bottom"),
+    (-10, -15, "right", "top"),
     (0, 24, "center", "bottom"),
     (0, -24, "center", "top"),
     (10, 23, "left", "bottom"),
@@ -2096,6 +2134,11 @@ def _split_icon(m, name=None, available=True):
     return name, None, "", strike
 
 
+def _shift(bb, dy):
+    """`bb` (x0, y0, x1, y1) moved vertically by dy."""
+    return (bb[0], bb[1] + dy, bb[2], bb[3] + dy)
+
+
 def _pad(bb, pad=PAD_PX):
     if hasattr(bb, "x0"):  # Bbox
         bb = (bb.x0, bb.y0, bb.x1, bb.y1)
@@ -2106,6 +2149,17 @@ def _overlap_area(a, b):
     dx = min(a[2], b[2]) - max(a[0], b[0])
     dy = min(a[3], b[3]) - max(a[1], b[1])
     return dx * dy if dx > 0 and dy > 0 else 0.0
+
+
+def _point_segment_dist(p, seg):
+    """Distance from point p to the closed segment seg, in display pixels."""
+    x0, y0, x1, y1 = seg
+    dx, dy = x1 - x0, y1 - y0
+    if dx == 0.0 and dy == 0.0:
+        return math.hypot(p[0] - x0, p[1] - y0)
+    t = ((p[0] - x0) * dx + (p[1] - y0) * dy) / (dx * dx + dy * dy)
+    t = max(0.0, min(1.0, t))
+    return math.hypot(p[0] - (x0 + t * dx), p[1] - (y0 + t * dy))
 
 
 def _segments_cross(a, b):
@@ -2219,6 +2273,50 @@ def place_labels(
 
     # Place the most crowded points first -- they have the fewest good options.
     disp = [ax.transData.transform((x, y)) for _, _, _, _, x, y in points]
+    dot_y = [py for _, py in disp]
+    dot_x = [px for px, _ in disp]
+
+    def misreads(i, j, box_i, box_j, vc_i, vc_j):
+        """True if label i and label j stack in the opposite order to their
+        dots: the plot then says "the upper label is the upper dot's" and means
+        the opposite, which is how a reader ends up with the wrong model.
+
+        The scope matters. A global "every label must stack in its dot's
+        order" rule is unsatisfiable wherever dots sit closer together than a
+        label is tall (the high-intelligence plot packs nine models into two
+        index points) -- enforcing it there just piles the labels on top of
+        each other. So only pairs the eye actually reads as a column count:
+        dots within ORDER_TIE_PX of each other vertically are a tie (nobody
+        can tell which is higher, so either stacking is honest), dots further
+        than ORDER_DOT_DX apart horizontally are paired with their label by
+        proximity, and label boxes more than ORDER_X_PX apart horizontally are
+        read as separate entries, not as a stack."""
+        dy = dot_y[i] - dot_y[j]
+        if abs(dy) < ORDER_TIE_PX:
+            return False
+        # A label centred above or below its dot is anchored by x-alignment; a
+        # label beside its dot is anchored by adjacency. A pair with one of each
+        # is read through those anchors, not as a stack, so their vertical order
+        # says nothing and must not be forced.
+        if (box_i[0] <= dot_x[i] <= box_i[2]) != (box_j[0] <= dot_x[j] <= box_j[2]):
+            return False
+        if abs(dot_x[i] - dot_x[j]) > ORDER_DOT_DX:
+            return False
+        if max(box_i[0] - box_j[2], box_j[0] - box_i[2]) > ORDER_X_PX:
+            return False
+        return dy * (vc_i - vc_j) < 0
+
+    def order_violations(state):
+        """[(higher dot, lower dot, px)] of the label pairs in `state` that
+        misread, in this plot's scope (see misreads)."""
+        live = [i for i, s in enumerate(state) if s is not None]
+        out = []
+        for a, i in enumerate(live):
+            for j in live[a + 1 :]:
+                if misreads(i, j, state[i][1], state[j][1], state[i][3], state[j][3]):
+                    up, lo = (i, j) if dot_y[i] > dot_y[j] else (j, i)
+                    out.append((up, lo, abs(state[i][3] - state[j][3])))
+        return out
 
     def crowding(i):
         xi, yi = disp[i]
@@ -2231,22 +2329,93 @@ def place_labels(
     crowd = [crowding(i) for i in range(len(points))]
     order = sorted(range(len(points)), key=lambda i: (-crowd[i], -points[i][5]))
 
-    def choose(i, obstacles, leaders):
+    def leader_for(i, box):
+        """Leader segment from dot i to the nearest edge of `box` (display px),
+        or None when the label sits close enough for the dot to speak for
+        itself."""
+        px, py = disp[i]
+        anchor_x = max(box[0], min(px, box[2]))
+        anchor_y = max(box[1], min(py, box[3]))
+        dist = math.hypot(anchor_x - px, anchor_y - py)
+        if not crowd[i] and dist <= marker_r_px + LEADER_MIN:
+            return None
+        if dist <= 1e-6:
+            return (px, py, anchor_x, anchor_y)
+        ux, uy = (anchor_x - px) / dist, (anchor_y - py) / dist
+        return (px + ux * marker_r_px, py + uy * marker_r_px, anchor_x, anchor_y)
+
+    def leader_dot_hits(i, leader):
+        """How many other models' dots the leader line of label i runs too close
+        to. A leader grazing a marker reads as if it pointed at that dot -- the
+        same misreading the order rule exists to prevent -- so a label has to
+        sit far enough above or below its own dot for the line to clear its
+        neighbours."""
+        if leader is None:
+            return 0
+        clear = marker_r_px + LEADER_CLEAR_PX
+        return sum(
+            1
+            for j, (px, py) in enumerate(disp)
+            if j != i and _point_segment_dist((px, py), leader) < clear
+        )
+
+    def clean_at(i, vc, state):
+        """True if label i, slid vertically to vc (display px), is as clean as
+        the repair rounds demand: inside the axes, off every dot and every
+        other label, clear of the legend, not crossing a leader line, and not
+        contradicting the dots' height order."""
+        box = _shift(state[i][1], vc - state[i][3])
+        raw = _pad(box, -PAD_PX)
+        if (
+            raw[0] < axes_box[0]
+            or raw[2] > axes_box[2]
+            or raw[1] < axes_box[1]
+            or raw[3] > axes_box[3]
+        ):
+            return False
+        if any(_overlap_area(box, o) for o in dot_boxes):
+            return False
+        if any(_overlap_area(box, o) for o in extra_obstacles):
+            return False
+        leader = leader_for(i, box)
+        for j in range(len(points)):
+            if j == i or state[j] is None:
+                continue
+            if _overlap_area(box, state[j][1]) > 4 * PAD_PX * PAD_PX:
+                return False
+            if misreads(i, j, box, state[j][1], vc, state[j][3]):
+                return False
+            if (
+                leader is not None
+                and state[j][7] is not None
+                and _segments_cross(leader, state[j][7])
+            ):
+                return False
+        return not leader_dot_hits(i, leader)
+
+    def choose(i, obstacles, leaders, others):
         """Pick the best candidate position for label i. Returns
         (score, bbox, left_x0, vc, icon_cx, right_x0, w_right, leader); the
-        bbox, positions and leader segment are display pixels."""
+        bbox, positions and leader segment are display pixels. others is
+        [(j, vc_j, bbox_j)]: the current box and vertical centre of every other
+        placed label, for the order rule.
+        """
         left, right, icon, _strike, x, y = points[i]
         best = None
         # In a cluster, a label touching its dot is ambiguous no matter what, so
-        # only consider the far slots -- that buys a visible leader line.
-        # Right of the point is always tried first, then left; the stacked
-        # far slots are the fallback once those collide.
+        # only consider the slots that clear it: the horizontal ones, and the
+        # mid-height ones that buy a little daylight without running off to a
+        # leader-length-away stack. Right of the point is always tried first,
+        # then left; the far slots are the fallback once those collide.
         cands = CANDIDATES
         if max_candidates is not None:
             cands = CANDIDATES[:max_candidates]
         elif crowd[i]:
             near = [
-                c for c in CANDIDATES if abs(c[1]) < CROWD_OFFSET and c[3] == "center"
+                c
+                for c in CANDIDATES
+                if abs(c[1]) < CROWD_OFFSET
+                and (c[3] == "center" or abs(c[1]) >= CROWD_NEAR)
             ]
             far = [c for c in CANDIDATES if abs(c[1]) >= CROWD_OFFSET]
             cands = near + far
@@ -2309,28 +2478,32 @@ def place_labels(
             dot_pen = sum(_overlap_area(bb, o) for o in dot_boxes)
             pen = sum(_overlap_area(bb, o) for o in obstacles)
 
-            px, py = disp[i]
-            anchor_x = max(bb[0], min(px, bb[2]))
-            anchor_y = max(bb[1], min(py, bb[3]))
-            dist = math.hypot(anchor_x - px, anchor_y - py)
-            leader = None
-            if crowd[i] or dist > marker_r_px + LEADER_MIN:
-                if dist > 1e-6:
-                    ux, uy = (anchor_x - px) / dist, (anchor_y - py) / dist
-                    start_x = px + ux * marker_r_px
-                    start_y = py + uy * marker_r_px
-                else:
-                    start_x, start_y = px, py
-                leader = (start_x, start_y, anchor_x, anchor_y)
+            leader = leader_for(i, bb)
+            lead_dot = leader_dot_hits(i, leader)
             crossings = sum(
                 1
                 for other in leaders
                 if leader is not None and _segments_cross(leader, other)
             )
+            # The one mistake the plot cannot recover from is a label that
+            # reads as another model's: a stack that contradicts the dots'
+            # order, or a leader that grazes a marker. Rank both above
+            # leader-line crossings, which only look busy. (Label overlap,
+            # last, is the repair rounds' problem -- they drive it to zero.)
+            order_cnt, order_px = 0, 0.0
+            for j, vj, bj in others:
+                if misreads(i, j, bb, bj, vc, vj):
+                    order_cnt += 1
+                    order_px += abs(vc - vj)
             score = (
                 spill,
                 dot_pen > 0,
                 dot_pen,
+                order_cnt > 0,
+                order_cnt,
+                order_px,
+                lead_dot > 0,
+                lead_dot,
                 crossings > 0,
                 crossings,
                 pen,
@@ -2340,7 +2513,8 @@ def place_labels(
                 print(
                     f"DBG {left[:30]!r} dx={dx} dy={dy} {ha}/{va} "
                     f"spill={int(spill)} dot={dot_pen:.0f} pen={pen:.0f} "
-                    f"cross={crossings}"
+                    f"cross={crossings} order={order_cnt}/{order_px:.0f} "
+                    f"leaddot={lead_dot}"
                 )
 
             result = (
@@ -2353,7 +2527,7 @@ def place_labels(
                 w_right,
                 leader,
             )
-            if not any(score):  # collision-free position
+            if not any(score):  # nothing to fault: take it
                 return result
             if best is None or score < best[0]:
                 best = result
@@ -2368,7 +2542,12 @@ def place_labels(
     obstacles = list(extra_obstacles)
     leaders = []
     for i in order:
-        b = choose(i, obstacles, leaders)
+        seen = [
+            (j, placed[j][3], placed[j][1])
+            for j in range(len(points))
+            if placed[j] is not None
+        ]
+        b = choose(i, obstacles, leaders, seen)
         placed[i] = b
         if b is None:  # dropped label: reserves no space
             continue
@@ -2377,8 +2556,9 @@ def place_labels(
             leaders.append(b[7])
 
     def _total_cost(state):
-        """(leader crossings, unpadded label-overlap area) of a full layout,
-        in the same priority order as choose()'s score."""
+        """(order violations, their total px, leader crossings, unpadded
+        label-overlap area) of a full layout, in the same priority order as
+        choose()'s score."""
         area = 0.0
         crosses = 0
         for i in range(len(points)):
@@ -2396,7 +2576,8 @@ def place_labels(
                     and _segments_cross(state[i][7], state[j][7])
                 ):
                     crosses += 1
-        return (crosses, area)
+        violations = order_violations(state)
+        return (len(violations), sum(v[2] for v in violations), crosses, area)
 
     best_state = [b for b in placed]
     best_cost = _total_cost(best_state)
@@ -2418,7 +2599,10 @@ def place_labels(
                 for j in others
                 if placed[j] is not None and placed[j][7] is not None
             ]
-            placed[i] = choose(i, obs, other_leaders)
+            seen = [
+                (j, placed[j][3], placed[j][1]) for j in others if placed[j] is not None
+            ]
+            placed[i] = choose(i, obs, other_leaders, seen)
         label_collisions = any(
             _overlap_area(placed[i][1], placed[j][1]) > 4 * PAD_PX * PAD_PX
             for i in range(len(points))
@@ -2434,7 +2618,17 @@ def place_labels(
             and placed[i][7] is not None
             and placed[j][7] is not None
         )
-        if not label_collisions and not leader_collisions:
+        order_bad = bool(order_violations(placed))
+        lead_dot_bad = any(
+            placed[i] is not None and leader_dot_hits(i, placed[i][7])
+            for i in range(len(points))
+        )
+        if (
+            not label_collisions
+            and not leader_collisions
+            and not order_bad
+            and not lead_dot_bad
+        ):
             break
         cost = _total_cost(placed)
         if cost < best_cost:
@@ -2445,6 +2639,53 @@ def place_labels(
         # across all rounds, not whatever the last oscillating round produced.
         if best_cost < _total_cost(placed):
             placed = best_state
+
+    def settle_pass():
+        """Slide every label to the clean height nearest its own dot.
+
+        The repair rounds minimise penalties, not distance: a label takes the
+        nearest slot that happens to be free at the time and then stays there
+        while its neighbours move away, so a crowded column freezes with every
+        label parked a slot above its dot -- even though sliding the bottom one
+        down would let the next one take the vacated spot, and the one above
+        that take its spot, walking the whole column back down toward its dots.
+        Sweeping bottom-up (so the space a label vacates is available to the
+        next one) performs exactly that shuffle. A move is only ever accepted
+        into a spot the repair rounds would call clean, and only if it brings
+        the label closer to its dot, so the pass cannot break the layout."""
+        for _ in range(3):  # a few sweeps: one move can unblock another label
+            moved = False
+            for i in sorted(range(len(points)), key=lambda i: dot_y[i]):
+                if placed[i] is None:
+                    continue
+                current = placed[i][3]
+                want = dot_y[i]
+                best = None
+                for step in range(1, SETTLE_MAX_PX + 1):
+                    for vc in (want + step, want - step):
+                        if clean_at(i, vc, placed):
+                            best = vc
+                            break
+                    if best is not None:
+                        break
+                if best is None or abs(best - want) >= abs(current - want):
+                    continue
+                box = _shift(placed[i][1], best - current)
+                placed[i] = (
+                    placed[i][0],
+                    box,
+                    placed[i][2],
+                    best,
+                    placed[i][4],
+                    placed[i][5],
+                    placed[i][6],
+                    leader_for(i, box),
+                )
+                moved = True
+            if not moved:
+                break
+
+    settle_pass()
 
     # Diagnostics toggle, set by --verbose in main().
     if VERBOSE:
@@ -2479,6 +2720,26 @@ def place_labels(
                         f"[{points[i][0][:30]}|{points[i][1][:20]}] vs "
                         f"[{points[j][0][:30]}|{points[j][1][:20]}]"
                     )
+        # Leader lines that graze a dot they do not belong to: the line then
+        # looks like it points at that model. Dense clusters are not always
+        # satisfiable, so this is a report, not an assertion.
+        for i in range(len(points)):
+            if placed[i] is None:
+                continue
+            hits = leader_dot_hits(i, placed[i][7])
+            if hits:
+                print(
+                    f"LEADER/DOT [{title}]: "
+                    f"[{points[i][0][:30]}] grazes {hits} other dot(s)"
+                )
+        # Label pairs that stack against their dots' order: a reader pairs the
+        # upper label with the upper dot and reads the wrong model.
+        for up, lo, _ in order_violations(placed):
+            print(
+                f"ORDER [{title}]: "
+                f"[{points[up][0][:30]}] is above [{points[lo][0][:30]}], "
+                f"but its label is not"
+            )
     inv = ax.transData.inverted()
     for i in order:
         left, right, icon, strike, x, y = points[i]
@@ -2780,7 +3041,8 @@ def _make_datacenter_plot(
         ax.set_xlim(max(x_lo - pad, spec.x_min), x_hi + pad)
     else:
         ax.set_xlim(0, x_hi * (1 + spec.get_x_pad(fmt)))
-    # y_lim: floor/ceil of the points with 0.2 of slack, except on the band
+    # y_lim: floor of the points with a point of slack (enough for a label
+    # centred on the lowest dot) / ceil with 0.2, except on the band
     # side, which snaps exactly to the band edge (computed in main).
     y_lo, y_hi = y_lim
     ax.set_ylim(y_lo, y_hi)
@@ -3299,7 +3561,11 @@ def main(argv=None):
             print("Generating bar plot:", spec.stem)
             make_bar_plot(spec, models)
             continue
-        y_lo = math.floor(min(m.intelligence for m in models)) - 0.2
+        # Add 1 index point of slack to the bottom: a label centred on the lowest dot is
+        # ~18 px tall at this DPI, i.e. ~0.8 index points, and without the room every
+        # near slot spills under the axis and the capped PNG label search drops that
+        # model's name entirely.
+        y_lo = math.floor(min(m.intelligence for m in models)) - 1.0
         y_hi = math.ceil(max(m.intelligence for m in models)) + 0.2
         if y_hi == y_lo:  # degenerate: all points on one level
             y_hi = y_lo + 1
