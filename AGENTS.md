@@ -83,6 +83,9 @@ name:
   and given a "Not publicly available" legend entry
 - `estimated=True` → hollow dot (data not published by AA: extrapolated, or hand-entered)
 
+A view can drop a glyph entirely with `PlotSpec.hidden_icons` (labels and legend entry
+alike); the hardware plot hides `bolt` because its filter admits only local models.
+
 A publisher appearing for the first time must be added to `PUBLISHERS` with its
 artificialanalysis.ai color, or the script KeyErrors.
 

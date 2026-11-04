@@ -890,7 +890,7 @@ MODELS = [
         # From https://github.com/Niko1221/Strata @ 2.0bpw; UD-Q2_K_XL is 2.8bpw
         local_speed=LocalSpeed(prefill=320, decode=21 * 2.0 / 2.8),
         hardware_price_override=6400,  # R9700 + 192 GiB RAM (Strata)
-    ),    
+    ),
     # Guesstimate - not on AA. Intelligence is extrapolated from Tencent's own
     # agentic-benchmark chart for the Hy4 release, which plots Hy4 against five
     # models AA does score (GLM 5.3, DeepSeek-V4.1-Flash-1017, Kimi K3.1 Pro,
@@ -1862,6 +1862,10 @@ class PlotSpec(NamedTuple):
     label_of: Callable[[Model], str] = lambda m: m.name  # a point's display
     # text. The hardware plot drops the effort/hardware suffixes, since its x
     # is the same rig for every effort variant of a model
+    hidden_icons: frozenset[str] = frozenset()  # icon keys this view drops, from
+    # its labels and from its legend. The hardware plot hides "bolt": its filter
+    # admits only local models, so the ⚡ marks every point and therefore says
+    # nothing
     right_xtick_step: float | None = None  # tick step for the x_break panel.
     # None gives it one tick per model, for when the prices are six figures
     # and a fixed step would only produce collisions
@@ -1994,6 +1998,7 @@ PLOTS = [
         break_xtick_format="${x:,.0f}",
         available_of=lambda m: m.available_local,
         label_of=lambda m: _clean_label(m),
+        hidden_icons=frozenset({"bolt"}),
     ),
 ]
 
@@ -2111,7 +2116,7 @@ def _clean_label(m: Model) -> str:
     return name + bolt
 
 
-def _split_icon(m, name=None, available=True):
+def _split_icon(m, name=None, available=True, hidden=()):
     """Split the display glyphs out of a model's label.
 
     Returns (left, icon, right, strike): the text before the glyph, the icon
@@ -2126,6 +2131,9 @@ def _split_icon(m, name=None, available=True):
 
     `name` overrides the display text (e.g. with an effort suffix removed).
     `available` overrides the availability the label is rendered under.
+    `hidden` lists icon keys this view suppresses: they are neither returned
+    nor left in the text, so a hidden ⚡ leaves the name it was spliced into
+    unchanged apart from the glyph itself.
     """
     if name is None:
         name = m.name
@@ -2134,8 +2142,10 @@ def _split_icon(m, name=None, available=True):
     if idx >= 0:
         left = name[:idx].rstrip()
         right = name[idx + len("⚡") :].lstrip()
+        if "bolt" in hidden:
+            return (left + " " + right).strip(), None, "", strike
         return left, "bolt", right, strike
-    if m.trains_on_your_data:
+    if m.trains_on_your_data and "mask" not in hidden:
         return name, "mask", "", strike
     return name, None, "", strike
 
@@ -2829,12 +2839,18 @@ def place_labels(
 
 
 def _plot_legend(
-    ax, models, loc="lower right", bbox_to_anchor=None, available_of=lambda m: True
+    ax,
+    models,
+    loc="lower right",
+    bbox_to_anchor=None,
+    available_of=lambda m: True,
+    hidden=(),
 ):
     """Legend for the publishers present in a plot, plus an entry for every
     special marker in use (⚡ local electricity, thief mask for
     trains_on_your_data, hollow dot for estimated points, strikethrough for
-    a model unavailable under `available_of`).
+    a model unavailable under `available_of`). Icon keys in `hidden` get no
+    entry, matching the labels a view suppresses them in.
     Returns (legend, has_unavailable_entry)."""
     present = [p for p in PUBLISHERS if any(m.publisher == p for m in models)]
     handles = [
@@ -2849,7 +2865,7 @@ def _plot_legend(
         )
         for p in present
     ]
-    if any("⚡" in m.name for m in models):
+    if "bolt" not in hidden and any("⚡" in m.name for m in models):
         fill, edge = ICON_COLORS["bolt"]
         handles.append(
             Line2D(
@@ -2864,7 +2880,7 @@ def _plot_legend(
                 label="Local electricity cost",
             )
         )
-    if any(m.trains_on_your_data for m in models):
+    if "mask" not in hidden and any(m.trains_on_your_data for m in models):
         fill, edge = ICON_COLORS["mask"]
         handles.append(
             Line2D(
@@ -3305,7 +3321,11 @@ def make_broken_axis_plot(spec, models, band, y_lim):
     # Legend: one entry per publisher actually present in this plot.
     legend_ax = ax_r if spec.legend_panel == "right" else ax_l
     legend, have_unavailable = _plot_legend(
-        legend_ax, models, loc="lower right", available_of=spec.available_of
+        legend_ax,
+        models,
+        loc="lower right",
+        available_of=spec.available_of,
+        hidden=spec.hidden_icons,
     )
     fig.tight_layout()
     # The gap between the panels, after tight_layout rather than in
@@ -3350,7 +3370,12 @@ def make_broken_axis_plot(spec, models, band, y_lim):
                 (left_, right_, icon, strike, spec.x_of(m), m.intelligence)
                 for m in panel
                 for left_, icon, right_, strike in [
-                    _split_icon(m, spec.label_of(m), available=spec.available_of(m))
+                    _split_icon(
+                        m,
+                        spec.label_of(m),
+                        available=spec.available_of(m),
+                        hidden=spec.hidden_icons,
+                    )
                 ]
             ],
             marker_r_px,
@@ -3401,7 +3426,7 @@ def make_bar_plot(spec, models):
     icon_rows = []
     for i, m in enumerate(ordered):
         name = _clean_label(m) if spec.one_per_model else m.name
-        left, icon, right, _strike = _split_icon(m, name)
+        left, icon, right, _strike = _split_icon(m, name, hidden=spec.hidden_icons)
         labels.append((left + " " + right).strip())
         if icon is not None:
             icon_rows.append((i, icon))
@@ -3445,6 +3470,7 @@ def make_bar_plot(spec, models):
         loc="center left",
         bbox_to_anchor=(1.005, 0.5),
         available_of=lambda m: m.available_datacenter,
+        hidden=spec.hidden_icons,
     )
     fig.tight_layout()
     fig.canvas.draw()
