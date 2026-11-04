@@ -1067,7 +1067,6 @@ MODELS = [
         or_toks_served=3037234158165,
         or_eff_input_price=0.2983,
         or_eff_output_price=10.12,
-        available_local=False,
     ),
     Model(
         "Google",

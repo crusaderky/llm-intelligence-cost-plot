@@ -2111,6 +2111,7 @@ L 212.680046 486.374451
 L 235.822101 473.258231 
 L 374.674434 386.243688 
 L 426.744059 369.313733 
+L 1865.107656 240.692705 
 " clip-path="url(#p134d9038a6)" style="fill: none; stroke-dasharray: 1.2,1.98; stroke-dashoffset: 0; stroke: #7a7f8a; stroke-opacity: 0.9; stroke-width: 1.2"/>
    </g>
    <g id="line2d_112">
@@ -4686,6 +4687,17 @@ L 1856.907656 56.32671
      </g>
     </g>
    </g>
+   <g id="line2d_228">
+    <path d="M 818.588828 925.110026 
+L 828.838362 676.899686 
+L 847.970827 640.434155 
+L 852.07064 486.374451 
+L 857.537059 473.258231 
+L 890.335569 386.243688 
+L 902.63501 369.313733 
+L 1697.998876 68.215495 
+" clip-path="url(#pe3d3fcb625)" style="fill: none; stroke-dasharray: 1.2,1.98; stroke-dashoffset: 0; stroke: #7a7f8a; stroke-opacity: 0.9; stroke-width: 1.2"/>
+   </g>
    <g id="patch_7">
     <path d="M 1539.090095 946.829609 
 L 1539.090095 51.982793 
@@ -4764,7 +4776,7 @@ z
    </g>
    <g id="text_93">
     <!-- Kimi K3.1 Pro -->
-    <g style="fill: #4b5563" transform="translate(1707.998876 71.592956) scale(0.13 -0.13)">
+    <g style="fill: #1f2328" transform="translate(1707.998876 71.592956) scale(0.13 -0.13)">
      <use xlink:href="#DejaVuSans-2e"/>
      <use xlink:href="#DejaVuSans-4c" transform="translate(65.578125 0)"/>
      <use xlink:href="#DejaVuSans-50" transform="translate(93.359375 0)"/>
@@ -4779,11 +4791,6 @@ z
      <use xlink:href="#DejaVuSans-55" transform="translate(565.265625 0)"/>
      <use xlink:href="#DejaVuSans-52" transform="translate(604.171875 0)"/>
     </g>
-   </g>
-   <g id="line2d_228">
-    <path d="M 1707.998876 68.215495 
-L 1794.612626 68.215495 
-" style="fill: none; stroke: #4b5563; stroke-linecap: square"/>
    </g>
    <g id="line2d_229">
     <path d="M 1532.610095 953.309609 
