@@ -81,7 +81,7 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
         "DeepSeek V4.1 Flash 1017 (Max)",
         False,
     ),
-    "Hy4 preview": ("", "", False),  # not on AA yet: manual entry
+    "Hy4": ("", "", False),  # not on AA yet: manual entry
     "Muse Spark 1.3": ("muse-spark-1-3", "Muse Spark 1.3 (Max)", False),
     "Muse Wonder": ("muse-wonder", "Muse Wonder (Max)", False),
     # (high) is extrapolated from the (max) record: intelligence x

@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-10-31
+**Last updated:** 2026-11-04
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -25,7 +25,7 @@ Over time, I've become progressively more irritated by this plot, for a few reas
 The first issue I have with it is that it uses a logarithmic scale on the cost axis.
 Using a log scale is the only way to make you spot the difference between a model that
 costs $0.03 per task and one that costs $0.10, while the same plot contains a model
-that costs $13.47 — over 400 times as expensive. However, the net result is that the
+that costs $20 — 600 times as expensive. However, the net result is that the
 viewers can no longer appreciate the immensity of the price difference between the cheap
 models and the heavy ones; nor can they realize how inconsequential the price
 differences are between the cheap models.
@@ -68,7 +68,8 @@ Models marked with a thief mask symbol
 train on your data and you should not use them for anything that you would not
 want to become publicly available on the internet.
 
-Models in grey with a strikethrough are not offered to the public yet.
+Models in grey with a strikethrough are not offered to the public yet: no datacenter
+endpoint on the price plots, no downloadable weights on the hardware plot.
 
 Models that ArtificialAnalysis has not measured are drawn as hollow circles; their
 positions are extrapolated or estimated (the details are in the list of differences
@@ -126,9 +127,11 @@ absent as they have no sticker price to compare with.
 - Extrapolated intelligence for LFM3-1.7B, which AA does not list at all, from its
   individual benchmark scores at [Tiny League](https://tinyleague.nunodonato.com/) read
   against AA's scores of the models around it.
-- Extrapolated Hy4 preview, which AA does not list at all, by mapping [Tencent's
-  self-published benchmark chart](https://hy.tencent.ai/research/hy4-preview) onto the
-  AA Intelligence Index of GLM-5.3.
+- Extrapolated Hy4, which AA does not list at all, from [Tencent's own benchmark
+  chart](https://hy.tencent.ai/research/hy4): interpolate Hy4's score into the AA
+  Intelligence Index of the five models that chart compares it against (GLM-5.3,
+  DeepSeek V4.1 Flash, Kimi K3.1 Pro, Claude Opus 5.5, GPT-6.1 Sol) Hy4's tokens per
+  task are guesstimated as the geometric mean of GLM-5.3's and DeepSeek V4.1 Flash.
 
 ## Cost calculation for datacenter models
 
@@ -228,8 +231,7 @@ rapidly:
 | 128 GB unified | Strix Halo 128 GB<br>Mac Studio M5 Max 128 GB<br>MacBook Pro M5 Max 128 GB<br>DGX Spark | $3,100<br>$5,100<br>$7,000<br>$7,900 | GLM-5.3-Flash (IQ3_XXS)<br>MiMo-v2.6-Flash (3.0bpw)<br>Qwen3.8-Flash (Q4_K_M on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [Gufo](https://github.com/gufo-org/gufo/) / [DwarfStar](https://dwarfstar.sh/)) |
 | 192 GB unified | Gorgon Halo | $6,200 | DeepSeek V4.1 Flash (UD-IQ2_XXS)<br>MiniMax M3.1 Flash (UD-IQ3_XXS) |
 | 256 GB unified | Mac Studio M5 Ultra 256 GB<br>2x DGX Spark | $11,300<br>$15,900 | Ling 3.1 Flash 1019 (IQ3_XXS) |
-| 384 GB unified | 3x DGX Spark | $24,000 | GLM-5.3 (Q3_K_XL)<br>Step 5 Preview (Q4_K_M)<br>MiMo-v2.6-Pro (3.0 bpw)<br>Mistral Large 4 (Q2_K_XL) |
-| 512 GB unified | 2x Mac Studio M5 Ultra 256 GB<br>Mac studio M5 Ultra 512 GB<br>4x DGX Spark + QSFP28 switch | $22,600<br>$23,000<br>$32,800 | Hy4 preview (Q4_K_M) |
+| 384 GB unified | 3x DGX Spark | $24,000 | Hy4 (~Q3)<br>GLM-5.3 (Q3_K_XL)<br>Step 5 Preview (Q4_K_M)<br>MiMo-v2.6-Pro (3.0 bpw)<br>Mistral Large 4 (Q2_K_XL) |
 | 1 TB unified | 8x DGX Spark + QSFP-DD switch | $64,600 | Kimi K3.1 Pro (UD-Q2_K_XL) |
 
 The same models on a hardware-cost axis at the highest available quantization that
@@ -248,10 +250,10 @@ while the latter can be as cheap as a mobile phone subscription.
 
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
-appreciate how much better Claude Opus 5.5 at max effort (intelligence score 58,
-$21.03/task) is compared to GPT-6.1 Sol at max effort (intelligence 54, $1.69/task — 12x
-cheaper), most people will have a hard time doing so. Going further down, GPT-6.1 Sol at
-low effort (intelligence 34, $0.19/task — _over 100 times cheaper than Opus 5.5_) is
+appreciate how much better Claude Opus 5.5 at max effort (intelligence score 59,
+$20.59/task) is compared to GPT-6.1 Sol at max effort (intelligence 55, $1.81/task — 11x
+cheaper), most people will have a hard time doing so. Going further down, GPT-6.1 Terra
+at low effort (intelligence 29, $0.10/task — _over 200 times cheaper than Opus 5.5_) is
 visibly less capable when you give it very sophisticated tasks, like one-shotting a
 whole coding project on its own, but it remains _enough_ for 90% of what people actually
 need. Even the highly specialized engineers and scientists mentioned above don't
