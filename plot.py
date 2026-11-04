@@ -854,13 +854,13 @@ MODELS = [
         or_eff_input_price=0.01229,
         or_eff_output_price=0.6607,
     ),
-    # Local model
+    # Degraded local model
     Model(
         "DeepSeek",
-        "DeepSeek V4.1 Flash 1017",
+        "DeepSeek V4.1 Flash 1017 (UD-IQ1_M)",
         # https://unsloth.ai/docs/models/deepseek-v4.1-flash
-        # Average recovery over 14 benchmarks
-        32.5896393532027 * 0.975,
+        # Average recovery over 6 benchmarks; Unsloth 3.1
+        32.5896393532027 * 85.7 / 87.8,
         ProviderType.LOCAL,
         # https://unsloth.ai/docs/models/deepseek-v4.1-flash#quantization-increases-reasoning-lengths
         aa_tok_per_task=138962 * 2.8 / 1.5,
@@ -870,9 +870,27 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
         # From https://github.com/Niko1221/Strata @ 2.0bpw; UD-IQ1_M is 1.95bpw
         local_speed=LocalSpeed(prefill=320, decode=21),
-        hardware_price_override=5500,  # R9700 + 128 GiB RAM (Strata UD-IQ1_M)
+        hardware_price_override=5500,  # R9700 + 128 GiB RAM (Strata)
         estimated=True,
     ),
+    # Local model with negligible performance loss
+    Model(
+        "DeepSeek",
+        "DeepSeek V4.1 Flash 1017 (UD-Q2_K_XL)",
+        # https://unsloth.ai/docs/models/deepseek-v4.1-flash
+        # Average recovery over 6 benchmarks; Unsloth 3.1
+        32.5896393532027,
+        ProviderType.LOCAL,
+        # https://unsloth.ai/docs/models/deepseek-v4.1-flash#quantization-increases-reasoning-lengths
+        aa_tok_per_task=138962 * 2.1 / 1.5,
+        aa_cost_per_task=PricedTokens(
+            0.2571473726554651, 0.16675404706375513 * 2.1 / 1.5, 0.1782037281167598
+        ),
+        aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
+        # From https://github.com/Niko1221/Strata @ 2.0bpw; UD-Q2_K_XL is 2.8bpw
+        local_speed=LocalSpeed(prefill=320, decode=21 * 2.0 / 2.8),
+        hardware_price_override=6400,  # R9700 + 192 GiB RAM (Strata)
+    ),    
     # Guesstimate - not on AA. Intelligence is extrapolated from Tencent's own
     # agentic-benchmark chart for the Hy4 release, which plots Hy4 against five
     # models AA does score (GLM 5.3, DeepSeek-V4.1-Flash-1017, Kimi K3.1 Pro,
