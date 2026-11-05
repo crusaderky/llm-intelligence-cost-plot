@@ -95,6 +95,18 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "GLM-5.3-Flash (max)": ("glm-5-3-flash", "GLM-5.3-Flash", False),
     "GLM-5.3": ("glm-5-3", "GLM-5.3 (Max)", False),
     "Kimi K3.1 Pro": ("kimi-k3-1-pro", "Kimi K3.1 Pro", False),
+    # AA still has the page (slug gemini-3-5-flash, record "Gemini 3.5 Flash
+    # (High)") but since the 2026-10 index rebuild the record publishes no index,
+    # no tokens per task and no cost split - only its individual benchmark scores
+    # and its sticker prices. Pinned to ("", "") because pick_record's stem
+    # fallback otherwise resolves "Gemini 3.5 Flash" to the *Lite* record
+    # on the same page and would silently refresh this row with the wrong model.
+    # Intelligence and the whole token mix are hand-derived in plot.py.
+    "Gemini 3.5 Flash": ("", "", True),
+    # Pinned because AA's page carries three records that all reduce to the stem
+    # "gemini 3.8 flash" - (High), (Medium) and (Low) - so the stem fallback cannot
+    # pick one. This row is the (High) record.
+    "Gemini 3.8 Flash": ("gemini-3-8-flash", "Gemini 3.8 Flash", False),
     "Gemini 4 Argon (high)": ("gemini-4-argon", "Gemini 4 Argon (High)", False),
     "Grok 4.7": ("grok-4-7", "Grok 4.7 (Xhigh)", False),
     "MiMo-V2.6-Flash": ("mimo-v2-6-flash", "MiMo-V2.6-Flash", False),
@@ -224,6 +236,41 @@ def _or_get(url: str, params: str = "") -> dict:
     )
     with urllib.request.urlopen(req, timeout=60) as resp:
         return json.load(resp)
+
+
+def or_slug_variants(slug: str) -> list[str]:
+    """The two spellings OpenRouter uses for one dated release.
+
+    The stats endpoints (session cost, weekly tokens served) key on the
+    *permaslug*, which dashes the dots inside a version name:
+    "google/gemini-3-8-flash-20260902". The effective-pricing chart keys on the
+    developer slug plus the date and keeps the dots:
+    "google/gemini-3.8-flash-20260902". plot.py stores the readable dotted form
+    (the only spelling the price chart answers for), so the stats lookups have to
+    try the dashed twin. Only that direction is derivable from the stored string;
+    a slug already stored dashed gets no twin, and an undated slug gets none.
+    """
+    head, _, date = slug.rpartition("-")
+    if not (date.isdigit() and len(date) == 8 and "." in head):
+        return [slug]
+    return [slug, f"{head.replace('.', '-')}-{date}"]
+
+
+def or_lookup_key(mapping: dict[str, object], slug: str | None) -> str | None:
+    """The key in mapping that spellings of slug agree on, or None.
+
+    A row can have no OpenRouter slug at all (a model OR does not carry), which
+    is a miss, not a lookup to attempt.
+    """
+    if not slug:
+        return None
+    return next((v for v in or_slug_variants(slug) if v in mapping), None)
+
+
+def or_lookup(mapping: dict[str, object], slug: str | None) -> object:
+    """mapping[slug], or mapping[its other spelling], or None."""
+    key = or_lookup_key(mapping, slug)
+    return None if key is None else mapping[key]
 
 
 def fetch_or_sessions(
@@ -390,27 +437,32 @@ def fetch_or_effective(refresh: bool, slugs: list[str]) -> dict[str, OrEffective
         if not refresh and entry and time.time() - entry["fetched_at"] < CACHE_TTL:
             charts[slug] = entry["chart"]
             continue
-        url = (
-            f"{OR_EFFECTIVE_URL}?permaslug={urllib.parse.quote(slug)}"
-            f"&shape=v7&range={OR_EFFECTIVE_RANGE}"
-        )
-        payload = _or_get(url)
-        if "data" not in payload:
-            print(
-                f"no OR price chart for {slug}: {payload.get('error')}", file=sys.stderr
+        chart = None
+        error = None
+        for variant in or_slug_variants(slug):
+            url = (
+                f"{OR_EFFECTIVE_URL}?permaslug={urllib.parse.quote(variant)}"
+                f"&shape=v7&range={OR_EFFECTIVE_RANGE}"
             )
-            continue
-        chart = payload["data"]
-        if not chart.get("inputChartData") and slug in cached:
-            # An empty trailing week is an OR hiccup (the window can come back
-            # empty for a model whose traffic just moved permaslug), not the
-            # model turning free: keep the last chart that had days in it.
-            print(
-                f"OR returned an empty price week for {slug}; keeping the "
-                f"previously cached chart",
-                file=sys.stderr,
-            )
-            charts[slug] = cached[slug]["chart"]
+            payload = _or_get(url)
+            error = payload.get("error")
+            candidate = payload.get("data")
+            if candidate and candidate.get("inputChartData"):
+                chart = candidate
+                break
+        if chart is None:
+            if slug in cached and cached[slug]["chart"].get("inputChartData"):
+                # An empty trailing week is an OR hiccup (the window can come back
+                # empty for a model whose traffic just moved permaslug), not the
+                # model turning free: keep the last chart that had days in it.
+                print(
+                    f"OR returned an empty price week for {slug}; keeping the "
+                    f"previously cached chart",
+                    file=sys.stderr,
+                )
+                charts[slug] = cached[slug]["chart"]
+                continue
+            print(f"no OR price chart for {slug}: {error}", file=sys.stderr)
             continue
         charts[slug] = chart
         cached[slug] = {"fetched_at": time.time(), "chart": chart}
@@ -503,8 +555,8 @@ def main() -> None:
         eff = effective.get(args.new)
         if eff is None:
             sys.exit(f"no OR effective-pricing chart for {args.new}")
-        sess = session_costs.get(args.new)
-        toks = toks_served.get(args.new)
+        sess = or_lookup(session_costs, args.new)
+        toks = or_lookup(toks_served, args.new)
         print("AA record:", json.dumps(rec, indent=1))
         if sess is not None:
             print(
@@ -574,22 +626,20 @@ def main() -> None:
         prices and the weekly volume, neither of which depends on AA's index.
         """
         eff = effective.get(m.or_slug)
-        if m.or_slug in session_costs:
-            new_sess = session_costs[m.or_slug]
-            src = (
-                f" ({len(session_detail[m.or_slug])}/4 harnesses)"
-                if len(session_detail[m.or_slug]) < 4
-                else ""
-            )
-        else:
+        hit = or_lookup_key(session_costs, m.or_slug)
+        if hit is None:
             new_sess, src = None, " (no session data)"
+        else:
+            new_sess = session_costs[hit]
+            n = len(session_detail[hit])
+            src = f" ({n}/4 harnesses)" if n < 4 else ""
         if eff is None:
             src += " (no usable OR price: plots at AA's price)"
         return {
             "old_sess": m.or_session_cost_10_49_turns,
             "new_sess": new_sess,
             "old_vol": m.or_toks_served,
-            "new_vol": toks_served.get(m.or_slug),
+            "new_vol": or_lookup(toks_served, m.or_slug),
             "old_in": m.or_eff_input_price,
             "old_out": m.or_eff_output_price,
             "new_in": eff.input if eff else None,

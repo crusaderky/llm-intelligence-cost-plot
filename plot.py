@@ -378,10 +378,13 @@ class LocalSpeed(NamedTuple):
 
 # AA publishes no cost-per-task breakdown for some local models, so their
 # uncached input token count is estimated as this multiple of the output token
-# count. 3.85 is the median of (uncached input tokens / output tokens) over the
-# 50 models AA does break down; the real ratio is all over the place (2.0 at
-# the tightest, 95.0 on the record with the largest cached prefix), so this is
-# a coarse middle guess, not a per-model fit.
+# count. 3.85 was that multiple's median over the models AA does break down
+# when it was picked; across the 54 models it breaks down today the median is
+# 3.89, and the constant is left alone rather than retuned so the local rows'
+# prices stay put across refreshes. The real ratio is all over the place - 1.98
+# on GLM-5.3-Flash (max), 94.75 on Gemini 3.8 Flash, which AA bills for
+# close to a hundred cache-write tokens per answer - so this is a coarse middle
+# guess, not a per-model fit.
 LOCAL_INPUT_TOKEN_RATIO = 3.85
 
 
@@ -1051,6 +1054,39 @@ MODELS = [
         or_toks_served=3342540938738,
         or_eff_input_price=0.3302,
         or_eff_output_price=10.59,
+    ),
+    # Not on AA anymore. Intelligence extrapolated from Gemini 3.8 Flash and Gemini 3.5
+    # Flash-Lite. Tokens per task arbitrarily set the same as Gemini 3.8 Flash.
+    Model(
+        "Google",
+        "Gemini 3.5 Flash",
+        21.0,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=98_940,
+        aa_cost_per_task=PricedTokens(7.03 * 2, 0.37 * 9 / 3.75, 0.36 * 2),
+        aa_sticker_price=PricedTokens(1.5, 9.0, 0.15),
+        or_slug="google/gemini-3.5-flash-20260519",
+        or_session_cost_10_49_turns=0.4776147,
+        or_toks_served=47929091224,
+        or_eff_input_price=0.9885,
+        or_eff_output_price=9.024,
+        estimated=True,
+    ),
+    Model(
+        "Google",
+        "Gemini 3.8 Flash",
+        30.8468119957291,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=98_940,
+        aa_cost_per_task=PricedTokens(
+            7.030934890491321, 0.3710231777219156, 0.36404810993927716
+        ),
+        aa_sticker_price=PricedTokens(0.75, 3.75, 0.075),
+        or_slug="google/gemini-3.8-flash-20260902",
+        or_session_cost_10_49_turns=0.27150764,
+        or_toks_served=1_529_556_475_502,
+        or_eff_input_price=0.3527,
+        or_eff_output_price=4.18,
     ),
     Model(
         "Google",
@@ -1936,9 +1972,9 @@ PLOTS = [
         # default 0.03, where 0.002 would cut that dot in half
         png_x_pad=0.03,
         easter_eggs=(
-            (0.35, "Too cheap to care"),
-            (2.00, "Need to be careful\nabout your bill"),
-            (4.20, "This is EXPENSIVE"),
+            (0.45, "Too cheap to care"),
+            (1.90, "Need to be careful\nabout your bill"),
+            (4.00, "This is EXPENSIVE"),
             (
                 5.50,
                 "Anything beyond this point\nis unaffordable without\nVC subsidies",
@@ -1946,8 +1982,8 @@ PLOTS = [
             (10.00, "Keep scrolling"),
             (16.00, "This is getting ridiculous"),
             (23.00, "Are you still here?"),
-            (30.00, "Almost there..."),
-            (32.30, "Congratulations,\nyou made it to the end!"),
+            (27.00, "Almost there..."),
+            (30.00, "Congratulations,\nyou made it to the end!"),
         ),
     ),
     PlotSpec(

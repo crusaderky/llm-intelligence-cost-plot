@@ -119,6 +119,9 @@ absent as they have no sticker price to compare with.
   benchmarks](https://unsloth.ai/docs/models/deepseek-v4.1-flash).
 - Extrapolated intelligence for Qwen3.8-Flash by comparing its available individual
   benchmarks with those of GLM-5.3-Flash and MiMo-V2.6-Flash.
+- Extrapolated intelligence for Gemini 3.5 Flash using benchmarks of Gemini 3.5
+  Flash-Lite and Gemini 3.8 Flash; arbitrarily assumed same tok/task as Gemini 3.8
+  Flash.
 - Extrapolated intelligence for Qwen3.6-35B-A3B and K2 Horizon 7B by comparing their
   available individual benchmarks with those of GPT-6 Luna (low), GPT-6 Luna (medium),
   Muse Glimmer and Granite 4.2 3B.
@@ -168,8 +171,8 @@ rate, so it is applied to the whole input side rather than to cache hits alone. 
 result is a real, absolute price for the same task AA benchmarks: **what you pay on
 OpenRouter for the tokens that AA's task actually consumes.**.
 
-A model OR carries no price history for, or one AA publishes no breakdown for, keeps
-AA's own cost per task.
+A model OR carries no price history for, or one without AA price per task breakdown
+(published or inferred), keeps AA's own cost per task.
 
 ## Cost calculation for local models
 
@@ -182,9 +185,9 @@ calculated as follows:
   Cache hits are free on your own machine, so they are excluded.
 - AA publishes no breakdown for a few of these models (LFM3-1.7B, K2 Horizon 7B,
   Ternary-Bonsai-2). For those, the uncached input tokens are estimated as 3.85× the
-  output tokens, which is the median of that ratio over the 50 models AA does break
-  down. It is a crude guess: the real ratio runs from 2 to 95, depending mostly on how
-  much of the task's context the model got served out of cache.
+  output tokens, which is the median of that ratio over the models AA does break down.
+  It is a crude guess: the real ratio runs from 2 to 95, depending mostly on how much of
+  the task's context the model got served out of cache.
 - Crudely observe prefill and decode speed (tok/s) on local hardware. All measurements
   were taken on the same RTX 3090 video card from 2020, which today is relatively
   affordable at ~$1,400 (used).

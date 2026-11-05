@@ -68,6 +68,15 @@ plot`, visually inspect the PNGs, `pixi r lint`).
   model whose traffic just moved permaslug), the refresh warns on stderr and keeps the
   last chart that had days in it, so a hiccup cannot silently drop a model back to AA's
   price.
+- OR spells a dated release two ways and its endpoints disagree: the stats endpoints
+  (session cost, weekly volume) key on the **permaslug**, which dashes the dots inside a
+  version name (`google/gemini-3-8-flash-20260902`), while the effective-pricing chart
+  keys on the developer slug plus the release date and keeps the dots
+  (`google/gemini-3.8-flash-20260902`). `plot.py` stores the dotted form - the only
+  spelling the price chart answers for - and `or_lookup_key` tries the dashed twin for
+  the stats lookups. Asking only one spelling makes a heavily used model look like it
+  has no price history at all: `gemini-3.8-flash`, at 1.53T tokens a week, did exactly
+  that before the fallback was added.
 - The session-cost statistic is a **30-day trailing median, and OR only rolls its window
   periodically** (observed `windowEnd` frozen for 8+ days at 2026-09-13); between rolls a
   refresh returns byte-identical session values, so an `OR$!` flag signals a real roll,
@@ -87,6 +96,14 @@ plot`, visually inspect the PNGs, `pixi r lint`).
   - `GLM-5.3-Flash (high)` is extrapolated from the `(max)` record — multiply
     intelligence by 28.01/28.99 and tokens **and the whole `aa_cost_per_task` split** by
     70610/138690 (the sticker prices are the model's list prices and do not scale).
+  - `Gemini 3.5 Flash` prints `(not on AA: intelligence + tokens are manual)` even
+    though AA still has the record: since the 2026-10 rebuild `Gemini 3.5 Flash`
+    publishes only its sticker prices and its individual benchmarks — no index, no
+    tokens per task, no cost split — and the row is pinned to `("", "")` so
+    `pick_record`'s stem fallback cannot hand it the `Gemini 3.5 Flash-Lite` record that
+    sits on the same page. Intelligence and the whole token mix are hand-derived in
+    `plot.py` from the two scored siblings (see the comment above that row); only its OR
+    prices and weekly volume refresh.
   - The `trains_on_your_data=True` twin of `Muse Spark 1.3` must always get the same AA
     numbers as `Muse Spark 1.3`, but has its own OR permaslug, effective prices, session
     cost and weekly volume. Watch out: two rows can share a display name.
