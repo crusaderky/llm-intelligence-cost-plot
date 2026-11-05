@@ -78,6 +78,12 @@ plot`, visually inspect the PNGs, `pixi r lint`).
 - A `!!` line means the AA record name in `AA_LOOKUPS` no longer matches AA verbatim;
   the refresh still resolves it by effort tag, but copy the name it prints.
 - Reminder lines cover the special cases:
+  - `Hy4` prints `(AA publishes no cost split: …)` on every refresh: AA scores the
+    model but publishes neither a cost per task nor a sticker price, so the split in
+    `plot.py` is hand-derived (output leg = AA's tokens x Tencent's list price, input
+    and cache-read legs = the median proportions over the datacenter models AA does
+    break down). Only intelligence and `aa_tok_per_task` refresh; a split AA publishes
+    later flags `SPL!` and replaces the estimate.
   - `GLM-5.3-Flash (high)` is extrapolated from the `(max)` record — multiply
     intelligence by 28.01/28.99 and tokens **and the whole `aa_cost_per_task` split** by
     70610/138690 (the sticker prices are the model's list prices and do not scale).

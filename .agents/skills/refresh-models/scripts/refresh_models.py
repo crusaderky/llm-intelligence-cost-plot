@@ -69,6 +69,7 @@ AUTH_PATHS = [
 # pairs of the same model share a row.
 AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     # base name: (aa_page_slug, aa_record_name, derived_intelligence?)
+    "LFM3-1.7B": ("", "", False),  # not on AA at all: manual entry
     "MiniCPM5-2B": ("minicpm5-2b", "MiniCPM5-2B", False),
     "Qwen3.6-35B-A3B": ("qwen3-6-35b-a3b", "Qwen3.6 35B A3B (Reasoning)", False),
     "Qwen3.8-27B": ("qwen3-8-27b", "Qwen3.8 27B (Xhigh)", False),
@@ -81,7 +82,10 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
         "DeepSeek V4.1 Flash 1017 (Max)",
         False,
     ),
-    "Hy4": ("", "", False),  # not on AA yet: manual entry
+    # AA scores Hy4 but publishes no cost per task or sticker price for it; the
+    # refresh only updates intelligence + aa_tok_per_task, the cost split is
+    # hand-derived in plot.py (see the comment above that row)
+    "Hy4": ("tencent-hy4", "Tencent Hy4", False),
     "Muse Spark 1.3": ("muse-spark-1-3", "Muse Spark 1.3 (Max)", False),
     "Muse Wonder": ("muse-wonder", "Muse Wonder (Max)", False),
     # (high) is extrapolated from the (max) record: intelligence x
@@ -562,6 +566,70 @@ def main() -> None:
             return "-"
         return f"{v / 1e12:.2f}T" if v >= 1e12 else f"{v / 1e9:.1f}B"
 
+    def or_drift(m: plot.Model) -> dict:
+        """The OR side of one datacenter row: stored vs freshly fetched.
+
+        Split out of the per-model report so the rows AA has no index for --
+        which cannot refresh their AA numbers at all -- still apply the OR
+        prices and the weekly volume, neither of which depends on AA's index.
+        """
+        eff = effective.get(m.or_slug)
+        if m.or_slug in session_costs:
+            new_sess = session_costs[m.or_slug]
+            src = (
+                f" ({len(session_detail[m.or_slug])}/4 harnesses)"
+                if len(session_detail[m.or_slug]) < 4
+                else ""
+            )
+        else:
+            new_sess, src = None, " (no session data)"
+        if eff is None:
+            src += " (no usable OR price: plots at AA's price)"
+        return {
+            "old_sess": m.or_session_cost_10_49_turns,
+            "new_sess": new_sess,
+            "old_vol": m.or_toks_served,
+            "new_vol": toks_served.get(m.or_slug),
+            "old_in": m.or_eff_input_price,
+            "old_out": m.or_eff_output_price,
+            "new_in": eff.input if eff else None,
+            "new_out": eff.output if eff else None,
+            "src": src,
+        }
+
+    def report_or_only(m: plot.Model) -> None:
+        """Report (and queue a paste block for) the OR side of a row whose AA
+        numbers cannot be refreshed at all. Local rows have no OR side."""
+        nonlocal changed
+        if m.provider_type is not plot.ProviderType.DATACENTER:
+            return
+        orv = or_drift(m)
+        print(
+            "   OR: in "
+            f"{fmt(orv['old_in'], '.5f')} -> {fmt(orv['new_in'], '.5f')}"
+            ", out "
+            f"{fmt(orv['old_out'], '.4f')} -> {fmt(orv['new_out'], '.4f')}"
+            ", week toks "
+            f"{fmt_vol(orv['old_vol'])} -> {fmt_vol(orv['new_vol'])}"
+            f"{orv['src']}"
+        )
+        lines = or_lines(orv)
+        if lines:
+            changed += 1
+            paste.append(m.name + "\n" + "\n".join(lines))
+
+    def or_lines(orv: dict) -> list[str]:
+        """Paste-ready kwargs for the OR fields that drifted."""
+        lines = []
+        if (orv["new_in"], orv["new_out"]) != (orv["old_in"], orv["old_out"]):
+            lines.append(f"    or_eff_input_price={orv['new_in']!r},")
+            lines.append(f"    or_eff_output_price={orv['new_out']!r},")
+        if orv["new_sess"] is not None and orv["new_sess"] != orv["old_sess"]:
+            lines.append(f"    or_session_cost_10_49_turns={orv['new_sess']!r},")
+        if orv["new_vol"] is not None and orv["new_vol"] != orv["old_vol"]:
+            lines.append(f"    or_toks_served={orv['new_vol']!r},")
+        return lines
+
     for m in plot.MODELS:
         key = base_name(m.name)
         if key not in AA_LOOKUPS:
@@ -578,17 +646,21 @@ def main() -> None:
         if rec is None and not slug:
             name = plot._pad_cell(m.name[:30], 30)
             print(f"{name}   (not on AA: intelligence + tokens are manual)")
+            report_or_only(m)
             continue
         if rec is None:
             # AA has the page but no usable record: since the 2026-10 index
             # rebuild it drops the Intelligence Index (and with it the task
             # cost and token count) of the models it did not re-benchmark.
-            # Nothing here can be refreshed; the stored numbers are estimates.
+            # The AA side cannot be refreshed; the stored numbers are estimates
+            # and the row keeps estimated=True. The OR side does not depend on
+            # AA's index, so the prices and the weekly volume still refresh.
             name = plot._pad_cell(m.name[:30], 30)
             print(
                 f"{name}   (AA has no index for this model since the 2026-10 "
                 f"rebuild: stored values are manual estimates)"
             )
+            report_or_only(m)
             continue
         if rec is not None and rec.get("_matched_name") not in (None, rec_name):
             print(
@@ -612,25 +684,13 @@ def main() -> None:
         old_sticker = m.aa_sticker_price
         if m.provider_type is plot.ProviderType.DATACENTER:
             old_aa = m.aa_total_cost_per_task()
-            old_sess = m.or_session_cost_10_49_turns
-            old_vol = m.or_toks_served
             new_aa = rec.get("cost_per_task_total") if rec else None
-            if m.or_slug in session_costs:
-                new_sess = session_costs[m.or_slug]
-                src = (
-                    f" ({len(session_detail[m.or_slug])}/4 harnesses)"
-                    if len(session_detail[m.or_slug]) < 4
-                    else ""
-                )
-            else:
-                new_sess, src = None, " (no session data)"
-            new_vol = toks_served.get(m.or_slug)
-            old_eff_in, old_eff_out = m.or_eff_input_price, m.or_eff_output_price
-            eff = effective.get(m.or_slug)
-            new_eff_in = eff.input if eff else None
-            new_eff_out = eff.output if eff else None
-            if eff is None:
-                src += " (no usable OR price: plots at AA's price)"
+            orv = or_drift(m)
+            old_sess, new_sess = orv["old_sess"], orv["new_sess"]
+            old_vol, new_vol = orv["old_vol"], orv["new_vol"]
+            old_eff_in, old_eff_out = orv["old_in"], orv["old_out"]
+            new_eff_in, new_eff_out = orv["new_in"], orv["new_out"]
+            src = orv["src"]
         else:  # local: electricity, no OR fields
             old_aa = old_sess = old_vol = new_aa = new_sess = new_vol = None
             old_eff_in = old_eff_out = new_eff_in = new_eff_out = None
@@ -654,7 +714,13 @@ def main() -> None:
             # expected on every refresh: the volume is a rolling window
             if new_vol is not None and new_vol != old_vol:
                 mark += " VOL!"
-            if new_cost != old_cost or new_sticker != old_sticker:
+            # AA scoring a model but publishing neither a task cost nor a
+            # sticker price for it (Hy4) leaves a hand-derived split in plot.py:
+            # there is nothing to apply, so the row only reminds the operator.
+            # A split AA publishes later still flags SPL! and replaces it.
+            if new_cost is not None and (
+                (new_cost, new_sticker) != (old_cost, old_sticker)
+            ):
                 mark += " SPL!"
             if (new_eff_in, new_eff_out) != (old_eff_in, old_eff_out):
                 mark += " ORP!"
@@ -690,15 +756,21 @@ def main() -> None:
                 lines.append(f"    aa_sticker_price={_fmt_tokens(new_sticker)},")
             elif new_aa is not None and old_cost is None and new_aa != old_aa:
                 lines.append(f"    aa_cost_per_task={new_aa!r},")
-            if (new_eff_in, new_eff_out) != (old_eff_in, old_eff_out):
-                lines.append(f"    or_eff_input_price={new_eff_in!r},")
-                lines.append(f"    or_eff_output_price={new_eff_out!r},")
-            if new_sess is not None and new_sess != old_sess:
-                lines.append(f"    or_session_cost_10_49_turns={new_sess!r},")
-            if new_vol is not None and new_vol != old_vol:
-                lines.append(f"    or_toks_served={new_vol!r},")
-            if any(f in mark for f in ("SPL!", "ORP!", "AA$!", "INT!", "TOK!")):
+            if m.provider_type is plot.ProviderType.DATACENTER:
+                lines.extend(or_lines(orv))
+            # A row whose only drift is the rolling weekly volume still needs its
+            # one-line paste block: the table rounds that column to 3 significant
+            # digits, so without the block there is no exact value to apply.
+            if (
+                any(f in mark for f in ("SPL!", "ORP!", "AA$!", "INT!", "TOK!"))
+                or mark.strip() == "VOL!"
+            ):
                 paste.append(m.name + "\n" + "\n".join(lines))
+        if new_cost is None and old_cost is not None:
+            print(
+                "   (AA publishes no cost split: the stored one is hand-derived, "
+                "keep it; only intelligence + tokens are refreshed)"
+            )
         if derived:
             print(
                 "   (derived: values are extrapolated from the (max) record — "

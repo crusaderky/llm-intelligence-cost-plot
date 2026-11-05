@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-11-04
+**Last updated:** 2026-11-05
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -127,11 +127,8 @@ absent as they have no sticker price to compare with.
 - Extrapolated intelligence for LFM3-1.7B, which AA does not list at all, from its
   individual benchmark scores at [Tiny League](https://tinyleague.nunodonato.com/) read
   against AA's scores of the models around it.
-- Extrapolated Hy4, which AA does not list at all, from [Tencent's own benchmark
-  chart](https://hy.tencent.ai/research/hy4): interpolate Hy4's score into the AA
-  Intelligence Index of the five models that chart compares it against (GLM-5.3,
-  DeepSeek V4.1 Flash, Kimi K3.1 Pro, Claude Opus 5.5, GPT-6.1 Sol) Hy4's tokens per
-  task are guesstimated as the geometric mean of GLM-5.3's and DeepSeek V4.1 Flash.
+- Guesstimated Hy4's input tokens per task as proportions over the other datacenter
+  models AA does break down compared to Hy4's recorded output tokens.
 
 ## Cost calculation for datacenter models
 
@@ -251,7 +248,7 @@ while the latter can be as cheap as a mobile phone subscription.
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
 appreciate how much better Claude Opus 5.5 at max effort (intelligence score 59,
-$20.59/task) is compared to GPT-6.1 Sol at max effort (intelligence 55, $1.81/task — 11x
+$20.64/task) is compared to GPT-6.1 Sol at max effort (intelligence 55, $1.79/task — 11x
 cheaper), most people will have a hard time doing so. Going further down, GPT-6.1 Terra
 at low effort (intelligence 29, $0.10/task — _over 200 times cheaper than Opus 5.5_) is
 visibly less capable when you give it very sophisticated tasks, like one-shotting a
