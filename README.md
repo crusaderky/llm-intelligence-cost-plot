@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-11-05
+**Last updated:** 2026-11-09
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -25,7 +25,7 @@ Over time, I've become progressively more irritated by this plot, for a few reas
 The first issue I have with it is that it uses a logarithmic scale on the cost axis.
 Using a log scale is the only way to make you spot the difference between a model that
 costs $0.03 per task and one that costs $0.10, while the same plot contains a model
-that costs $20 — 600 times as expensive. However, the net result is that the
+that costs $27 — 900 times as expensive. However, the net result is that the
 viewers can no longer appreciate the immensity of the price difference between the cheap
 models and the heavy ones; nor can they realize how inconsequential the price
 differences are between the cheap models.
@@ -130,8 +130,6 @@ absent as they have no sticker price to compare with.
 - Extrapolated intelligence for LFM3-1.7B, which AA does not list at all, from its
   individual benchmark scores at [Tiny League](https://tinyleague.nunodonato.com/) read
   against AA's scores of the models around it.
-- Guesstimated Hy4's input tokens per task as proportions over the other datacenter
-  models AA does break down compared to Hy4's recorded output tokens.
 
 ## Cost calculation for datacenter models
 
@@ -250,10 +248,10 @@ while the latter can be as cheap as a mobile phone subscription.
 
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
-appreciate how much better Claude Opus 5.5 at max effort (intelligence score 59,
-$20.64/task) is compared to GPT-6.1 Sol at max effort (intelligence 55, $1.79/task — 11x
+appreciate how much better Claude Fable 5.2 at max effort (intelligence score 65,
+$72.08/task) is compared to GPT-6.1 Sol at max effort (intelligence 55, $1.88/task — 38x
 cheaper), most people will have a hard time doing so. Going further down, GPT-6.1 Terra
-at low effort (intelligence 29, $0.10/task — _over 200 times cheaper than Opus 5.5_) is
+at low effort (intelligence 29, $0.11/task — _over 680 times cheaper than Fable_) is
 visibly less capable when you give it very sophisticated tasks, like one-shotting a
 whole coding project on its own, but it remains _enough_ for 90% of what people actually
 need. Even the highly specialized engineers and scientists mentioned above don't

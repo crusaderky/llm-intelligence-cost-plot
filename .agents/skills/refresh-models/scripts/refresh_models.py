@@ -82,12 +82,41 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
         "DeepSeek V4.1 Flash 1017 (Max)",
         False,
     ),
-    # AA scores Hy4 but publishes no cost per task or sticker price for it; the
-    # refresh only updates intelligence + aa_tok_per_task, the cost split is
-    # hand-derived in plot.py (see the comment above that row)
+    # AA publishes Hy4's cost per task and its sticker prices, but no cache-write
+    # price, so AA's cache-write bill is folded into the input leg at the input
+    # price (see the comment above the row in plot.py)
     "Hy4": ("tencent-hy4", "Tencent Hy4", False),
     "Muse Spark 1.3": ("muse-spark-1-3", "Muse Spark 1.3 (Max)", False),
     "Muse Wonder": ("muse-wonder", "Muse Wonder (Max)", False),
+    # AA scores only the (Max) record of this ladder
+    "Muse Ember (max)": ("muse-ember", "Muse Ember (Max)", False),
+    # Anthropic's top ladder; all five records share one OR permaslug. AA spells
+    # every effort "(…, Default Fallback)".
+    "Claude Fable 5.2 (low)": (
+        "claude-fable-5-2-low",
+        "Claude Fable 5.2 (Low, Default Fallback)",
+        False,
+    ),
+    "Claude Fable 5.2 (medium)": (
+        "claude-fable-5-2-medium",
+        "Claude Fable 5.2 (Medium, Default Fallback)",
+        False,
+    ),
+    "Claude Fable 5.2 (high)": (
+        "claude-fable-5-2-high",
+        "Claude Fable 5.2 (High, Default Fallback)",
+        False,
+    ),
+    "Claude Fable 5.2 (xhigh)": (
+        "claude-fable-5-2-xhigh",
+        "Claude Fable 5.2 (Xhigh, Default Fallback)",
+        False,
+    ),
+    "Claude Fable 5.2 (max)": (
+        "claude-fable-5-2",
+        "Claude Fable 5.2 (Max, Default Fallback)",
+        False,
+    ),
     # (high) is extrapolated from the (max) record: intelligence x
     # 28.01/28.99, tokens and price x 70610/138690 (ratios from Z.ai's coding
     # scores and AA's GLM-5.3 effort split, see the README note)
@@ -105,8 +134,8 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "Gemini 3.5 Flash": ("", "", True),
     # Pinned because AA's page carries three records that all reduce to the stem
     # "gemini 3.8 flash" - (High), (Medium) and (Low) - so the stem fallback cannot
-    # pick one. This row is the (High) record.
-    "Gemini 3.8 Flash": ("gemini-3-8-flash", "Gemini 3.8 Flash", False),
+    # pick one. This row is the (High) record, which AA now spells out in full.
+    "Gemini 3.8 Flash": ("gemini-3-8-flash", "Gemini 3.8 Flash (High)", False),
     "Gemini 4 Argon (high)": ("gemini-4-argon", "Gemini 4 Argon (High)", False),
     "Grok 4.7": ("grok-4-7", "Grok 4.7 (Xhigh)", False),
     "MiMo-V2.6-Flash": ("mimo-v2-6-flash", "MiMo-V2.6-Flash", False),
