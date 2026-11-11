@@ -89,7 +89,7 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "Muse Spark 1.3": ("muse-spark-1-3", "Muse Spark 1.3 (Max)", False),
     "Muse Wonder": ("muse-wonder", "Muse Wonder (Max)", False),
     # AA scores only the (Max) record of this ladder
-    "Muse Ember (max)": ("muse-ember", "Muse Ember (Max)", False),
+    "Muse Ember": ("muse-ember", "Muse Ember (Max)", False),
     # Anthropic's top ladder; all five records share one OR permaslug. AA spells
     # every effort "(…, Default Fallback)".
     "Claude Fable 5.2 (low)": (
@@ -136,7 +136,6 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     # "gemini 3.8 flash" - (High), (Medium) and (Low) - so the stem fallback cannot
     # pick one. This row is the (High) record, which AA now spells out in full.
     "Gemini 3.8 Flash": ("gemini-3-8-flash", "Gemini 3.8 Flash (High)", False),
-    "Gemini 4 Argon (high)": ("gemini-4-argon", "Gemini 4 Argon (High)", False),
     "Grok 4.7": ("grok-4-7", "Grok 4.7 (Xhigh)", False),
     "MiMo-V2.6-Flash": ("mimo-v2-6-flash", "MiMo-V2.6-Flash", False),
     "MiMo-V2.6-Pro": ("mimo-v2-6-pro", "MiMo-V2.6-Pro", False),

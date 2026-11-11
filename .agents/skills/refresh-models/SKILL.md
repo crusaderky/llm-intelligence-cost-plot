@@ -85,7 +85,11 @@ plot`, visually inspect the PNGs, `pixi r lint`).
 - The weekly-volume endpoint returns the trailing few days, not a calendar week; the
   window rolls every day, so `VOL!` fires on every datacenter row every time.
 - A `!!` line means the AA record name in `AA_LOOKUPS` no longer matches AA verbatim;
-  the refresh still resolves it by effort tag, but copy the name it prints.
+  the refresh still resolves it by effort tag, but copy the name it prints. The other
+  `!!` form, `no AA_LOOKUPS row`, skips the row entirely — AA *and* OR. `AA_LOOKUPS` is
+  keyed by `base_name(display name)` (the name in `plot.py`, minus the `⚡` and the
+  hardware tag), so a ladder row scored at a single effort is keyed by its bare display
+  name: `"Muse Ember"`, not AA's `"Muse Ember (max)"`.
 - Reminder lines cover the special cases:
   - `GLM-5.3-Flash (high)` is extrapolated from the `(max)` record — multiply
     intelligence by 28.01/28.99 and tokens **and the whole `aa_cost_per_task` split** by
@@ -107,6 +111,16 @@ plot`, visually inspect the PNGs, `pixi r lint`).
     publishes them — the electricity cost uses the real uncached input token count
     instead of `LOCAL_INPUT_TOKEN_RATIO ×` the output count. `Ternary-Bonsai-2` is not
     on AA at all — manual entry, no refresh.
+  - The two quantised `DeepSeek V4.1 Flash 1017` rows store the AA record of the
+    *datacenter* row scaled by the Unsloth recovery and reasoning-length ratios, so the
+    refresh always flags their `intelligence`, `aa_tok_per_task` and `aa_cost_per_task`
+    with the unscaled values, and its paste block would overwrite the scaling
+    expressions. Do not apply them; check that the datacenter row itself did not move,
+    and retype the constants in those rows if it did.
+  - Effort variants of one ladder share a single OR permaslug, so they share one pair of
+    effective prices, one session cost and one weekly volume. A `derived=True` row
+    (`GLM-5.3-Flash (high)`) is never flagged, so copy the OR fields of its scored twin
+    into it by hand.
   - A model AA has retired (no record on its page any more) cannot be refreshed; drop
     the row rather than freezing its numbers. `Claude Sonnet 5.5 (low)` was dropped for
     this reason.

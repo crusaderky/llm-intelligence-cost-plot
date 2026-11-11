@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-11-09
+**Last updated:** 2026-11-11
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -249,9 +249,9 @@ while the latter can be as cheap as a mobile phone subscription.
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
 appreciate how much better Claude Fable 5.2 at max effort (intelligence score 65,
-$72.08/task) is compared to GPT-6.1 Sol at max effort (intelligence 55, $1.88/task — 38x
+$61.26/task) is compared to GPT-6.1 Sol at max effort (intelligence 55, $1.64/task — 37x
 cheaper), most people will have a hard time doing so. Going further down, GPT-6.1 Terra
-at low effort (intelligence 29, $0.11/task — _over 680 times cheaper than Fable_) is
+at low effort (intelligence 29, $0.10/task — _over 600 times cheaper than Fable_) is
 visibly less capable when you give it very sophisticated tasks, like one-shotting a
 whole coding project on its own, but it remains _enough_ for 90% of what people actually
 need. Even the highly specialized engineers and scientists mentioned above don't
