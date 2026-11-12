@@ -135,7 +135,7 @@ plot`, visually inspect the PNGs, `pixi r lint`).
     constants and fits are in the README bullet). AA may still publish the model's
     sticker prices; if so the task cost is the estimated token mix at those prices, so
     it still re-prices at OR's real prices. These rows are currently MiniCPM5-2B,
-    Qwen3.6-35B-A3B, Qwen3.8-Flash, K2 Horizon 7B and Ling 3.1 Flash.
+    Qwen3.6-35B-A3B, K2 Horizon 7B and Ling 3.1 Flash.
   - Rows whose AA record is gone *and* whose display name stems into another record
     (as `Ling 3.1 Flash` did into `Ling 3.1 Flash 1019`) must be pinned to `("", "")`
     in `AA_LOOKUPS`, or `pick_record`'s stem fallback will silently refresh them with

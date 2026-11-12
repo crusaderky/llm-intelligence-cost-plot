@@ -2009,7 +2009,7 @@ z
     <path d="M 64.72049 925.117226 
 L 81.479054 866.148223 
 L 125.28865 821.162584 
-L 183.068881 478.333449 
+L 169.440103 447.921128 
 L 379.461317 429.299414 
 L 665.411424 310.171899 
 L 1054.291382 235.804889 
@@ -2100,6 +2100,9 @@ z
      <use xlink:href="#C0_0_e3a6dd5e81" x="400.942095" y="635.219236" style="fill: #ff7018; stroke: #ff7018"/>
     </g>
     <g clip-path="url(#p222fb1dd4a)">
+     <use xlink:href="#C0_0_e3a6dd5e81" x="169.440103" y="447.921128" style="fill: #ff7018; stroke: #ff7018"/>
+    </g>
+    <g clip-path="url(#p222fb1dd4a)">
      <use xlink:href="#C0_0_e3a6dd5e81" x="1804.467759" y="359.125358" style="fill: #2243e6; stroke: #2243e6"/>
     </g>
     <g clip-path="url(#p222fb1dd4a)">
@@ -2179,9 +2182,6 @@ z
     </g>
     <g clip-path="url(#p222fb1dd4a)">
      <use xlink:href="#C1_0_e3a6dd5e81" x="408.366903" y="672.353694" style="fill: #ffffff; stroke: #d6409f; stroke-width: 1.5"/>
-    </g>
-    <g clip-path="url(#p222fb1dd4a)">
-     <use xlink:href="#C1_0_e3a6dd5e81" x="183.068881" y="478.333449" style="fill: #ffffff; stroke: #ff7018; stroke-width: 1.5"/>
     </g>
     <g clip-path="url(#p222fb1dd4a)">
      <use xlink:href="#C1_0_e3a6dd5e81" x="902.425899" y="376.365878" style="fill: #ffffff; stroke: #2243e6; stroke-width: 1.5"/>
@@ -3646,7 +3646,7 @@ z
    </g>
    <g id="text_78">
     <!-- Qwen3.8-Flash -->
-    <g style="fill: #1f2328" transform="translate(193.068881 481.710909) scale(0.13 -0.13)">
+    <g style="fill: #1f2328" transform="translate(179.440103 451.298588) scale(0.13 -0.13)">
      <use xlink:href="#DejaVuSans-34"/>
      <use xlink:href="#DejaVuSans-5a" transform="translate(78.71875 0)"/>
      <use xlink:href="#DejaVuSans-48" transform="translate(160.5 0)"/>
@@ -3664,7 +3664,7 @@ z
    </g>
    <g id="line2d_128">
     <g>
-     <use xlink:href="#md943215de3" x="296.388881" y="478.333449" style="fill: #fbbf24; stroke: #b45309"/>
+     <use xlink:href="#md943215de3" x="282.760103" y="447.921128" style="fill: #fbbf24; stroke: #b45309"/>
     </g>
    </g>
    <g id="text_79">

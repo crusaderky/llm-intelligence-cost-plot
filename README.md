@@ -117,8 +117,6 @@ absent as they have no sticker price to compare with.
   by [ByteShape](https://byteshape.com/blogs/Qwen3.8-27B/)
 - Extrapolated heavily quantized DeepSeek that fits on a 128GB PC from [Unsloth
   benchmarks](https://unsloth.ai/docs/models/deepseek-v4.1-flash).
-- Extrapolated intelligence for Qwen3.8-Flash by comparing its available individual
-  benchmarks with those of GLM-5.3-Flash and MiMo-V2.6-Flash.
 - Extrapolated intelligence for Gemini 3.5 Flash using benchmarks of Gemini 3.5
   Flash-Lite and Gemini 3.8 Flash; arbitrarily assumed same tok/task as Gemini 3.8
   Flash.
@@ -256,5 +254,5 @@ visibly less capable when you give it very sophisticated tasks, like one-shottin
 whole coding project on its own, but it remains _enough_ for 90% of what people actually
 need. Even the highly specialized engineers and scientists mentioned above don't
 actually need the extra intelligence for a lot of what they do. Finally, an enthusiast
-gamer can run Qwen3.8-Flash (intelligence 27) on a computer they already own for the
-cost of electricity ($0.04/task).
+gamer can run Qwen3.8-Flash (intelligence 29, as capable as GPT-6.1 Terra at low effort)
+on a computer they already own for the cost of electricity ($0.035/task).

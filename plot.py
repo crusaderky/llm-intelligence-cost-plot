@@ -764,65 +764,37 @@ MODELS = [
         hardware_price_override=1000,
         estimated=True,
     ),
-    # Guesstimate - not on AA: its record (Qwen3.8-Flash-Next) carries no
-    # Intelligence Index since the v5 rebuild and the free API does not list it
-    # at all, but the page does publish its individual benchmark scores. Those are
-    # enough because AA's v5 index is itself just a linear function of its nine
-    # constituent benchmarks: regressing the index on the z-scored constituents of
-    # the 92 re-benchmarked models (AA names them in each record's
-    # intelligenceIndexEvaluations: AA-Briefcase, AutomationBench-AA,
-    # TerminalBench 4.0, FrontierCode 2.0, Omniscience, GDP-PDF, HLE-Diamond,
-    # CritPT v2 Hard, Terminal-Bench Science) reproduces every published index to
-    # rmse 0.47, R^2 0.999. The weights come out as 3.0 (Terminal-Bench Science),
-    # 2.6 (TerminalBench 4.0), 2.2 (FrontierCode 2.0), 2.1 (AA-Briefcase),
-    # 2.0 (HLE-Diamond, CritPT v2 Hard), 1.4 (Omniscience), 1.2
-    # (AutomationBench-AA), 0.2 (GDP-PDF), plus a 31.5 intercept.
-    # Qwen3.8-Flash reports six of the nine; FrontierCode 2.0, CritPT v2 Hard and
-    # Terminal-Bench Science - the three heaviest-weighted - AA has never run on
-    # it, so they are imputed by regressing each of them on the six it reports.
-    # Neighbours as the anchor: the recovered map reproduces GLM-5.3-Flash's
-    # published 27.75 and MiMo-V2.6-Flash's 26.73 to within 0.02, so pushing it
-    # through either of them gives the same number - 27.25 from GLM-5.3-Flash,
-    # 27.26 from MiMo-V2.6-Flash. Take 27.2, +/-1.7 (running the same procedure on
-    # models that do have an index misses by 1.7 points on average, 1.9 inside the
-    # 24-31 band, with the target's whole model family held out of the fit).
-    # Reading it: Qwen3.8-Flash lands between its two neighbours because it beats
-    # both on AA-Briefcase (+124 Elo over GLM-5.3-Flash) and GDP-PDF, sits between
-    # them on TerminalBench 4.0 and HLE-Diamond, and loses to both on
-    # AutomationBench and Omniscience. Adding its non-constituent scores (CritPT
-    # 0.11, HLE 0.38, MMMU-Pro 0.80) to the imputation reads ~1 point low - that
-    # variant misses the 24-31 band by -0.9 when checked against models with a
-    # published index, while the six-benchmark version is off by only -0.2.
     Model(
         "Alibaba",
         "Qwen3.8-Flash",
-        27.2,
+        28.5750026655353,
         ProviderType.LOCAL,
-        aa_tok_per_task=167387,
-        aa_cost_per_task=PricedTokens(0.077, 0.079, 0.42),
+        aa_tok_per_task=147706,
+        aa_cost_per_task=PricedTokens(
+            0.07464306072950636, 0.06942190972050413, 0.4253161214346214
+        ),
         aa_sticker_price=PricedTokens(0.15, 0.47, 0.016),
         local_speed=LocalSpeed(prefill=2000, decode=84),
         hardware_price_override=2700,  # 5060 Ti 16 GiB + 48 GiB RAM (Strata Gyro-M)
-        estimated=True,
     ),
     # --- Datacenter models (price per task = AA's token mix priced at OR's
     # effective input/output prices) ---
-    # Datacenter twin of the row above; same reconstructed intelligence (see the
-    # note there).
+    # Datacenter twin of the row above; same AA record and numbers.
     Model(
         "Alibaba",
         "Qwen3.8-Flash",
-        27.2,
+        28.5750026655353,
         ProviderType.DATACENTER,
-        aa_tok_per_task=167387,
-        aa_cost_per_task=PricedTokens(0.077, 0.079, 0.422),
+        aa_tok_per_task=147706,
+        aa_cost_per_task=PricedTokens(
+            0.07464306072950636, 0.06942190972050413, 0.4253161214346214
+        ),
         aa_sticker_price=PricedTokens(0.15, 0.47, 0.016),
         or_slug="qwen/qwen3.8-flash-20260826",
         or_session_cost_10_49_turns=0.0417805715,
         or_toks_served=1040209342482,
-        or_eff_input_price=0.03242,
-        or_eff_output_price=0.4695,
-        estimated=True,
+        or_eff_input_price=0.03196,
+        or_eff_output_price=0.4693,
     ),
     Model(
         "Alibaba",
