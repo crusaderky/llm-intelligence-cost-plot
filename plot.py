@@ -343,7 +343,7 @@ class LocalHardware(NamedTuple):
 RTX3090 = LocalHardware("RTX 3090", 43, 350)
 STRIX_HALO = LocalHardware("Strix Halo", 15, 140, price=3100)  # Bosgame
 GORGON_HALO = LocalHardware("Gorgon Halo", 15, 140, price=6200)  # Bosgame
-DGX_SPARK = LocalHardware("DGX Spark", price=7900)  # Asus Ascent GX10
+DGX_SPARK = LocalHardware("DGX Spark", price=6000)  # Asus Ascent GX10
 
 # Residential electricity, weighted by population, May 2026 (USD/KWh)
 # https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a
