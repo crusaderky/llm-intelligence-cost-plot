@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-11-11
+**Last updated:** 2026-11-13
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which

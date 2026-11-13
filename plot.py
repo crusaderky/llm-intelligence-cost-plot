@@ -1071,6 +1071,69 @@ MODELS = [
         or_eff_input_price=0.5906,
         or_eff_output_price=10.4,
     ),
+    # The four efforts of the Hydrogen ladder share one OR permaslug, and AA
+    # prices every stream at the same sticker rate: what separates them on the
+    # plot is how many reasoning tokens each effort burns per task.
+    Model(
+        "Google",
+        "Gemini 4 Hydrogen (low)",
+        26.8936694361562,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=14074,
+        aa_cost_per_task=PricedTokens(
+            0.13744084227725598, 0.10555363083928798, 0.0492282269035066
+        ),
+        aa_sticker_price=PricedTokens(1.5, 7.5, 0.075),
+        or_slug="google/gemini-4-hydrogen-20261112",
+        or_toks_served=12824839221,
+        or_eff_input_price=0.5365,
+        or_eff_output_price=7.486,
+    ),
+    Model(
+        "Google",
+        "Gemini 4 Hydrogen (medium)",
+        41.2329566992579,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=39353,
+        aa_cost_per_task=PricedTokens(
+            0.2875479383495821, 0.2951458016197718, 0.21529286555588661
+        ),
+        aa_sticker_price=PricedTokens(1.5, 7.5, 0.075),
+        or_slug="google/gemini-4-hydrogen-20261112",
+        or_toks_served=12824839221,
+        or_eff_input_price=0.5365,
+        or_eff_output_price=7.486,
+    ),
+    Model(
+        "Google",
+        "Gemini 4 Hydrogen (high)",
+        50.7870826951304,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=84978,
+        aa_cost_per_task=PricedTokens(
+            0.6636066811136964, 0.6373379870380624, 0.5723693381002419
+        ),
+        aa_sticker_price=PricedTokens(1.5, 7.5, 0.075),
+        or_slug="google/gemini-4-hydrogen-20261112",
+        or_toks_served=12824839221,
+        or_eff_input_price=0.5365,
+        or_eff_output_price=7.486,
+    ),
+    Model(
+        "Google",
+        "Gemini 4 Hydrogen (xhigh)",
+        53.9192287317542,
+        ProviderType.DATACENTER,
+        aa_tok_per_task=154406,
+        aa_cost_per_task=PricedTokens(
+            0.7942221078868448, 1.158042068442335, 1.2078948993714356
+        ),
+        aa_sticker_price=PricedTokens(1.5, 7.5, 0.075),
+        or_slug="google/gemini-4-hydrogen-20261112",
+        or_toks_served=12824839221,
+        or_eff_input_price=0.5365,
+        or_eff_output_price=7.486,
+    ),
     Model(
         "SpaceXAI",
         "Grok 4.7",

@@ -141,6 +141,28 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "MiMo-V2.6-Pro": ("mimo-v2-6-pro", "MiMo-V2.6-Pro", False),
     "MiniMax-M3.1-Flash": ("minimax-m3-1-flash", "MiniMax-M3.1-Flash", False),
     "Gemini 4 Carbon": ("gemini-4-carbon", "Gemini 4 Carbon (High)", False),
+    # AA scores all four efforts of the Hydrogen ladder; every effort has its own
+    # page except (Xhigh), which AA spells with the bare slug.
+    "Gemini 4 Hydrogen (low)": (
+        "gemini-4-hydrogen-low",
+        "Gemini 4 Hydrogen (Low)",
+        False,
+    ),
+    "Gemini 4 Hydrogen (medium)": (
+        "gemini-4-hydrogen-medium",
+        "Gemini 4 Hydrogen (Medium)",
+        False,
+    ),
+    "Gemini 4 Hydrogen (high)": (
+        "gemini-4-hydrogen-high",
+        "Gemini 4 Hydrogen (High)",
+        False,
+    ),
+    "Gemini 4 Hydrogen (xhigh)": (
+        "gemini-4-hydrogen",
+        "Gemini 4 Hydrogen (Xhigh)",
+        False,
+    ),
     "GPT-6 Luna (low)": ("gpt-6-luna-low", "GPT-6 Luna (Low)", False),
     "GPT-6 Luna (medium)": ("gpt-6-luna-medium", "GPT-6 Luna (Medium)", False),
     "GPT-6 Luna (high)": ("gpt-6-luna-high", "GPT-6 Luna (High)", False),
