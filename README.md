@@ -120,6 +120,10 @@ absent as they have no sticker price to compare with.
 - Extrapolated intelligence for Gemini 3.5 Flash using benchmarks of Gemini 3.5
   Flash-Lite and Gemini 3.8 Flash; arbitrarily assumed same tok/task as Gemini 3.8
   Flash.
+- Extrapolated intelligence for Hy4 flash from the benchmarks in [Tencent's Hy4
+  flash appendix](https://hy.tencent.ai/research/hy4-flash), regressing the AA
+  Intelligence Index of the comparison models that have one. Tokens per task
+  calibrated to make the AA total 24.5x cheaper than Hy4.
 - Extrapolated intelligence for Qwen3.6-35B-A3B and K2 Horizon 7B by comparing their
   available individual benchmarks with those of GPT-6 Luna (low), GPT-6 Luna (medium),
   Muse Glimmer and Granite 4.2 3B.
