@@ -76,7 +76,7 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "Ternary-Bonsai-2": ("", "", False),  # not on AA: manual entry
     "Qwen3.8-Flash": ("qwen3-8-flash-next", "Qwen3.8-Flash-Next", False),
     "K2 Horizon 7B": ("k2-horizon-7b", "K2 Horizon 7B", False),
-    "Qwen3.8 Max (0902)": ("qwen3-8-max", "Qwen3.8 Max (0902)", False),
+    "Qwen4 Max": ("qwen4-max", "Qwen4 Max", False),
     "DeepSeek V4.1 Flash 1017": (
         "deepseek-v4-1-flash-1017",
         "DeepSeek V4.1 Flash 1017 (Max)",
