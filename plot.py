@@ -845,7 +845,7 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
         # From https://github.com/Niko1221/Strata @ 2.0bpw; UD-IQ1_M is 1.95bpw
         local_speed=LocalSpeed(prefill=320, decode=21),
-        hardware_price_override=5500,  # R9700 + 128 GiB RAM (Strata)
+        hardware_price_override=5200,  # RTX 3090 + 128 GiB RAM (Strata)
         estimated=True,
     ),
     # Local model with negligible performance loss
@@ -864,7 +864,7 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
         # From https://github.com/Niko1221/Strata @ 2.0bpw; UD-Q2_K_XL is 2.8bpw
         local_speed=LocalSpeed(prefill=320, decode=21 * 2.0 / 2.8),
-        hardware_price_override=6400,  # R9700 + 192 GiB RAM (Strata)
+        hardware_price_override=6100,  # RTX 3090 + 192 GiB RAM (Strata)
     ),
     Model(
         "Tencent",
@@ -882,7 +882,7 @@ MODELS = [
         or_eff_input_price=0.08358,
         or_eff_output_price=2.435,
         # GGUFs not available yet; estimated same as GLM @ UD-Q3_K_XL
-        hardware=DGX_SPARK.cluster(3, extra_price=300),
+        hardware=DGX_SPARK.cluster(3, extra_price=26 * 3),
         available_local=False,
     ),
     # Guesstimate - not on AA (AA has no Hy4 flash record). Intelligence from
@@ -1032,7 +1032,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(1.4, 4.4, 0.26),
         # 384 GiB unified: 3x DGX Spark
-        hardware=DGX_SPARK.cluster(3, extra_price=300),  # Q3_K_XL
+        hardware=DGX_SPARK.cluster(3, extra_price=26 * 3),  # Q3_K_XL
         or_slug="z-ai/glm-5.3-20260816",
         or_session_cost_10_49_turns=0.19674737,
         or_toks_served=3758131935360,
@@ -1049,8 +1049,8 @@ MODELS = [
             0.8567468935932564, 0.722389702315149, 2.1020636936657997
         ),
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
-        # 1 TB VRAM: 8x DGX Spark + 4-ports 400G switch + 2x 400G to 4x100G cables
-        hardware=DGX_SPARK.cluster(8, extra_price=1200 + 100 * 2),
+        # 1 TB VRAM: 8x DGX Spark + 4-ports 400G switch + 4x 400G to 2x200G cables
+        hardware=DGX_SPARK.cluster(8, extra_price=1200 + 100 * 4),
         or_slug="moonshotai/kimi-k3.1-pro-20261023",
         or_session_cost_10_49_turns=0.7731742,
         or_toks_served=3465624789127,
@@ -1195,7 +1195,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(1.0, 2.7, 0.1),
         # 384 GiB unified: 3x DGX Spark
-        hardware=DGX_SPARK.cluster(3, extra_price=300),
+        hardware=DGX_SPARK.cluster(3, extra_price=26 * 3),
         or_slug="stepfun/step-5-preview-20261008",
         or_toks_served=6409939376037,
         or_eff_input_price=0.145,
@@ -1228,7 +1228,7 @@ MODELS = [
             0.10909531014918307, 0.10533362295314275, 0.04275142965643572
         ),
         aa_sticker_price=PricedTokens(0.435, 0.87, 0.0036),
-        hardware=DGX_SPARK.cluster(3, extra_price=300),  # 3.0bpw
+        hardware=DGX_SPARK.cluster(3, extra_price=26 * 3),  # 3.0bpw
         or_slug="xiaomi/mimo-v2.6-pro-20260921",
         or_session_cost_10_49_turns=0.08711627666666666,
         or_toks_served=936031620738,
@@ -1927,7 +1927,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(0.3, 0.9, 0.06),
         # 256 GiB unified: 2x DGX Spark
-        hardware=DGX_SPARK.cluster(2, extra_price=100),
+        hardware=DGX_SPARK.cluster(2, extra_price=26 * 2),
         # OpenRouter still only lists the older checkpoint
         available_datacenter=False,
     ),
@@ -1946,7 +1946,7 @@ MODELS = [
         or_toks_served=85448235239,
         or_eff_input_price=0.1516,
         or_eff_output_price=2.117,
-        hardware=DGX_SPARK.cluster(3, extra_price=300),  # UD-Q2_K_XL
+        hardware=DGX_SPARK.cluster(3, extra_price=26 * 3),  # UD-Q2_K_XL
     ),
 ]
 
