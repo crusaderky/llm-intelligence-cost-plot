@@ -120,7 +120,7 @@ absent as they have no sticker price to compare with.
 - Extrapolated intelligence for Gemini 3.5 Flash using benchmarks of Gemini 3.5
   Flash-Lite and Gemini 3.8 Flash; arbitrarily assumed same tok/task as Gemini 3.8
   Flash.
-- Extrapolated intelligence for Hy4 flash from the benchmarks in [Tencent's Hy4
+- Extrapolated intelligence for Hy4-flash from the benchmarks in [Tencent's Hy4
   flash appendix](https://hy.tencent.ai/research/hy4-flash), regressing the AA
   Intelligence Index of the comparison models that have one. Tokens per task
   calibrated to make the AA total 24.5x cheaper than Hy4.
@@ -221,7 +221,7 @@ rapidly:
 | 24 GB VRAM + 128 GB host | PC with RTX 3090 | ~$5,200 | DeepSeek V4.1 Flash (UD-IQ1_M on [Xolotl](https://github.com/Indras-Mirror/Xolotl) / [Project Maya](https://github.com/mw00/project-maya))<br>Any model from the 128 GB unified row below |
 | 24 GB VRAM + 192 GB host | PC with RTX 3090 | ~$6,100 | DeepSeek V4.1 Flash (UD-Q2_K_XL on [Xolotl](https://github.com/Indras-Mirror/Xolotl) / [Project Maya](https://github.com/mw00/project-maya))<br>MiniMax M3.1 Flash (UD-Q3_X_XL) |
 | 96 GB unified | Mac Studio M5 Ultra 96 GB | $5,400 | Qwen3.8-Flash (Q4_K_M on [DwarfStar](https://dwarfstar.sh/)) |
-| 128 GB unified | Strix Halo 128 GB<br>Mac Studio M5 Max 128 GB<br>DGX Spark<br>MacBook Pro M5 Max 128 GB | $3,100<br>$5,100<br>$6,000<br>$7,000 | GLM-5.3-Flash (IQ3_XXS)<br>MiMo-v2.6-Flash (3.0bpw)<br>Qwen3.8-Flash (Q4_K_M on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [Gufo](https://github.com/gufo-org/gufo/) / [DwarfStar](https://dwarfstar.sh/))<br>Hy4 flash |
+| 128 GB unified | Strix Halo 128 GB<br>Mac Studio M5 Max 128 GB<br>DGX Spark<br>MacBook Pro M5 Max 128 GB | $3,100<br>$5,100<br>$6,000<br>$7,000 | GLM-5.3-Flash (IQ3_XXS)<br>MiMo-v2.6-Flash (3.0bpw)<br>Qwen3.8-Flash (Q4_K_M on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [Gufo](https://github.com/gufo-org/gufo/) / [DwarfStar](https://dwarfstar.sh/))<br>Hy4-flash |
 | 192 GB unified | Gorgon Halo | $6,200 | DeepSeek V4.1 Flash (UD-IQ2_XXS)<br>MiniMax M3.1 Flash (UD-IQ3_XXS) |
 | 256 GB unified | Mac Studio M5 Ultra 256 GB<br>2x DGX Spark | $11,300<br>$12,220 | Ling 3.1 Flash 1019 (IQ3_XXS) |
 | 384 GB unified | 3x DGX Spark | $18,330 | Hy4 (~Q3)<br>GLM-5.3 (Q3_K_XL)<br>MiMo-v2.6-Pro (3.0 bpw)<br>Step 5 Preview (Q3)<br>Mistral Large 4 (Q2_K_XL)<br>DeepSeek V4.1 Flash (MXFP4) |
@@ -245,12 +245,12 @@ while the latter can be as cheap as a mobile phone subscription.
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
 appreciate how much better Claude Fable 5.2 at max effort (intelligence score 65,
-$62.01/task) is compared to GPT-6.2 Sol at max effort (intelligence 57, $1.68/task — 37x
-cheaper), most people will have a hard time doing so. Going further down, GPT-6.1 Terra
-at low effort (intelligence 29, $0.11/task — _560 times cheaper than Fable_) is
-visibly less capable when you give it very sophisticated tasks, like one-shotting a
-whole coding project on its own, but it remains _enough_ for 90% of what people actually
-need. Even the highly specialized engineers and scientists mentioned above don't
-actually need the extra intelligence for a lot of what they do. Finally, an enthusiast
-gamer can run Qwen3.8-Flash (intelligence 29, as capable as GPT-6.1 Terra at low effort)
-on a computer they already own for the cost of electricity ($0.035/task).
+$62.01/task) is compared to GPT-6.2 Sol at xhigh effort (intelligence 56, $1.02/task —
+60x cheaper), most people will have a hard time doing so. Going further down, Hy4-flash
+(intelligence 30, $0.04/task — _over 1600 times cheaper than Fable_) is visibly less
+capable when you give it very sophisticated tasks, like one-shotting a whole coding
+project on its own, but it remains _enough_ for 90% of what people actually need. Even
+the highly specialized engineers and scientists mentioned above don't actually need the
+extra intelligence for a lot of what they do. Finally, an enthusiast gamer can run
+Qwen3.8-Flash (intelligence 29) on a computer they already own for the cost of
+electricity ($0.035/task).

@@ -86,9 +86,9 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     # price, so AA's cache-write bill is folded into the input leg at the input
     # price (see the comment above the row in plot.py)
     "Hy4": ("tencent-hy4", "Tencent Hy4", False),
-    # AA has no Hy4 flash record at all, and its stem would otherwise resolve to
+    # AA has no Hy4-flash record at all, and its stem would otherwise resolve to
     # the Tencent Hy4 page: pinned so only its OR side refreshes.
-    "Hy4 flash": ("", "", True),
+    "Hy4-flash": ("", "", True),
     "Muse Spark 1.3": ("muse-spark-1-3", "Muse Spark 1.3 (Max)", False),
     "Muse Wonder": ("muse-wonder", "Muse Wonder (Max)", False),
     # AA scores only the (Max) record of this ladder

@@ -199,7 +199,7 @@ pixi r refresh-models --new OR_SLUG --aa-slug AA_SLUG --aa-name "AA Record Name"
 6. A model not on AA (or one AA has retired) needs a hand-entered token mix:
    `aa_cost_per_task` in tokens ÷ 1e6 against `aa_sticker_price=PricedTokens(1, 1, 1)`
    (see `K2 Horizon 7B`) if it is priced by electricity, or a hand-derived real split
-   (see `Hy4 flash`) if OR prices it.
+   (see `Hy4-flash`) if OR prices it.
 
 ## Provenance rules
 

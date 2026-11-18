@@ -798,24 +798,24 @@ MODELS = [
         hardware=DGX_SPARK.cluster(3, extra_price=QSFP112_CABLE * 3),
         available_local=False,
     ),
-    # Guesstimate - not on AA (AA has no Hy4 flash record). Intelligence from
+    # Guesstimate - not on AA (AA has no Hy4-flash record). Intelligence from
     # Tencent's 17-benchmark appendix (https://hy.tencent.ai/research/hy4-flash):
     # per benchmark, OLS of the five comparison models' AA Intelligence Index on
     # their score in that table (Hy4 34.56, DeepSeek V4.1 Flash 1017 32.59,
     # Qwen3.8-Flash-Next 28.58, GLM-5.3-Flash 27.80, GPT-6 Luna max 27.86; Hy4
-    # preview is excluded because AA does not score it), inverted at Hy4 flash's
+    # preview is excluded because AA does not score it), inverted at Hy4-flash's
     # score and averaged. That gives 29.65 (median 30.33); the pooled
     # within-benchmark z-score form gives 29.73 and a regression on the mean
     # benchmark score gives 30.22. Take 30.0, +/-1.5.
     # Token split: Hy4's AA cost split scaled by 1/24.5, so the same
     # uncached/output/cached proportions as Hy4 but 24.5x cheaper in total.
-    # The sticker prices are Hy4 flash's (0.070 / 0.281 / 0.003 per Mtok);
+    # The sticker prices are Hy4-flash's (0.070 / 0.281 / 0.003 per Mtok);
     # dividing the scaled split by them gives 287,490 / 28,357 / 4,664,456
     # tokens. The displayed price reprices that token mix at OR's effective
     # prices, so it moves with them.
     Model(
         "Tencent",
-        "Hy4 flash",
+        "Hy4-flash",
         30.0,
         ProviderType.DATACENTER,
         aa_cost_per_task=PricedTokens(
