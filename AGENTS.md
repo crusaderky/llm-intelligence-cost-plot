@@ -20,6 +20,18 @@ Single script, `plot.py`. All model data lives in the `MODELS` list; label place
 automatic, so adding a model = adding one row and re-running. The `PLOTS` list defines
 which filtered views get generated.
 
+## Label placement
+
+`place_labels` picks every label's slot itself (`CANDIDATES`, in preference order, then
+repair rounds and a settle pass). Leave it automatic unless a label genuinely reads as
+another model's — then hand-pin that one label in `LABEL_PINS`, keyed by
+`(plot stem, drawn label text)`, where the text is the name as that view renders it
+_without_ the `⚡`/mask glyph. A pin is hard: that slot is the only one tried, the label
+claims it before the automatic ones arrange around it, the settle pass leaves it alone,
+and a pinned label is exempt from the height-order rule (its leader line is what asserts
+the pairing). Re-check `pixi r plot -- -v` after pinning: it reports residual overlaps,
+order and leader/dot grazes, and a pin can force one the other labels cannot escape.
+
 ## Adding or refreshing a model
 
 Follow `.agents/skills/refresh-models/SKILL.md`: it re-fetches the AA and OpenRouter

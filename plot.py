@@ -61,9 +61,10 @@ first that collides with nothing already placed. A label is also required to
 respect its dot's height order relative to the labels beside it, so a stack of
 labels never reads as the wrong model, and a final pass slides every label to
 the nearest free height above or below its own dot so nothing stays parked a
-slot away from its point -- see place_labels. So MODELS only needs publisher /
-name / intelligence / provider type plus the raw cost inputs -- just add rows
-and re-run.
+slot away from its point -- see place_labels. The handful of labels the
+automatic search reads wrong can be hand-pinned to one slot in LABEL_PINS, per
+view. So MODELS only needs publisher / name / intelligence / provider type plus
+the raw cost inputs -- just add rows and re-run.
 """
 
 from __future__ import annotations
@@ -280,6 +281,29 @@ CANDIDATES = [
     (-70, 23, "right", "bottom"),
     (-70, -23, "right", "top"),
 ]
+
+# Hand-pinned label slots: {(plot stem, drawn label text): (dx, dy, ha, va)}, in
+# the same shape as a CANDIDATES entry. The label text is the name as the view
+# renders it, without the ⚡ or mask glyph (see _pins_for). A pin overrides the
+# automatic placement for that one label in that one view: it is the only slot
+# tried, the label is placed before the unpinned ones so the others arrange
+# around it, and neither the repair rounds nor the settle pass moves it. Use it
+# when the automatic choice reads as belonging to the wrong dot — the greedy
+# order is not a human reading of the plot, and a label parked in a spot nobody
+# else wants is better than one whose leader threads a cluster.
+LABEL_PINS: dict[tuple[str, str], tuple[float, float, str, str]] = {
+    # Bottom-left pile. GPT-6 Luna (low) claims the slot right of its dot first,
+    # and with that taken the automatic search drops Qwen's name two intelligence
+    # units below its own dot, into the row above LFM3-1.7B's label -- out of
+    # reach of the dot it belongs to. Pinning Qwen there shoves Luna's label a
+    # little right instead, which its leader line covers.
+    ("low_cost", "Qwen3.6-35B-A3B"): (10, 0, "left", "center"),
+    # $1.24, index 34.6, in the left-edge pile: its automatic slot is four
+    # intelligence units above the dot, its leader threading the Muse/Haiku
+    # labels. North-east puts it in the free row directly over Claude Opus 5.5
+    # (low)'s label.
+    ("high_intelligence", "Claude Haiku 5.5 (xhigh)"): (40, 24, "left", "bottom"),
+}
 
 # Colored vector icons that stand in for the ⚡ emoji: matplotlib cannot render
 # color emoji, so without this ⚡ draws as a thin black outline.
@@ -2147,6 +2171,23 @@ def _split_icon(m, name=None, available=True, hidden=()):
     return name, None, "", strike
 
 
+def _pins_for(spec, models):
+    """Per-model slots from LABEL_PINS, parallel to the points place_labels
+    draws for `models` in this view.
+
+    The key is the label as the reader sees it: the text this view renders
+    (`_clean_label` on the hardware plot), with any glyph marker split off --
+    _split_icon's left half, which is also what strips the ⚡ that
+    Model.__post_init__ splices into a local model's name.
+    """
+    return tuple(
+        LABEL_PINS.get(
+            (spec.stem, _split_icon(m, spec.label_of(m), hidden=spec.hidden_icons)[0])
+        )
+        for m in models
+    )
+
+
 def _shift(bb, dy):
     """`bb` (x0, y0, x1, y1) moved vertically by dy."""
     return (bb[0], bb[1] + dy, bb[2], bb[3] + dy)
@@ -2249,6 +2290,7 @@ def place_labels(
     extra_obstacles=(),
     max_candidates=None,
     drop_unplaceable=False,
+    pins=(),
 ):
     """points: [(left, right, icon, strike, x, y)] in data coords -- icon is
     None, "bolt", or "mask"; the icon is drawn as a colored vector marker
@@ -2268,6 +2310,9 @@ def place_labels(
 
     extra_obstacles: additional (x0, y0, x1, y1) display-pixel boxes that
     labels must not overlap (e.g. the legend).
+
+    pins: parallel to points; a non-None entry is that label's hand-picked
+    CANDIDATES slot (see LABEL_PINS) -- the only one it may occupy.
     """
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
@@ -2289,6 +2334,10 @@ def place_labels(
     dot_y = [py for _, py in disp]
     dot_x = [px for px, _ in disp]
 
+    def pin_at(i):
+        """Label i's hand-picked slot, or None (pins may be empty)."""
+        return pins[i] if i < len(pins) else None
+
     def misreads(i, j, box_i, box_j, vc_i, vc_j):
         """True if label i and label j stack in the opposite order to their
         dots: the plot then says "the upper label is the upper dot's" and means
@@ -2304,6 +2353,10 @@ def place_labels(
         than ORDER_DOT_DX apart horizontally are paired with their label by
         proximity, and label boxes more than ORDER_X_PX apart horizontally are
         read as separate entries, not as a stack."""
+        if pin_at(i) is not None or pin_at(j) is not None:
+            # A pinned slot was chosen by someone who read this plot: the
+            # pairing it implies is the intent, and the leader line says so.
+            return False
         dy = dot_y[i] - dot_y[j]
         if abs(dy) < ORDER_TIE_PX:
             return False
@@ -2340,7 +2393,13 @@ def place_labels(
         )
 
     crowd = [crowding(i) for i in range(len(points))]
-    order = sorted(range(len(points)), key=lambda i: (-crowd[i], -points[i][5]))
+
+    # Pinned labels claim their slot first, so the automatic ones route around
+    # them instead of squatting on it with no way for the pin to evict them.
+    order = sorted(
+        range(len(points)),
+        key=lambda i: (pin_at(i) is None, -crowd[i], -points[i][5]),
+    )
 
     def leader_for(i, box):
         """Leader segment from dot i to the nearest edge of `box` (display px),
@@ -2421,7 +2480,10 @@ def place_labels(
         # leader-length-away stack. Right of the point is always tried first,
         # then left; the far slots are the fallback once those collide.
         cands = CANDIDATES
-        if max_candidates is not None:
+        pin = pin_at(i)
+        if pin is not None:
+            cands = [pin]
+        elif max_candidates is not None:
             cands = CANDIDATES[:max_candidates]
         elif crowd[i]:
             near = [
@@ -2546,8 +2608,9 @@ def place_labels(
                 best = result
         # Capped search: nothing in the allowed slots is collision-free, so the
         # label is either dropped (drop_unplaceable) or placed at the least bad
-        # spot.
-        return None if drop_unplaceable else best
+        # spot. A pin is never dropped: it is an explicit choice of slot, made
+        # by someone who looked at this plot.
+        return best if (pin is not None or not drop_unplaceable) else None
 
     # Round 0: greedy sequential pass (already-placed labels and leader lines
     # are obstacles).
@@ -2669,7 +2732,7 @@ def place_labels(
         for _ in range(3):  # a few sweeps: one move can unblock another label
             moved = False
             for i in sorted(range(len(points)), key=lambda i: dot_y[i]):
-                if placed[i] is None:
+                if placed[i] is None or pin_at(i) is not None:
                     continue
                 current = placed[i][3]
                 want = dot_y[i]
@@ -3142,6 +3205,7 @@ def _make_datacenter_plot(
         extra_obstacles=(legend_box,),
         max_candidates=spec.png_label_slots if fmt == "png" else None,
         drop_unplaceable=spec.png_label_slots is not None and fmt == "png",
+        pins=_pins_for(spec, models),
     )
     save_plots(fig, spec.stem, fmt)
 
@@ -3378,6 +3442,7 @@ def make_broken_axis_plot(spec, models, band, y_lim):
             extra_obstacles=(_pad(legend.get_window_extent(renderer)),)
             if ax is legend_ax
             else (),
+            pins=_pins_for(spec, panel),
         )
 
     save_plots(fig, spec.stem)
