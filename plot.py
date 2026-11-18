@@ -137,7 +137,7 @@ SETTLE_MAX_PX = 200
 # Bottom of the high-intelligence plot
 HIGH_INTELLIGENCE_THRESHOLD = 31
 # Right edge of the low cost plot
-LOW_COST_THRESHOLD = 0.60
+LOW_COST_THRESHOLD = 0.75
 
 
 # Candidate label positions: (dx, dy) in points, plus alignment.
