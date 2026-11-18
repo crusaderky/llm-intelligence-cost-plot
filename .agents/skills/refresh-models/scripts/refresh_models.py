@@ -69,7 +69,7 @@ AUTH_PATHS = [
 # pairs of the same model share a row.
 AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     # base name: (aa_page_slug, aa_record_name, derived_intelligence?)
-    "LFM3-1.7B": ("", "", False),  # not on AA at all: manual entry
+    "LFM3-1.7B": ("lfm3-1-7b", "LFM3-1.7B", False),  # AA scores it since 2026-11
     "MiniCPM5-2B": ("minicpm5-2b", "MiniCPM5-2B", False),
     "Qwen3.6-35B-A3B": ("qwen3-6-35b-a3b", "Qwen3.6 35B A3B (Reasoning)", False),
     "Qwen3.8-27B": ("qwen3-8-27b", "Qwen3.8 27B (Xhigh)", False),
@@ -86,6 +86,9 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     # price, so AA's cache-write bill is folded into the input leg at the input
     # price (see the comment above the row in plot.py)
     "Hy4": ("tencent-hy4", "Tencent Hy4", False),
+    # AA has no Hy4 flash record at all, and its stem would otherwise resolve to
+    # the Tencent Hy4 page: pinned so only its OR side refreshes.
+    "Hy4 flash": ("", "", True),
     "Muse Spark 1.3": ("muse-spark-1-3", "Muse Spark 1.3 (Max)", False),
     "Muse Wonder": ("muse-wonder", "Muse Wonder (Max)", False),
     # AA scores only the (Max) record of this ladder
@@ -173,16 +176,26 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "GPT-6.1 Terra (high)": ("gpt-6-1-terra-high", "GPT-6.1 Terra (High)", False),
     "GPT-6.1 Terra (xhigh)": ("gpt-6-1-terra-xhigh", "GPT-6.1 Terra (Xhigh)", False),
     "GPT-6.1 Terra (max)": ("gpt-6-1-terra", "GPT-6.1 Terra (Max)", False),
-    "GPT-6.1 Sol (low)": ("gpt-6-1-sol-low", "GPT-6.1 Sol (Low)", False),
-    "GPT-6.1 Sol (medium)": ("gpt-6-1-sol-medium", "GPT-6.1 Sol (Medium)", False),
-    "GPT-6.1 Sol (high)": ("gpt-6-1-sol-high", "GPT-6.1 Sol (High)", False),
-    "GPT-6.1 Sol (xhigh)": ("gpt-6-1-sol-xhigh", "GPT-6.1 Sol (Xhigh)", False),
-    "GPT-6.1 Sol (max)": ("gpt-6-1-sol", "GPT-6.1 Sol (Max)", False),
-    "GPT-6 Astra (low)": ("gpt-6-astra-low", "GPT-6 Astra (Low)", False),
-    "GPT-6 Astra (medium)": ("gpt-6-astra-medium", "GPT-6 Astra (Medium)", False),
-    "GPT-6 Astra (high)": ("gpt-6-astra-high", "GPT-6 Astra (High)", False),
-    "GPT-6 Astra (xhigh)": ("gpt-6-astra-xhigh", "GPT-6 Astra (Xhigh)", False),
-    "GPT-6 Astra (max)": ("gpt-6-astra", "GPT-6 Astra (Max)", False),
+    # The GPT-6.2 ladder replaced GPT-6.1 Sol and GPT-6 Astra, which are off the
+    # plots; AA keeps their records (gpt-6-1-sol-*, gpt-6-astra-*).
+    "GPT-6.2 Sol (low)": ("gpt-6-2-sol-low", "GPT-6.2 Sol (Low)", False),
+    "GPT-6.2 Sol (medium)": ("gpt-6-2-sol-medium", "GPT-6.2 Sol (Medium)", False),
+    "GPT-6.2 Sol (high)": ("gpt-6-2-sol-high", "GPT-6.2 Sol (High)", False),
+    "GPT-6.2 Sol (xhigh)": ("gpt-6-2-sol-xhigh", "GPT-6.2 Sol (Xhigh)", False),
+    "GPT-6.2 Sol (max)": ("gpt-6-2-sol", "GPT-6.2 Sol (Max)", False),
+    "GPT-6.2 Astra (low)": ("gpt-6-2-astra-low", "GPT-6.2 Astra (Low)", False),
+    "GPT-6.2 Astra (medium)": (
+        "gpt-6-2-astra-medium",
+        "GPT-6.2 Astra (Medium)",
+        False,
+    ),
+    "GPT-6.2 Astra (high)": ("gpt-6-2-astra-high", "GPT-6.2 Astra (High)", False),
+    "GPT-6.2 Astra (xhigh)": (
+        "gpt-6-2-astra-xhigh",
+        "GPT-6.2 Astra (Xhigh)",
+        False,
+    ),
+    "GPT-6.2 Astra (max)": ("gpt-6-2-astra", "GPT-6.2 Astra (Max)", False),
     "Step 5 Preview": ("step-5", "Step 5 Preview", False),
     "Claude Haiku 5.5 (low)": (
         "claude-haiku-5-5-low",
@@ -259,10 +272,12 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
         "Claude Opus 5.5 (Max, Default Fallback)",
         False,
     ),
-    # AA's 2026-10 index rebuild dropped the pre-1019 Ling record (the 1019 is
-    # the one AA kept for the Ling page, and it is local-only).
-    "Ling 3.1 Flash": ("", "", False),  # not on AA (index dropped): manual
-    "Ling 3.1 Flash 1019": ("ling-3-1-flash-1019", "Ling 3.1 Flash 1019", False),
+    # AA's 2026-10 index rebuild dropped the pre-1019 Ling record, and AA has
+    # re-benchmarked the 1019 (local-only) since: it publishes a full record again,
+    # now on the Ling 3.1 Flash page — its own slug answers 404. "Ling 3.1 Flash"
+    # stays pinned to ("", "): its stem resolves to the 1019 record on that page.
+    "Ling 3.1 Flash": ("", "", False),  # not on AA: the row is manual
+    "Ling 3.1 Flash 1019": ("ling-3-1-flash", "Ling 3.1 Flash 1019", False),
     "Mistral Large 4": ("mistral-large-4", "Mistral Large 4 (High)", False),
 }
 

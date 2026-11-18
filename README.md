@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-11-16
+**Last updated:** 2026-11-18
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -124,14 +124,11 @@ absent as they have no sticker price to compare with.
   flash appendix](https://hy.tencent.ai/research/hy4-flash), regressing the AA
   Intelligence Index of the comparison models that have one. Tokens per task
   calibrated to make the AA total 24.5x cheaper than Hy4.
-- Extrapolated intelligence for Qwen3.6-35B-A3B and K2 Horizon 7B by comparing their
-  available individual benchmarks with those of GPT-6 Luna (low), GPT-6 Luna (medium),
-  Muse Glimmer and Granite 4.2 3B.
+- Extrapolated intelligence for Qwen3.6-35B-A3B by comparing its available
+  individual benchmarks with those of GPT-6 Luna (low), GPT-6 Luna (medium), Muse
+  Glimmer and Granite 4.2 3B.
 - Extrapolated intelligence for Ling 3.1 Flash (early checkpoint, datacenter only) from
   the benchmarks it shares with its successor, Ling 3.1 Flash 1019 (local only).
-- Extrapolated intelligence for LFM3-1.7B, which AA does not list at all, from its
-  individual benchmark scores at [Tiny League](https://tinyleague.nunodonato.com/) read
-  against AA's scores of the models around it.
 
 ## Cost calculation for datacenter models
 
@@ -183,7 +180,7 @@ calculated as follows:
   artificialanalysis.ai](https://artificialanalysis.ai/#intelligence-comparison-tabs),
   plus the uncached input tokens from the same breakdown the datacenter models use.
   Cache hits are free on your own machine, so they are excluded.
-- AA publishes no breakdown for a few of these models (LFM3-1.7B, K2 Horizon 7B,
+- AA publishes no breakdown for a few of these models (K2 Horizon 7B,
   Ternary-Bonsai-2). For those, the uncached input tokens are estimated as 3.85× the
   output tokens, which is the median of that ratio over the models AA does break down.
   It is a crude guess: the real ratio runs from 2 to 95, depending mostly on how much of
@@ -228,7 +225,7 @@ rapidly:
 | 24 GB VRAM + 128 GB host | PC with RTX 3090 | ~$5,200 | DeepSeek V4.1 Flash (UD-IQ1_M on [Xolotl](https://github.com/Indras-Mirror/Xolotl) / [Project Maya](https://github.com/mw00/project-maya))<br>Any model from the 128 GB unified row below |
 | 24 GB VRAM + 192 GB host | PC with RTX 3090 | ~$6,100 | DeepSeek V4.1 Flash (UD-Q2_K_XL on [Xolotl](https://github.com/Indras-Mirror/Xolotl) / [Project Maya](https://github.com/mw00/project-maya))<br>MiniMax M3.1 Flash (UD-Q3_X_XL) |
 | 96 GB unified | Mac Studio M5 Ultra 96 GB | $5,400 | Qwen3.8-Flash (Q4_K_M on [DwarfStar](https://dwarfstar.sh/)) |
-| 128 GB unified | Strix Halo 128 GB<br>Mac Studio M5 Max 128 GB<br>DGX Spark<br>MacBook Pro M5 Max 128 GB | $3,100<br>$5,100<br>$6,000<br>$7,000 | GLM-5.3-Flash (IQ3_XXS)<br>MiMo-v2.6-Flash (3.0bpw)<br>Qwen3.8-Flash (Q4_K_M on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [Gufo](https://github.com/gufo-org/gufo/) / [DwarfStar](https://dwarfstar.sh/)) |
+| 128 GB unified | Strix Halo 128 GB<br>Mac Studio M5 Max 128 GB<br>DGX Spark<br>MacBook Pro M5 Max 128 GB | $3,100<br>$5,100<br>$6,000<br>$7,000 | GLM-5.3-Flash (IQ3_XXS)<br>MiMo-v2.6-Flash (3.0bpw)<br>Qwen3.8-Flash (Q4_K_M on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [Gufo](https://github.com/gufo-org/gufo/) / [DwarfStar](https://dwarfstar.sh/))<br>Hy4 flash |
 | 192 GB unified | Gorgon Halo | $6,200 | DeepSeek V4.1 Flash (UD-IQ2_XXS)<br>MiniMax M3.1 Flash (UD-IQ3_XXS) |
 | 256 GB unified | Mac Studio M5 Ultra 256 GB<br>2x DGX Spark | $11,300<br>$12,030 | Ling 3.1 Flash 1019 (IQ3_XXS) |
 | 384 GB unified | 3x DGX Spark | $18,100 | Hy4 (~Q3)<br>GLM-5.3 (Q3_K_XL)<br>MiMo-v2.6-Pro (3.0 bpw)<br>Step 5 Preview (Q3)<br>Mistral Large 4 (Q2_K_XL)<br>DeepSeek V4.1 Flash (MXFP4) |
@@ -252,9 +249,9 @@ while the latter can be as cheap as a mobile phone subscription.
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
 appreciate how much better Claude Fable 5.2 at max effort (intelligence score 65,
-$62.95/task) is compared to GPT-6.1 Sol at max effort (intelligence 55, $1.67/task — 38x
+$62.01/task) is compared to GPT-6.2 Sol at max effort (intelligence 57, $1.68/task — 37x
 cheaper), most people will have a hard time doing so. Going further down, GPT-6.1 Terra
-at low effort (intelligence 29, $0.105/task — _600 times cheaper than Fable_) is
+at low effort (intelligence 29, $0.11/task — _560 times cheaper than Fable_) is
 visibly less capable when you give it very sophisticated tasks, like one-shotting a
 whole coding project on its own, but it remains _enough_ for 90% of what people actually
 need. Even the highly specialized engineers and scientists mentioned above don't
