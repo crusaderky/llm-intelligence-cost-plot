@@ -344,6 +344,7 @@ RTX3090 = LocalHardware("RTX 3090", 43, 350)
 STRIX_HALO = LocalHardware("Strix Halo", 15, 140, price=3100)  # Bosgame
 GORGON_HALO = LocalHardware("Gorgon Halo", 15, 140, price=6200)  # Bosgame
 DGX_SPARK = LocalHardware("DGX Spark", price=6000)  # Asus Ascent GX10
+QSFP112_CABLE = 112  # USD (Amazon US). Needed to cluster DGX Spark
 
 # Residential electricity, weighted by population, May 2026 (USD/KWh)
 # https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a
@@ -846,7 +847,7 @@ MODELS = [
         or_eff_input_price=0.08542,
         or_eff_output_price=2.425,
         # GGUFs not available yet; estimated same as GLM @ UD-Q3_K_XL
-        hardware=DGX_SPARK.cluster(3, extra_price=26 * 3),
+        hardware=DGX_SPARK.cluster(3, extra_price=QSFP112_CABLE * 3),
         available_local=False,
     ),
     # Guesstimate - not on AA (AA has no Hy4 flash record). Intelligence from
@@ -998,7 +999,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(1.4, 4.4, 0.26),
         # 384 GiB unified: 3x DGX Spark
-        hardware=DGX_SPARK.cluster(3, extra_price=26 * 3),  # Q3_K_XL
+        hardware=DGX_SPARK.cluster(3, extra_price=QSFP112_CABLE * 3),  # Q3_K_XL
         or_slug="z-ai/glm-5.3-20260816",
         or_session_cost_10_49_turns=0.19674737,
         or_toks_served=3617602516927,
@@ -1016,7 +1017,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
         # 1 TB VRAM: 8x DGX Spark + 4-ports 400G switch + 4x 400G to 2x200G cables
-        hardware=DGX_SPARK.cluster(8, extra_price=1200 + 100 * 4),
+        hardware=DGX_SPARK.cluster(8, extra_price=1200 + 200 * 4),
         or_slug="moonshotai/kimi-k3.1-pro-20261023",
         or_session_cost_10_49_turns=0.7731742,
         or_toks_served=3387472433358,
@@ -1161,7 +1162,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(1.0, 2.7, 0.1),
         # 384 GiB unified: 3x DGX Spark
-        hardware=DGX_SPARK.cluster(3, extra_price=26 * 3),
+        hardware=DGX_SPARK.cluster(3, extra_price=QSFP112_CABLE * 3),
         or_slug="stepfun/step-5-preview-20261008",
         or_toks_served=6566706825957,
         or_eff_input_price=0.1449,
@@ -1194,7 +1195,7 @@ MODELS = [
             0.10909531014918307, 0.10533362295314275, 0.04275142965643572
         ),
         aa_sticker_price=PricedTokens(0.435, 0.87, 0.0036),
-        hardware=DGX_SPARK.cluster(3, extra_price=26 * 3),  # 3.0bpw
+        hardware=DGX_SPARK.cluster(3, extra_price=QSFP112_CABLE * 3),  # 3.0bpw
         or_slug="xiaomi/mimo-v2.6-pro-20260921",
         or_session_cost_10_49_turns=0.08711627666666666,
         or_toks_served=911356087881,
@@ -1891,7 +1892,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(0.3, 0.9, 0.06),
         # 256 GiB unified: 2x DGX Spark
-        hardware=DGX_SPARK.cluster(2, extra_price=26 * 2),
+        hardware=DGX_SPARK.cluster(2, extra_price=QSFP112_CABLE * 2),
         # OpenRouter still only lists the older checkpoint
         available_datacenter=False,
     ),
@@ -1910,7 +1911,7 @@ MODELS = [
         or_toks_served=110208834164,
         or_eff_input_price=0.1684,
         or_eff_output_price=2.185,
-        hardware=DGX_SPARK.cluster(3, extra_price=26 * 3),  # UD-Q2_K_XL
+        hardware=DGX_SPARK.cluster(3, extra_price=QSFP112_CABLE * 3),  # UD-Q2_K_XL
     ),
 ]
 
