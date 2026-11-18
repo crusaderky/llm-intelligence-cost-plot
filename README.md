@@ -168,8 +168,7 @@ rate, so it is applied to the whole input side rather than to cache hits alone. 
 result is a real, absolute price for the same task AA benchmarks: **what you pay on
 OpenRouter for the tokens that AA's task actually consumes.**.
 
-A model OR carries no price history for, or one without AA price per task breakdown
-(published or inferred), keeps AA's own cost per task.
+A model OR carries no price history for keeps AA's own cost per task.
 
 ## Cost calculation for local models
 
@@ -180,11 +179,8 @@ calculated as follows:
   artificialanalysis.ai](https://artificialanalysis.ai/#intelligence-comparison-tabs),
   plus the uncached input tokens from the same breakdown the datacenter models use.
   Cache hits are free on your own machine, so they are excluded.
-- AA publishes no breakdown for a few of these models (K2 Horizon 7B,
-  Ternary-Bonsai-2). For those, the uncached input tokens are estimated as 3.85× the
-  output tokens, which is the median of that ratio over the models AA does break down.
-  It is a crude guess: the real ratio runs from 2 to 95, depending mostly on how much of
-  the task's context the model got served out of cache.
+- For K2 Horizon 7B, AA publishes output tokens but not input ones. Guesstimate uncached
+  input tokens as 3.5x the output tokens.
 - Crudely observe prefill and decode speed (tok/s) on local hardware. All measurements
   were taken on the same RTX 3090 video card from 2020, which today is relatively
   affordable at ~$1,400 (used).

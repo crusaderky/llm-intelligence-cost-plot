@@ -28,39 +28,42 @@ one). `.agents/skills/aa-lookup` is the low-level AA query tool it builds on.
 
 Models are `Model(...)` dataclasses: `publisher`, `name`, `intelligence` and
 `provider_type` (`ProviderType.LOCAL` or `ProviderType.DATACENTER`) are positional,
-every other field is keyword-only. `aa_tok_per_task` is mandatory (AA's *output* tokens
-per task). The displayed price per task is derived on demand by
+every other field is keyword-only. The displayed price per task is derived on demand by
 `Model.price_per_task()` (see README for the full rationale):
 
 - `ProviderType.DATACENTER` — AA's token mix for the task, priced at OR's synthetic
   effective prices:
 
-  - `aa_cost_per_task` is AA's cost of one task: a
-    `PricedTokens(input_, output, cached_input)` when AA publishes the split
+  - `aa_cost_per_task` is AA's cost of one task as a
+    `PricedTokens(input_, output, cached_input)`
     (`input_` = nonCacheInput + cacheWrite, `output` = reasoning + answer,
-    `cached_input` = cacheRead; the three sum to the total), or a bare **float**
-    — the total only — for the models AA publishes no breakdown for. A
-    `cached_input` of 0.0 means "AA reports no cache reads for this model", which
-    is also how the refresh writes the model whose cache price AA leaves unset.
+    `cached_input` = cacheRead; the three sum to the total). A `cached_input` of
+    0.0 means "AA reports no cache reads for this model", which is also how the
+    refresh writes the model whose cache price AA leaves unset. It is mandatory:
+    the one model AA publishes no breakdown for (K2 Horizon 7B) carries its
+    token mix here against a dummy `aa_sticker_price=PricedTokens(1, 1, 1)`, so
+    cost ÷ price × 1e6 reads the token count straight back out (0.347 = 347k
+    tokens). Its summed total is then a fiction — harmless, because only
+    datacenter rows ever fall back to an AA cost.
   - `aa_sticker_price=PricedTokens(...)` is the same shape in USD per **1M tokens**: the
-    sticker price each stream was billed at. Cost ÷ price recovers the token counts.
+    sticker price each stream was billed at. Cost ÷ price × 1e6 recovers the token counts.
   - `or_eff_input_price` / `or_eff_output_price` (USD per 1M tokens) come from OR's
     trailing-week effective-pricing chart: every endpoint instance is priced at its mean
     effective price over the window's days, then instances are averaged weighted by the
     share of the model's tokens they served (free endpoints dropped). Never use OR's
     spot "cheapest provider" price, and not the old quintile/median reduction either —
     it priced providers nobody routed to.
-  - The total (`sum()` of the split, or the float) stays as the fallback price when
-    either the AA breakdown or the OR price is missing, and as the delta plot's
+  - The total (`sum()` of the split) stays as the fallback price when the OR price
+    is missing, and as the delta plot's
     baseline; read it with `Model.aa_total_cost_per_task()`.
   - `or_slug`, `or_session_cost_10_49_turns` and `or_toks_served` are still collected
     but no longer price anything; keep them in sync, don't use them.
 
 - `ProviderType.LOCAL` — electricity to generate the task on `hardware` (None =
   RTX3090; `hardware=STRIX_HALO` for the ~120B class). Runtime comes from
-  `Model.local_token_counts()`, which zeroes the cached input (free on a local rig)
-  and falls back to `LOCAL_INPUT_TOKEN_RATIO ×` output tokens when AA publishes no
-  split, times `LocalSpeed(prefill=…, decode=…)`. Both rates are measured on the
+  `Model.local_token_counts()`, which is `aa_token_counts()` with the cached
+  input zeroed (free on a local rig), times
+  `LocalSpeed(prefill=…, decode=…)`. Both rates are measured on the
   rig; prefill is currently a hand-typed guesstimate at 10× decode — replace it
   with the measured number when there is one. The `⚡` and hardware suffix is
   appended automatically.

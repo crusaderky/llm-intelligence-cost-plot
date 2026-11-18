@@ -639,7 +639,6 @@ def main() -> None:
             f'    "{args.name}",\n'
             f"    {rec['intelligence']:.4f},\n"
             "    ProviderType.DATACENTER,\n"
-            f"    aa_tok_per_task={round(rec['output_tokens_per_task'])},\n"
             f"    aa_cost_per_task={_fmt_tokens(cost)},\n"
             f"    aa_sticker_price={_fmt_tokens(sticker)},\n"
             f'    or_slug="{args.new}",\n'
@@ -788,15 +787,22 @@ def main() -> None:
             if rec and rec.get("output_tokens_per_task")
             else None
         )
-        old_int, old_tok = m.intelligence, m.aa_tok_per_task
+        old_int = m.intelligence
         splits = aa_splits(rec)
         new_cost, new_sticker = splits if splits else (None, None)
-        old_cost = (
-            m.aa_cost_per_task
-            if isinstance(m.aa_cost_per_task, plot.PricedTokens)
-            else None
+        old_cost, old_sticker = m.aa_cost_per_task, m.aa_sticker_price
+        # A row whose sticker price is the dummy 1.0 carries a hand-entered
+        # token mix in the cost slot instead of AA's dollars, so the counts it
+        # derives are exact where a real split's inherit AA's rounding.
+        hand_mix = old_sticker == plot.PricedTokens(1.0, 1.0, 1.0)
+        old_tok = m.aa_token_counts().output
+        # AA's output tokens per task against what the row stores them as. A
+        # real split's counts are off by up to a few tenths of a percent
+        # (AA's 2-digit dollars), so only a move over 1% is a real change; a
+        # hand-entered mix matches AA's integer exactly, so any drift flags.
+        tok_drift = new_tok is not None and (
+            new_tok != old_tok if hand_mix else abs(new_tok - old_tok) > 0.01 * new_tok
         )
-        old_sticker = m.aa_sticker_price
         if m.provider_type is plot.ProviderType.DATACENTER:
             old_aa = m.aa_total_cost_per_task()
             new_aa = rec.get("cost_per_task_total") if rec else None
@@ -815,15 +821,14 @@ def main() -> None:
         if not derived:  # derived rows are extrapolations; the reminder explains
             if new_int is not None and new_int != old_int:
                 mark += " INT!"
-            if new_tok is not None and new_tok != old_tok:
+            # AA's tokens/task against what the row stores them as (see above).
+            if tok_drift:
                 mark += " TOK!"
             # exact: plot.py stores every value at full precision, so any
             # nonzero difference means the stored value no longer matches the
-            # AA page / OR window. AA$! only compares bare totals: a stored
-            # split is already checked stream-by-stream by SPL!, and AA's own
-            # total is that sum computed in one pass, i.e. a few ULP away.
-            if new_aa is not None and old_cost is None and new_aa != old_aa:
-                mark += " AA$!"
+            # AA page / OR window. AA's own total is not flagged separately: it
+            # is the sum of the split SPL! already compares stream by stream,
+            # computed in one pass, i.e. a few ULP away.
             if new_sess is not None and new_sess != old_sess:
                 mark += " OR$!"
             # expected on every refresh: the volume is a rolling window
@@ -860,24 +865,28 @@ def main() -> None:
                     f"    # 3rd positional arg (intelligence): "
                     f"{old_int!r} -> {new_int!r}"
                 )
-            if new_tok is not None and new_tok != old_tok:
-                lines.append(f"    aa_tok_per_task={new_tok!r},")
+            if tok_drift and hand_mix:
+                lines.append(
+                    f"    # aa_cost_per_task=PricedTokens(...): AA now publishes "
+                    f"{new_tok} output tokens/task (was {old_tok}) — edit the "
+                    "output leg to that count / 1e6 (the dummy 1.0 sticker "
+                    "price), the input leg beside it is a guess"
+                )
             if new_cost is not None and (new_cost, new_sticker) != (
                 old_cost,
                 old_sticker,
             ):
-                # the split replaces the bare total: it is the same money, itemized
+                # AA's split, itemised: cost per task and the sticker price it
+                # was billed at, which together are the task's token mix.
                 lines.append(f"    aa_cost_per_task={_fmt_tokens(new_cost)},")
                 lines.append(f"    aa_sticker_price={_fmt_tokens(new_sticker)},")
-            elif new_aa is not None and old_cost is None and new_aa != old_aa:
-                lines.append(f"    aa_cost_per_task={new_aa!r},")
             if m.provider_type is plot.ProviderType.DATACENTER:
                 lines.extend(or_lines(orv))
             # A row whose only drift is the rolling weekly volume still needs its
             # one-line paste block: the table rounds that column to 3 significant
             # digits, so without the block there is no exact value to apply.
             if (
-                any(f in mark for f in ("SPL!", "ORP!", "AA$!", "INT!", "TOK!"))
+                any(f in mark for f in ("SPL!", "ORP!", "INT!", "TOK!"))
                 or mark.strip() == "VOL!"
             ):
                 paste.append(m.name + "\n" + "\n".join(lines))
@@ -897,8 +906,10 @@ def main() -> None:
             )
         if m.provider_type is plot.ProviderType.LOCAL:
             print(
-                "   (local: update intelligence + aa_tok_per_task; "
-                "local_speed and hardware stay)"
+                "   (local: update intelligence, plus the task's token mix — "
+                "aa_cost_per_task + aa_sticker_price when AA publishes them, "
+                "the output leg of the dummy-priced aa_cost_per_task when it "
+                "does not; local_speed and hardware stay)"
             )
 
     if paste:

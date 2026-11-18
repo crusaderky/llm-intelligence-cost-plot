@@ -22,13 +22,16 @@ local:      price = electricity to run those tokens on the local rig
 ```
 
 `aa_cost_per_task` holds that split as a `PricedTokens(input_, output, cached_input)`
-(USD per task, the three summing to the total) or, for a model AA publishes no split
-for, the bare total as a float. `aa_sticker_price` is the same three streams in USD
-per 1M tokens; a `cached_input` of 0.0 in either means "AA reports no cache reads
-for this model".
+(USD per task, the three summing to the total) and `aa_sticker_price` is the same three
+streams in USD per 1M tokens; a `cached_input` of 0.0 in either means "AA reports no
+cache reads for this model". Every row carries both. The one model AA publishes no
+split for, `K2 Horizon 7B`, stores its token mix in the cost slot against a dummy
+`aa_sticker_price=PricedTokens(1, 1, 1)`, so cost ÷ price × 1e6 is just the token
+count (0.347 = 347,000 tokens) and its summed "cost per task" is a fiction no plot
+reads.
 
-A datacenter model with no OR price chart, no paid OR endpoint, or no AA split to get
-the token mix from, keeps AA's own cost per task.
+A datacenter model with no OR price chart or no paid OR endpoint keeps AA's own cost
+per task.
 
 ## Running the refresh
 
@@ -40,7 +43,7 @@ pixi r refresh-models --refresh   # force re-fetch of AA pages + OR stats
 Requires `AA_API_KEY` (exported in the shell profile) and the OpenRouter key at
 `~/.pi/agent/auth.json` (field `openrouter.key`).
 
-The script prints one row per `MODELS` entry — old vs new intelligence, tokens per task,
+The script prints one row per `MODELS` entry — old vs new intelligence, output tokens per task,
 AA cost per task, AA token split and sticker prices (`SPL!`), OR effective input/output
 prices (`ORP!`), OR session cost, and weekly tokens served — plus a **paste-ready
 constructor kwargs** block for every row that drifted, and reminders. It **never edits
@@ -53,12 +56,17 @@ plot`, visually inspect the PNGs, `pixi r lint`).
   verbatim at full precision, including the Intelligence Index (paste AA's
   `41.807466113455`, never a rounded `41.8075`), so any nonzero difference between a
   stored value and what AA/OR publishes now flags the row and must be applied. `INT!`
-  and `TOK!` therefore fire on sub-unit moves: AA republishes both at sub-unit
-  precision, so a 0.003-point move is a real change, not rounding noise.
-- `AA$!` compares AA's total with the **bare total** stored in `plot.py`. A model that
-  stores a `PricedTokens` split is checked stream-by-stream by `SPL!` instead: AA's
-  published total is that same sum computed in one pass, so comparing the two would
-  flag a few ULP of float noise on every run.
+  therefore fires on sub-unit moves: AA republishes the index at sub-unit precision, so
+  a 0.003-point move is a real change, not rounding noise. `TOK!` compares AA's output
+  tokens per task against the count the row *derives* from `aa_cost_per_task ÷
+  aa_sticker_price`. A real split inherits AA's rounding of its dollars, which puts the
+  derived count a few tenths of a percent off AA's published integer, so only a drift
+  over 1% flags (and `SPL!` reports the mix itself either way). A row with the dummy
+  `PricedTokens(1, 1, 1)` sticker price stores its token mix verbatim, so any drift
+  flags and gets a paste comment telling you which leg of the split to edit.
+- AA's own cost per task is printed as a column but never flagged: it is the sum of the
+  split, and `SPL!` already compares that split stream-by-stream. Comparing the total
+  too would flag a few ULP of float noise on every run.
 - `SPL!` (AA cost split + sticker prices), `ORP!` (OR effective prices) and `VOL!`
   (weekly volume) are expected on every refresh: they move with every AA page republish
   and every rolling window. Always apply them. The OR prices are rounded to 4
@@ -105,15 +113,21 @@ plot`, visually inspect the PNGs, `pixi r lint`).
   - The `trains_on_your_data=True` twin of `Muse Spark 1.3` must always get the same AA
     numbers as `Muse Spark 1.3`, but has its own OR permaslug, effective prices, session
     cost and weekly volume. Watch out: two rows can share a display name.
-  - Local models: update `intelligence` and `aa_tok_per_task`; keep
+  - Local models: update `intelligence`; keep
     `local_speed=LocalSpeed(prefill=…, decode=…)` and `hardware` (measured on real
     hardware, never from AA), but do add `aa_cost_per_task` / `aa_sticker_price` when AA
-    publishes them — the electricity cost uses the real uncached input token count
-    instead of `LOCAL_INPUT_TOKEN_RATIO ×` the output count. `Ternary-Bonsai-2` is not
+    publishes them — the electricity cost then uses the real uncached input token count.
+    `K2 Horizon 7B` is the one local row
+    AA scores but publishes no cost split for (it hosts the model nowhere), so its token
+    mix stays hand-entered in `aa_cost_per_task` against the dummy
+    `aa_sticker_price=PricedTokens(1, 1, 1)`: the refresh
+    flags `TOK!` when AA moves the output count and you edit that leg in place (as
+    tokens ÷ 1e6), leaving the guessed input leg alone. `Ternary-Bonsai-2` is not
     on AA at all — manual entry, no refresh.
   - The two quantised `DeepSeek V4.1 Flash 1017` rows store the AA record of the
     *datacenter* row scaled by the Unsloth recovery and reasoning-length ratios, so the
-    refresh always flags their `intelligence`, `aa_tok_per_task` and `aa_cost_per_task`
+    refresh always flags their `intelligence`, output `tokens/task` and
+    `aa_cost_per_task`
     with the unscaled values, and its paste block would overwrite the scaling
     expressions. Do not apply them; check that the datacenter row itself did not move,
     and retype the constants in those rows if it did.
@@ -182,8 +196,10 @@ pixi r refresh-models --new OR_SLUG --aa-slug AA_SLUG --aa-name "AA Record Name"
    prices, one session cost and one weekly volume each), like the Luna/Opus/Sonnet/Astra
    ladders. Their price per task still differs: each burns a different mix of input and
    output tokens.
-6. A model not on AA (or one AA has retired) needs a hand-written bare total in
-   `aa_cost_per_task` and no `aa_sticker_price`; it plots at that price.
+6. A model not on AA (or one AA has retired) needs a hand-entered token mix:
+   `aa_cost_per_task` in tokens ÷ 1e6 against `aa_sticker_price=PricedTokens(1, 1, 1)`
+   (see `K2 Horizon 7B`) if it is priced by electricity, or a hand-derived real split
+   (see `Hy4 flash`) if OR prices it.
 
 ## Provenance rules
 

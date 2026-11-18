@@ -26,9 +26,10 @@ each kind the task uses:
     output tokens = AA $/task[output] / AA sticker[$/token, output]
 
 Both AA figures are stored as PricedTokens(input_, output, cached_input) — the
-cost one in USD per task, the sticker one in USD per 1M tokens. A model AA
-publishes no breakdown for stores the bare total as a float instead of the
-split.
+cost one in USD per task, the sticker one in USD per 1M tokens. The one model AA
+publishes no breakdown for, K2 Horizon 7B, stores its token mix in the cost slot
+against a dummy sticker price of 1.0 per 1M tokens, which makes the division just
+read the token count back out.
 
 OpenRouter's prices for those tokens come from the trailing week rather than
 the volatile spot quote: every endpoint instance that serves the model is
@@ -41,14 +42,15 @@ synthetic OR price pair per model, in $/M tokens:
                       + output tokens x OR output $/M) / 1e6
 
 OR's effective input price is itself cache-hit-discounted, so it is applied
-to the whole input side. A model OR carries no price chart for, or one AA
-publishes no breakdown for, falls back to AA's posted cost per task.
+to the whole input side. A model OR carries no price chart for falls back to
+AA's posted cost per task.
 
 Local (electricity-powered) models have no sticker price: their price per task
 is the electricity needed to run the task on consumer hardware, counting AA's
 uncached input tokens through prefill and its output tokens through decode.
-Cache reads cost the local rig nothing and are left out. Models AA does not
-break down get an estimated input token count (LOCAL_INPUT_TOKEN_RATIO).
+Cache reads cost the local rig nothing and are left out. The one local model AA
+publishes no breakdown for, K2 Horizon 7B, carries its token mix as a
+hand-priced dummy split (see Model.aa_cost_per_task).
 
 Dots are colored by publisher (colors replicated from artificialanalysis.ai)
 and a legend lists only the publishers present in each plot.
@@ -377,18 +379,6 @@ class LocalSpeed(NamedTuple):
     decode: float  # output tokens/s
 
 
-# AA publishes no cost-per-task breakdown for some local models, so their
-# uncached input token count is estimated as this multiple of the output token
-# count. 3.85 was that multiple's median over the models AA does break down
-# when it was picked; across the 54 models it breaks down today the median is
-# 3.89, and the constant is left alone rather than retuned so the local rows'
-# prices stay put across refreshes. The real ratio is all over the place - 1.98
-# on GLM-5.3-Flash (max), 94.75 on Gemini 3.8 Flash, which AA bills for
-# close to a hundred cache-write tokens per answer - so this is a coarse middle
-# guess, not a per-model fit.
-LOCAL_INPUT_TOKEN_RATIO = 3.85
-
-
 class ProviderType(Enum):
     """How a model's price per task is obtained."""
 
@@ -401,27 +391,15 @@ class Model:
     """One model on the plots. Only the first four fields are positional.
 
     The cost is not computed at construction time: the raw inputs are stored
-    and price_per_task() derives the displayed figure on demand. The
-    constructor does validate the inputs each provider type needs: LOCAL
-    models must have a measured local_speed, DATACENTER models must have
-    AA's aa_cost_per_task.
+    and price_per_task() derives the displayed figure on demand.
     """
 
     publisher: str
     name: str
     intelligence: float
     provider_type: ProviderType
-    # AA's output tokens per benchmark task (also the task size the local
-    # electricity cost is computed from).
-    aa_tok_per_task: float = field(kw_only=True)
-    # Datacenter models: what one AA task costs, and how it splits. A
-    # PricedTokens (USD per task) is AA's split by token type; a bare float is
-    # the total only, for the models AA publishes no breakdown for. The split,
-    # divided by aa_sticker_price, is what turns AA's dollar breakdown into
-    # token counts (see the module docstring); the total is the fallback price
-    # and the delta plot's baseline.
-    aa_cost_per_task: PricedTokens | float | None = field(default=None, kw_only=True)
-    aa_sticker_price: PricedTokens | None = field(default=None, kw_only=True)
+    aa_cost_per_task: PricedTokens = field(kw_only=True)
+    aa_sticker_price: PricedTokens = field(kw_only=True)
     or_slug: str | None = field(default=None, kw_only=True)
     # Recorded for reference only: neither figure prices the plot any more.
     # or_session_cost_10_49_turns is OR's median cost of a real 10-49-turn
@@ -473,27 +451,20 @@ class Model:
                 self.name += " ⚡"
             else:
                 self.name += f" ({self.hardware.name} ⚡)"
-        elif self.aa_cost_per_task is None:
-            raise ValueError(f"{self.name}: datacenter model needs aa_cost_per_task")
 
     def aa_total_cost_per_task(self) -> float:
-        """AA's posted cost of one task, whether or not it is split by type."""
-        assert self.aa_cost_per_task is not None
-        if isinstance(self.aa_cost_per_task, PricedTokens):
-            return sum(self.aa_cost_per_task)
-        return self.aa_cost_per_task
+        """AA's posted cost of one task: the sum of its split by token type."""
+        return sum(self.aa_cost_per_task)
 
-    def aa_token_counts(self) -> PricedTokens | None:
-        """The task's tokens per stream, or None if AA publishes no split.
+    def aa_token_counts(self) -> PricedTokens:
+        """The task's tokens per stream.
 
         AA's cost-per-task split divided by the sticker price of each stream
         (both in PricedTokens), in tokens. A 0.0 cache price means AA reports no
-        cache reads for the model, so the task burned no cached tokens.
+        cache reads for the model, so the task burned no cached tokens. A row
+        whose sticker price is the dummy 1.0 carries its token mix in the cost
+        split itself (see aa_cost_per_task).
         """
-        if not isinstance(self.aa_cost_per_task, PricedTokens):
-            return None
-        if self.aa_sticker_price is None:
-            return None
         cost, sticker = self.aa_cost_per_task, self.aa_sticker_price
         assert min(cost.input_, cost.output, sticker.input_, sticker.output) > 0, (
             f"{self.name}: every price we divide by must be non-zero"
@@ -515,20 +486,11 @@ class Model:
         """The task's tokens per stream, for the electricity cost.
 
         Cached input is deliberately zeroed: on a local rig a cache read is
-        free, it only costs the electricity to decode the answer. Models AA
-        does not break down fall back to LOCAL_INPUT_TOKEN_RATIO x the output
-        token count for the uncached input. The output leg is always AA's
-        published aa_tok_per_task rather than the split's, which is the same
-        figure before AA's rounding.
+        free, it only costs the electricity to decode the answer.
         """
         counts = self.aa_token_counts()
-        input_ = (
-            self.aa_tok_per_task * LOCAL_INPUT_TOKEN_RATIO
-            if counts is None
-            else counts.input_
-        )
         return PricedTokens(
-            input_=input_, output=self.aa_tok_per_task, cached_input=0.0
+            input_=counts.input_, output=counts.output, cached_input=0.0
         )
 
     def price_per_task(self) -> float:
@@ -536,8 +498,8 @@ class Model:
 
         Datacenter models: AA's token mix for the task (uncached + cached
         input, output) priced at OR's synthetic effective input/output prices
-        from the trailing week. A model with no OR price, or no AA breakdown to
-        get the token mix from, keeps AA's posted cost per task.
+        from the trailing week. A model OR carries no price for keeps AA's
+        posted cost per task.
 
         Local models: the electricity to run the task's uncached input tokens
         through prefill and its output tokens through decode on `hardware`.
@@ -554,11 +516,7 @@ class Model:
             return kwh_per_task * US_ELECTRICITY_PRICE
 
         tokens = self.aa_token_counts()
-        if (
-            tokens is None
-            or self.or_eff_input_price is None
-            or self.or_eff_output_price is None
-        ):
+        if self.or_eff_input_price is None or self.or_eff_output_price is None:
             return self.aa_total_cost_per_task()
         return (
             (tokens.input_ + tokens.cached_input) * self.or_eff_input_price
@@ -589,13 +547,11 @@ class Model:
 
 MODELS = [
     # Price per task is derived by Model.price_per_task(). Stored inputs:
-    # - intelligence + aa_tok_per_task + aa_cost_per_task + aa_sticker_price:
+    # - intelligence + aa_cost_per_task + aa_sticker_price:
     #   artificialanalysis.ai (AA model page flight payloads, sub-unit /
-    #   sub-cent precision). aa_cost_per_task is AA's cost of one task, either
-    #   split by token type (a PricedTokens, whose three streams sum to the
-    #   total) or as the bare total (a float, for the models AA publishes no
-    #   breakdown for); aa_sticker_price is those same three streams in USD per
-    #   1M tokens.
+    #   sub-cent precision). aa_cost_per_task is AA's cost of one task split by
+    #   token type (a PricedTokens, whose three streams sum to the total) and
+    #   aa_sticker_price is those same three streams in USD per 1M tokens.
     # - datacenter: or_slug + or_eff_input_price / or_eff_output_price
     #   (openrouter.ai, GET /api/frontend/v1/stats/effective-pricing: each
     #   endpoint instance's mean effective price over the trailing week,
@@ -624,7 +580,6 @@ MODELS = [
         "LFM3-1.7B",
         5.99389916662478,
         ProviderType.LOCAL,
-        aa_tok_per_task=97634,
         aa_cost_per_task=PricedTokens(
             0.02747071158805385, 0.01952671979253421, 0.12619184126922414
         ),
@@ -677,7 +632,6 @@ MODELS = [
         "Qwen3.6-35B-A3B",
         8.9,
         ProviderType.LOCAL,
-        aa_tok_per_task=57589,
         aa_cost_per_task=PricedTokens(0.66, 0.13, 0.0),
         # AA reports no cache reads for this model and publishes no cache-read
         # price; 0.0 in the cached slot of both splits means "never caches"
@@ -691,7 +645,10 @@ MODELS = [
         "K2 Horizon 7B",
         10.5630231522891,
         ProviderType.LOCAL,
-        aa_tok_per_task=99115,
+        # AA publishes output tokens but not input ones.
+        # Guesstimate uncached input tokens as 3.5x the output tokens.
+        aa_cost_per_task=PricedTokens(99_115 * 3.5 / 1e6, 99_115 / 1e6, 0.0),
+        aa_sticker_price=PricedTokens(1.0, 1.0, 1.0),  # Dummy
         local_speed=LocalSpeed(prefill=3430, decode=104),
         hardware_price_override=1000,
     ),
@@ -700,7 +657,6 @@ MODELS = [
         "Qwen3.8-27B",
         20.1068756031705,
         ProviderType.LOCAL,
-        aa_tok_per_task=109802,
         aa_cost_per_task=PricedTokens(
             2.0194864181153562, 0.3294063915269094, 1.1806566654988
         ),
@@ -718,7 +674,6 @@ MODELS = [
         ProviderType.LOCAL,
         # Verbatim copies from Qwen3.8-27B. This doesn't keep in to consideration that
         # lower quants tend to be more verbose.
-        aa_tok_per_task=109802,
         aa_cost_per_task=PricedTokens(
             2.0194864181153562, 0.3294063915269094, 1.1806566654988
         ),
@@ -733,7 +688,6 @@ MODELS = [
         "Qwen3.8-Flash",
         28.5750026655353,
         ProviderType.LOCAL,
-        aa_tok_per_task=147706,
         aa_cost_per_task=PricedTokens(
             0.07464306072950636, 0.06942190972050413, 0.4253161214346214
         ),
@@ -749,7 +703,6 @@ MODELS = [
         "Qwen3.8-Flash",
         28.5750026655353,
         ProviderType.DATACENTER,
-        aa_tok_per_task=147706,
         aa_cost_per_task=PricedTokens(
             0.07464306072950636, 0.06942190972050413, 0.4253161214346214
         ),
@@ -767,7 +720,6 @@ MODELS = [
         "Qwen4 Max",
         42.8914543287565,
         ProviderType.DATACENTER,
-        aa_tok_per_task=104940,
         aa_cost_per_task=PricedTokens(
             1.680535461910324, 0.4722289955421897, 1.1153682726372187
         ),
@@ -783,7 +735,6 @@ MODELS = [
         "DeepSeek V4.1 Flash 1017",
         32.5896393532027,
         ProviderType.DATACENTER,
-        aa_tok_per_task=138962,
         aa_cost_per_task=PricedTokens(
             0.2571473726554651, 0.16675404706375513, 0.1782037281167598
         ),
@@ -803,7 +754,6 @@ MODELS = [
         32.5896393532027 * 85.7 / 87.8,
         ProviderType.LOCAL,
         # https://unsloth.ai/docs/models/deepseek-v4.1-flash#quantization-increases-reasoning-lengths
-        aa_tok_per_task=138962 * 2.8 / 1.5,
         aa_cost_per_task=PricedTokens(
             0.2571473726554651, 0.16675404706375513 * 2.8 / 1.5, 0.1782037281167598
         ),
@@ -822,7 +772,6 @@ MODELS = [
         32.5896393532027,
         ProviderType.LOCAL,
         # https://unsloth.ai/docs/models/deepseek-v4.1-flash#quantization-increases-reasoning-lengths
-        aa_tok_per_task=138962 * 2.1 / 1.5,
         aa_cost_per_task=PricedTokens(
             0.2571473726554651, 0.16675404706375513 * 2.1 / 1.5, 0.1782037281167598
         ),
@@ -836,7 +785,6 @@ MODELS = [
         "Hy4",
         34.5552385392508,
         ProviderType.DATACENTER,
-        aa_tok_per_task=78058,
         aa_cost_per_task=PricedTokens(
             0.49304540305271105, 0.19522317789568608, 0.34283748969140015
         ),
@@ -870,7 +818,6 @@ MODELS = [
         "Hy4 flash",
         30.0,
         ProviderType.DATACENTER,
-        aa_tok_per_task=28357,
         aa_cost_per_task=PricedTokens(
             0.49304540305271105 / 24.5,
             0.19522317789568608 / 24.5,
@@ -891,7 +838,6 @@ MODELS = [
         "Muse Spark 1.3",
         36.6172039139368,
         ProviderType.DATACENTER,
-        aa_tok_per_task=91114,
         aa_cost_per_task=PricedTokens(
             0.2848644588586805, 0.3872337907751061, 1.7136831361769378
         ),
@@ -907,7 +853,6 @@ MODELS = [
         "Muse Spark 1.3",
         36.6172039139368,
         ProviderType.DATACENTER,
-        aa_tok_per_task=91114,
         aa_cost_per_task=PricedTokens(
             0.2848644588586805, 0.3872337907751061, 1.7136831361769378
         ),
@@ -924,7 +869,6 @@ MODELS = [
         "Muse Wonder",
         43.5748225998431,
         ProviderType.DATACENTER,
-        aa_tok_per_task=96063,
         aa_cost_per_task=PricedTokens(
             1.2403611645930221, 1.921261981835536, 3.790413332177666
         ),
@@ -939,7 +883,6 @@ MODELS = [
         "Muse Ember",
         36.0212987864912,
         ProviderType.DATACENTER,
-        aa_tok_per_task=84482,
         aa_cost_per_task=PricedTokens(
             0.027216886792402466, 0.042240832668746175, 0.06647789743748768
         ),
@@ -955,7 +898,6 @@ MODELS = [
         # scaled from the (max) record, see the README note
         27.803889160883 * 28.01 / 28.99,
         ProviderType.DATACENTER,
-        aa_tok_per_task=round(134205 * 70610 / 138690),
         # the token split scales with the token count; the sticker prices are
         # the model's list prices and do not
         aa_cost_per_task=PricedTokens(
@@ -976,7 +918,6 @@ MODELS = [
         "GLM-5.3-Flash (max)",
         27.803889160883,
         ProviderType.DATACENTER,
-        aa_tok_per_task=134205,
         aa_cost_per_task=PricedTokens(
             0.039832743493184115, 0.0671024626915514, 0.4763751378166728
         ),
@@ -993,7 +934,6 @@ MODELS = [
         "GLM-5.3",
         31.653381843882,
         ProviderType.DATACENTER,
-        aa_tok_per_task=118987,
         aa_cost_per_task=PricedTokens(
             0.35155644931635205, 0.5235406213267805, 4.134167531076821
         ),
@@ -1011,7 +951,6 @@ MODELS = [
         "Kimi K3.1 Pro",
         46.4526236744189,
         ProviderType.DATACENTER,
-        aa_tok_per_task=72239,
         aa_cost_per_task=PricedTokens(
             0.8567468935932564, 0.722389702315149, 2.1020636936657997
         ),
@@ -1031,7 +970,6 @@ MODELS = [
         "Gemini 3.5 Flash",
         21.0,
         ProviderType.DATACENTER,
-        aa_tok_per_task=98_940,
         aa_cost_per_task=PricedTokens(7.03 * 2, 0.37 * 9 / 3.75, 0.36 * 2),
         aa_sticker_price=PricedTokens(1.5, 9.0, 0.15),
         or_slug="google/gemini-3.5-flash-20260519",
@@ -1046,7 +984,6 @@ MODELS = [
         "Gemini 3.8 Flash",
         30.8468119957291,
         ProviderType.DATACENTER,
-        aa_tok_per_task=98_940,
         aa_cost_per_task=PricedTokens(
             7.030934890491321, 0.3710231777219156, 0.36404810993927716
         ),
@@ -1062,7 +999,6 @@ MODELS = [
         "Gemini 4 Carbon",
         60.025738829526,
         ProviderType.DATACENTER,
-        aa_tok_per_task=122768,
         aa_cost_per_task=PricedTokens(
             3.2610441869737987, 2.4553559174861244, 2.0391456408266344
         ),
@@ -1080,7 +1016,6 @@ MODELS = [
         "Gemini 4 Hydrogen (low)",
         26.8936694361562,
         ProviderType.DATACENTER,
-        aa_tok_per_task=14074,
         aa_cost_per_task=PricedTokens(
             0.13744084227725598, 0.10555363083928798, 0.0492282269035066
         ),
@@ -1095,7 +1030,6 @@ MODELS = [
         "Gemini 4 Hydrogen (medium)",
         41.2329566992579,
         ProviderType.DATACENTER,
-        aa_tok_per_task=39353,
         aa_cost_per_task=PricedTokens(
             0.2875479383495821, 0.2951458016197718, 0.21529286555588661
         ),
@@ -1110,7 +1044,6 @@ MODELS = [
         "Gemini 4 Hydrogen (high)",
         50.7870826951304,
         ProviderType.DATACENTER,
-        aa_tok_per_task=84978,
         aa_cost_per_task=PricedTokens(
             0.6636066811136964, 0.6373379870380624, 0.5723693381002419
         ),
@@ -1125,7 +1058,6 @@ MODELS = [
         "Gemini 4 Hydrogen (xhigh)",
         53.9192287317542,
         ProviderType.DATACENTER,
-        aa_tok_per_task=154406,
         aa_cost_per_task=PricedTokens(
             0.7942221078868448, 1.158042068442335, 1.2078948993714356
         ),
@@ -1140,7 +1072,6 @@ MODELS = [
         "Grok 4.7",
         35.4850117067196,
         ProviderType.DATACENTER,
-        aa_tok_per_task=104531,
         aa_cost_per_task=PricedTokens(
             2.576886728299715, 0.6271856443241712, 4.567467028963252
         ),
@@ -1156,7 +1087,6 @@ MODELS = [
         "Step 5 Preview",
         28.5283090216016,
         ProviderType.DATACENTER,
-        aa_tok_per_task=113473,
         aa_cost_per_task=PricedTokens(
             0.5051213025810452, 0.30637676984880086, 1.5337544881906702
         ),
@@ -1173,7 +1103,6 @@ MODELS = [
         "MiMo-V2.6-Flash",
         26.7276981444568,
         ProviderType.DATACENTER,
-        aa_tok_per_task=131806,
         aa_cost_per_task=PricedTokens(
             0.04318792692902057, 0.03690574314577558, 0.0484362007653506
         ),
@@ -1190,7 +1119,6 @@ MODELS = [
         "MiMo-V2.6-Pro",
         29.8897833093321,
         ProviderType.DATACENTER,
-        aa_tok_per_task=121073,
         aa_cost_per_task=PricedTokens(
             0.10909531014918307, 0.10533362295314275, 0.04275142965643572
         ),
@@ -1207,7 +1135,6 @@ MODELS = [
         "MiniMax-M3.1-Flash",
         29.0595214290458,
         ProviderType.DATACENTER,
-        aa_tok_per_task=138176,
         aa_cost_per_task=PricedTokens(
             0.11282161400286993, 0.08290581497833605, 0.29524324450332606
         ),
@@ -1224,7 +1151,6 @@ MODELS = [
         "GPT-6 Luna (low)",
         9.66610812336462,
         ProviderType.DATACENTER,
-        aa_tok_per_task=3296,
         aa_cost_per_task=PricedTokens(
             0.0023262275757420735, 0.0016479451676949762, 0.001141082445083342
         ),
@@ -1240,7 +1166,6 @@ MODELS = [
         "GPT-6 Luna (medium)",
         18.4542156192416,
         ProviderType.DATACENTER,
-        aa_tok_per_task=19823,
         aa_cost_per_task=PricedTokens(
             0.008684756771769251, 0.009911619090008737, 0.0236054602447598
         ),
@@ -1256,7 +1181,6 @@ MODELS = [
         "GPT-6 Luna (high)",
         21.4290170864582,
         ProviderType.DATACENTER,
-        aa_tok_per_task=32839,
         aa_cost_per_task=PricedTokens(
             0.013260173743129955, 0.016419570614591268, 0.04326802037422575
         ),
@@ -1272,7 +1196,6 @@ MODELS = [
         "GPT-6 Luna (xhigh)",
         23.4508728089378,
         ProviderType.DATACENTER,
-        aa_tok_per_task=43893,
         aa_cost_per_task=PricedTokens(
             0.017039746974944057, 0.021946607051674276, 0.06510685518459125
         ),
@@ -1288,7 +1211,6 @@ MODELS = [
         "GPT-6 Luna (max)",
         27.8552004938153,
         ProviderType.DATACENTER,
-        aa_tok_per_task=75296,
         aa_cost_per_task=PricedTokens(
             0.024671461535684842, 0.03764802618281935, 0.08963626960255419
         ),
@@ -1306,7 +1228,6 @@ MODELS = [
         "GPT-6.1 Terra (low)",
         29.4169280792131,
         ProviderType.DATACENTER,
-        aa_tok_per_task=4422,
         aa_cost_per_task=PricedTokens(
             0.03421288115320557, 0.022110861337539173, 0.015013819560952543
         ),
@@ -1322,7 +1243,6 @@ MODELS = [
         "GPT-6.1 Terra (medium)",
         38.1652076677975,
         ProviderType.DATACENTER,
-        aa_tok_per_task=10875,
         aa_cost_per_task=PricedTokens(
             0.06293867838538772, 0.05437731370395206, 0.051488590294554354
         ),
@@ -1338,7 +1258,6 @@ MODELS = [
         "GPT-6.1 Terra (high)",
         42.4344508712563,
         ProviderType.DATACENTER,
-        aa_tok_per_task=16746,
         aa_cost_per_task=PricedTokens(
             0.08723872309895113, 0.08373238661179763, 0.08830853690622348
         ),
@@ -1354,7 +1273,6 @@ MODELS = [
         "GPT-6.1 Terra (xhigh)",
         45.250051789066,
         ProviderType.DATACENTER,
-        aa_tok_per_task=26200,
         aa_cost_per_task=PricedTokens(
             0.12107684361417946, 0.1309982959158254, 0.14861386213662026
         ),
@@ -1370,7 +1288,6 @@ MODELS = [
         "GPT-6.1 Terra (max)",
         51.3265188577015,
         ProviderType.DATACENTER,
-        aa_tok_per_task=59883,
         aa_cost_per_task=PricedTokens(
             0.23526757467699644, 0.2994158235895208, 0.4264246328151169
         ),
@@ -1390,7 +1307,6 @@ MODELS = [
         "GPT-6.2 Sol (low)",
         40.552508943285,
         ProviderType.DATACENTER,
-        aa_tok_per_task=5980,
         aa_cost_per_task=PricedTokens(
             0.0787608473723816, 0.05979721113848632, 0.04502665675485909
         ),
@@ -1405,7 +1321,6 @@ MODELS = [
         "GPT-6.2 Sol (medium)",
         52.6777305876603,
         ProviderType.DATACENTER,
-        aa_tok_per_task=13651,
         aa_cost_per_task=PricedTokens(
             0.1521751449100399, 0.13650936026845, 0.11737140442227624
         ),
@@ -1420,7 +1335,6 @@ MODELS = [
         "GPT-6.2 Sol (high)",
         54.8898658241942,
         ProviderType.DATACENTER,
-        aa_tok_per_task=20160,
         aa_cost_per_task=PricedTokens(
             0.19767967481674203, 0.2016048197625647, 0.1643601576417682
         ),
@@ -1435,7 +1349,6 @@ MODELS = [
         "GPT-6.2 Sol (xhigh)",
         55.7351067246438,
         ProviderType.DATACENTER,
-        aa_tok_per_task=24323,
         aa_cost_per_task=PricedTokens(
             0.22213385399692628, 0.2432255664789305, 0.18260825252973775
         ),
@@ -1450,7 +1363,6 @@ MODELS = [
         "GPT-6.2 Sol (max)",
         57.2576209885477,
         ProviderType.DATACENTER,
-        aa_tok_per_task=40360,
         aa_cost_per_task=PricedTokens(
             0.30962703685533033, 0.4036042741824378, 0.30114865926299994
         ),
@@ -1469,7 +1381,6 @@ MODELS = [
         "GPT-6.2 Astra (low)",
         45.6504174923967,
         ProviderType.DATACENTER,
-        aa_tok_per_task=5216,
         aa_cost_per_task=PricedTokens(
             0.27677942824119806, 0.20865491790349983, 0.17627105386560812
         ),
@@ -1484,7 +1395,6 @@ MODELS = [
         "GPT-6.2 Astra (medium)",
         56.9986252138657,
         ProviderType.DATACENTER,
-        aa_tok_per_task=13165,
         aa_cost_per_task=PricedTokens(
             0.5566169681744552, 0.5265823574084363, 0.5344884107038941
         ),
@@ -1499,7 +1409,6 @@ MODELS = [
         "GPT-6.2 Astra (high)",
         60.0882280338247,
         ProviderType.DATACENTER,
-        aa_tok_per_task=17828,
         aa_cost_per_task=PricedTokens(
             0.7262683361070965, 0.7131160616044322, 0.6344905596512769
         ),
@@ -1514,7 +1423,6 @@ MODELS = [
         "GPT-6.2 Astra (xhigh)",
         61.5602325371388,
         ProviderType.DATACENTER,
-        aa_tok_per_task=22238,
         aa_cost_per_task=PricedTokens(
             0.8437237365519823, 0.8895041947748235, 0.7879154450852321
         ),
@@ -1529,7 +1437,6 @@ MODELS = [
         "GPT-6.2 Astra (max)",
         62.1387990593969,
         ProviderType.DATACENTER,
-        aa_tok_per_task=41029,
         aa_cost_per_task=PricedTokens(
             1.162089239145493, 1.6411792220465897, 1.1946376954881024
         ),
@@ -1548,7 +1455,6 @@ MODELS = [
         "Claude Fable 5.2 (low)",
         53.9249388799182,
         ProviderType.DATACENTER,
-        aa_tok_per_task=35860,
         aa_cost_per_task=PricedTokens(
             1.040665157646971, 1.4240919609594807, 0.6324847856680946
         ),
@@ -1563,7 +1469,6 @@ MODELS = [
         "Claude Fable 5.2 (medium)",
         56.4083157101519,
         ProviderType.DATACENTER,
-        aa_tok_per_task=43131,
         aa_cost_per_task=PricedTokens(
             1.228047020697479, 1.7102304491697624, 0.8643275943115216
         ),
@@ -1578,7 +1483,6 @@ MODELS = [
         "Claude Fable 5.2 (high)",
         61.8218785440284,
         ProviderType.DATACENTER,
-        aa_tok_per_task=97841,
         aa_cost_per_task=PricedTokens(
             2.59311518192607, 3.8883159624114056, 2.596983633522906
         ),
@@ -1593,7 +1497,6 @@ MODELS = [
         "Claude Fable 5.2 (xhigh)",
         62.2167392403357,
         ProviderType.DATACENTER,
-        aa_tok_per_task=161944,
         aa_cost_per_task=PricedTokens(
             4.014762523548346, 6.430695367722222, 4.383129741240549
         ),
@@ -1608,7 +1511,6 @@ MODELS = [
         "Claude Fable 5.2 (max)",
         64.563595756626,
         ProviderType.DATACENTER,
-        aa_tok_per_task=273776,
         aa_cost_per_task=PricedTokens(
             7.121424801990003, 10.891777372657142, 8.52535562933377
         ),
@@ -1623,7 +1525,6 @@ MODELS = [
         "Claude Sonnet 5.5 (low)",
         25.649704549789,
         ProviderType.DATACENTER,
-        aa_tok_per_task=20856,
         aa_cost_per_task=PricedTokens(
             0.15495829818267776, 0.20856371779750618, 0.14782043040956583
         ),
@@ -1639,7 +1540,6 @@ MODELS = [
         "Claude Sonnet 5.5 (medium)",
         30.8195522148431,
         ProviderType.DATACENTER,
-        aa_tok_per_task=30746,
         aa_cost_per_task=PricedTokens(
             0.2229816006675009, 0.3074589477415119, 0.25021548679343536
         ),
@@ -1655,7 +1555,6 @@ MODELS = [
         "Claude Sonnet 5.5 (high)",
         41.515109087048,
         ProviderType.DATACENTER,
-        aa_tok_per_task=58421,
         aa_cost_per_task=PricedTokens(
             0.42919145427046057, 0.5842121201361333, 0.6227258655718849
         ),
@@ -1671,7 +1570,6 @@ MODELS = [
         "Claude Sonnet 5.5 (xhigh)",
         49.9240327787242,
         ProviderType.DATACENTER,
-        aa_tok_per_task=122205,
         aa_cost_per_task=PricedTokens(
             0.9742263747522919, 1.2220489885977281, 1.895709552971899
         ),
@@ -1687,7 +1585,6 @@ MODELS = [
         "Claude Sonnet 5.5 (max)",
         54.54133407109,
         ProviderType.DATACENTER,
-        aa_tok_per_task=285387,
         aa_cost_per_task=PricedTokens(
             2.2877209769653377, 2.853871133504894, 4.879029232925522
         ),
@@ -1703,7 +1600,6 @@ MODELS = [
         "Claude Opus 5.5 (low)",
         34.752785007759,
         ProviderType.DATACENTER,
-        aa_tok_per_task=19060,
         aa_cost_per_task=PricedTokens(
             0.26830032873330867, 0.38125266891205145, 0.3259763248005245
         ),
@@ -1719,7 +1615,6 @@ MODELS = [
         "Claude Opus 5.5 (medium)",
         48.2081024960691,
         ProviderType.DATACENTER,
-        aa_tok_per_task=43817,
         aa_cost_per_task=PricedTokens(
             0.5747918883798223, 0.8764203544840845, 0.9998771947972656
         ),
@@ -1735,7 +1630,6 @@ MODELS = [
         "Claude Opus 5.5 (high)",
         51.8359958227294,
         ProviderType.DATACENTER,
-        aa_tok_per_task=60071,
         aa_cost_per_task=PricedTokens(
             0.751725695304029, 1.201514087031893, 1.5114224997613959
         ),
@@ -1751,7 +1645,6 @@ MODELS = [
         "Claude Opus 5.5 (xhigh)",
         57.4447060170507,
         ProviderType.DATACENTER,
-        aa_tok_per_task=103395,
         aa_cost_per_task=PricedTokens(
             1.1864324939748008, 2.0680263131828958, 2.7927356836910775
         ),
@@ -1767,7 +1660,6 @@ MODELS = [
         "Claude Opus 5.5 (max)",
         59.1060336078904,
         ProviderType.DATACENTER,
-        aa_tok_per_task=173313,
         aa_cost_per_task=PricedTokens(
             1.8315729353173493, 3.4664583713189643, 4.738378412876434
         ),
@@ -1783,7 +1675,6 @@ MODELS = [
         "Claude Haiku 5.5 (low)",
         18.6180055310996,
         ProviderType.DATACENTER,
-        aa_tok_per_task=28161,
         aa_cost_per_task=PricedTokens(
             0.009711032547690896, 0.014080275004595064, 0.01996637882970253
         ),
@@ -1799,7 +1690,6 @@ MODELS = [
         "Claude Haiku 5.5 (medium)",
         24.6013254343023,
         ProviderType.DATACENTER,
-        aa_tok_per_task=53335,
         aa_cost_per_task=PricedTokens(
             0.017755535648584567, 0.026667558259885586, 0.04734146449820697
         ),
@@ -1815,7 +1705,6 @@ MODELS = [
         "Claude Haiku 5.5 (high)",
         29.874315467743,
         ProviderType.DATACENTER,
-        aa_tok_per_task=88064,
         aa_cost_per_task=PricedTokens(
             0.028172450783792408, 0.04403217390244535, 0.08635569488055722
         ),
@@ -1831,7 +1720,6 @@ MODELS = [
         "Claude Haiku 5.5 (xhigh)",
         34.6387759486628,
         ProviderType.DATACENTER,
-        aa_tok_per_task=136177,
         aa_cost_per_task=PricedTokens(
             0.04176397260319096, 0.06808849536432662, 0.1385086332984472
         ),
@@ -1847,7 +1735,6 @@ MODELS = [
         "Claude Haiku 5.5 (max)",
         36.4845435880142,
         ProviderType.DATACENTER,
-        aa_tok_per_task=225966,
         aa_cost_per_task=PricedTokens(
             0.06550207604700437, 0.11298297985798467, 0.23252235946317396
         ),
@@ -1869,7 +1756,6 @@ MODELS = [
         "Ling 3.1 Flash",
         28.41,
         ProviderType.DATACENTER,
-        aa_tok_per_task=158551,
         aa_cost_per_task=PricedTokens(
             0.5426813344872892, 0.1426962308047775, 0.8686886280125741
         ),
@@ -1886,7 +1772,6 @@ MODELS = [
         "Ling 3.1 Flash 1019",
         29.570119369837,
         ProviderType.DATACENTER,
-        aa_tok_per_task=224711,
         aa_cost_per_task=PricedTokens(
             1.1261695939526823, 0.20223972528697784, 1.8567356990981327
         ),
@@ -1901,7 +1786,6 @@ MODELS = [
         "Mistral Large 4",
         26.1249946754784,
         ProviderType.DATACENTER,
-        aa_tok_per_task=81951,
         aa_cost_per_task=PricedTokens(
             1.1078363678887329, 0.172096563210152, 0.7817976957138006
         ),

@@ -88,8 +88,10 @@ query with the full exact name (as printed by `--list`) for a reliable page matc
 
 - `intelligence` — the page record's sub-unit value (the API-side
   `evaluations.artificial_analysis_intelligence_index` may be rounded).
-- `output_tokens_per_task` — AA's benchmark task size in output tokens; feeds
-  `aa_tok_per_task`.
+- `output_tokens_per_task` — AA's benchmark task size in output tokens. It prices
+  nothing on its own: the split below already carries the output count (cost ÷ sticker
+  price). Read it as the cross-check of that count, and as the output leg of the
+  dummy-priced split for the one local model AA publishes no split for.
 - `cost_per_task_*` — feeds `aa_cost_per_task=PricedTokens(input_, output,
   cached_input)`, the per-task cost split by token type.
 - `price_1m_input` / `price_1m_output` / `price_1m_cache_hit` — feeds
@@ -97,9 +99,11 @@ query with the full exact name (as printed by `--list`) for a reliable page matc
   Together with the split they give the task's token mix, which is what the OpenRouter
   prices are applied to. A missing `price_1m_cache_hit` becomes `cached_input = 0.0`,
   which reads as "AA reports no cache reads for this model".
-- `cost_per_task_total` — the total the split sums to; when AA publishes no split at
-  all, store it as a bare float in `aa_cost_per_task`. Either way it is the fallback
-  price and the delta plot's baseline.
+- `cost_per_task_total` — the total the split sums to; it is the fallback price and
+  the delta plot's baseline. Every row must carry a split, so a model AA publishes no
+  split for (K2 Horizon 7B — AA scores it but hosts it nowhere) gets a hand-entered
+  token mix in `aa_cost_per_task` against `aa_sticker_price=PricedTokens(1, 1, 1)`, in
+  which the cost is the token count divided by 1e6.
 
 The `.agents/skills/refresh-models` skill automates all of this (AA + OpenRouter)
 and prints old -> new values plus paste-ready constructor rows; prefer it over
