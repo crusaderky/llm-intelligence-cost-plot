@@ -26,7 +26,7 @@ still refresh their OpenRouter fields.
 
 Usage (always through the pixi environment):
   pixi r refresh-models                 # cached fetches (6h)
-  pixi r refresh-models --refresh       # force re-fetch of everything
+  pixi r refresh-models --force         # force re-fetch of everything
   pixi r refresh-models --new OR_SLUG --aa-slug SLUG --aa-name "AA Record Name" \
         --publisher "Pub" --name "Model Name"    # print a TOML row
 """
@@ -123,7 +123,7 @@ def or_lookup(mapping: dict[str, object], slug: str | None) -> object:
 
 
 def fetch_or_sessions(
-    refresh: bool,
+    force: bool,
 ) -> tuple[dict[str, float], dict[str, dict[str, float]]]:
     """permaslug -> (average 10-49-turn session cost, per-harness medians).
 
@@ -132,7 +132,7 @@ def fetch_or_sessions(
     harnesses that carry session data for the model.
     """
     harnesses = None
-    if not refresh and CACHE_PATH.exists():
+    if not force and CACHE_PATH.exists():
         entry = json.loads(CACHE_PATH.read_text())
         if time.time() - entry["fetched_at"] < CACHE_TTL:
             harnesses = entry["harnesses"]
@@ -158,7 +158,7 @@ def fetch_or_sessions(
     return costs, detail
 
 
-def fetch_or_toks_served(refresh: bool) -> dict[str, int]:
+def fetch_or_toks_served(force: bool) -> dict[str, int]:
     """permaslug -> prompt + completion tokens served in the trailing week.
 
     GET /api/frontend/v1/rankings/models?view=week returns one daily row per
@@ -166,7 +166,7 @@ def fetch_or_toks_served(refresh: bool) -> dict[str, int]:
     volume behind data.toml's or_toks_served. Every variant (standard, batch,
     free) counts as served tokens.
     """
-    if not refresh and TOKS_CACHE_PATH.exists():
+    if not force and TOKS_CACHE_PATH.exists():
         entry = json.loads(TOKS_CACHE_PATH.read_text())
         if time.time() - entry["fetched_at"] < CACHE_TTL:
             return entry["toks_served"]
@@ -271,7 +271,7 @@ def synthesize_effective(chart: dict) -> OrEffectivePrice | None:
     )
 
 
-def fetch_or_effective(refresh: bool, slugs: list[str]) -> dict[str, OrEffectivePrice]:
+def fetch_or_effective(force: bool, slugs: list[str]) -> dict[str, OrEffectivePrice]:
     """permaslug -> OrEffectivePrice, from the trailing-week price charts.
 
     Charts are cached per permaslug so adding one model only fetches one
@@ -283,7 +283,7 @@ def fetch_or_effective(refresh: bool, slugs: list[str]) -> dict[str, OrEffective
     charts: dict[str, dict] = {}
     for slug in slugs:
         entry = cached.get(slug)
-        if not refresh and entry and time.time() - entry["fetched_at"] < CACHE_TTL:
+        if not force and entry and time.time() - entry["fetched_at"] < CACHE_TTL:
             charts[slug] = entry["chart"]
             continue
         chart = None
@@ -365,7 +365,79 @@ def _toml_str(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
-def _set(row, key: str, value, label: str, changes: list[str]) -> None:
+@dataclass(frozen=True)
+class Change:
+    """One field updated in data.toml."""
+
+    model: str
+    field: str
+    old: object
+    new: object
+
+
+def _number(value: object) -> float | None:
+    """The value itself, or the total of a numeric array; None for text."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, (list, tuple)) and all(
+        isinstance(v, (int, float)) and not isinstance(v, bool) for v in value
+    ):
+        return float(sum(value))
+    return None
+
+
+def _pct_change(old: object, new: object) -> str:
+    """Signed percentage from old to new, rounded to a whole percent."""
+    before, after = _number(old), _number(new)
+    if before is None or after is None or before == 0:
+        return ""
+    pct = round((after - before) / abs(before) * 100)
+    if pct == 0:
+        return "0%"
+    return f"{pct:+d}%"
+
+
+def _print_changes(changes: list[Change]) -> None:
+    """Print all field updates as an aligned table."""
+    headers = ("Model", "Field", "Old", "New", "Δ%")
+    rows = [
+        (
+            change.model,
+            change.field,
+            repr(change.old),
+            repr(change.new),
+            _pct_change(change.old, change.new),
+        )
+        for change in changes
+    ]
+    widths = [
+        max([len(header)] + [len(row[i]) for row in rows])
+        for i, header in enumerate(headers)
+    ]
+
+    def render(cells: tuple[str, ...]) -> str:
+        return "  ".join(
+            cell.ljust(width) if i < len(headers) - 1 else cell.rjust(width)
+            for i, (cell, width) in enumerate(zip(cells, widths))
+        ).rstrip()
+
+    print(render(headers))
+    print("  ".join("-" * width for width in widths))
+    for row in rows:
+        print(render(row))
+
+
+def _set(
+    row,
+    key: str,
+    value,
+    model: str,
+    changes: list[Change],
+    *,
+    field: str | None = None,
+) -> None:
     """Update one TOML value, keeping its non-calculation comment."""
     item = row.get(key)
     old = item.unwrap() if hasattr(item, "unwrap") else item
@@ -382,7 +454,7 @@ def _set(row, key: str, value, label: str, changes: list[str]) -> None:
             trivia.comment = comment
         else:
             trivia.comment = ""
-    changes.append(f"{label}: {key}: {old!r} -> {value!r}")
+    changes.append(Change(model=model, field=field or key, old=old, new=value))
 
 
 def _base_of(rows, index: int):
@@ -410,7 +482,7 @@ def _validate(doc) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--refresh", action="store_true", help="ignore caches")
+    ap.add_argument("--force", action="store_true", help="ignore caches")
     ap.add_argument("--new", metavar="OR_SLUG", help="print a TOML row for a new model")
     ap.add_argument("--aa-slug", help="AA page slug for --new")
     ap.add_argument("--aa-name", help="exact AA record name for --new")
@@ -422,11 +494,11 @@ def main() -> None:
         assert args.aa_slug and args.aa_name and args.publisher and args.name, (
             "--new needs --aa-slug, --aa-name, --publisher, --name"
         )
-        session_costs, _detail = fetch_or_sessions(args.refresh)
-        toks_served = fetch_or_toks_served(args.refresh)
-        effective = fetch_or_effective(args.refresh, [args.new])
+        session_costs, _detail = fetch_or_sessions(args.force)
+        toks_served = fetch_or_toks_served(args.force)
+        effective = fetch_or_effective(args.force, [args.new])
         rec = aa_query.get_page_record(
-            {"name": args.aa_name, "slug": args.aa_slug}, args.refresh
+            {"name": args.aa_name, "slug": args.aa_slug}, args.force
         )
         if rec is None:
             sys.exit(f"no AA page record for {args.aa_name!r} at {args.aa_slug}")
@@ -463,19 +535,18 @@ def main() -> None:
     doc = tomlkit.parse(DATA_PATH.read_text())
     _validate(doc)
     rows = doc["models"]
-    sessions, session_detail = fetch_or_sessions(args.refresh)
-    toks_served = fetch_or_toks_served(args.refresh)
+    sessions, session_detail = fetch_or_sessions(args.force)
+    toks_served = fetch_or_toks_served(args.force)
     effective = fetch_or_effective(
-        args.refresh,
+        args.force,
         sorted({row["or_slug"] for row in rows if row.get("or_slug")}),
     )
     aa_cache: dict[tuple[str, str], dict | None] = {}
     warned: set[tuple[str, str]] = set()
-    changes: list[str] = []
+    changes: list[Change] = []
 
     for index, row in enumerate(rows):
         name = row["name"]
-        label = f"[{index}] {name}"
         slug = row["aa_page_slug"]
         rec_name = row["aa_record_name"]
 
@@ -483,7 +554,7 @@ def main() -> None:
             key = (slug, rec_name)
             if key not in aa_cache:
                 aa_cache[key] = aa_query.get_page_record(
-                    {"name": rec_name, "slug": slug}, args.refresh
+                    {"name": rec_name, "slug": slug}, args.force
                 )
             rec = aa_cache[key]
             if rec is None:
@@ -500,11 +571,11 @@ def main() -> None:
                     f"!! {name}: AA record {rec_name!r} is now {actual!r}",
                     file=sys.stderr,
                 )
-                _set(row, "aa_record_name", actual, label, changes)
+                _set(row, "aa_record_name", actual, name, changes)
             if rec is not None:
                 new_int = rec.get("intelligence")
                 if new_int is not None:
-                    _set(row, "intelligence", new_int, label, changes)
+                    _set(row, "intelligence", new_int, name, changes)
                 splits = aa_splits(rec)
                 if splits is not None:
                     new_cost, new_sticker = splits
@@ -524,15 +595,16 @@ def main() -> None:
                         new_tok = rec.get("output_tokens_per_task")
                         if new_tok:
                             cost[1] = round(new_tok) / 1e6
-                            _set(row, "aa_cost_per_task", cost, label, changes)
+                            _set(row, "aa_cost_per_task", cost, name, changes)
                     else:
-                        _set(row, "aa_cost_per_task", list(new_cost), label, changes)
+                        _set(row, "aa_cost_per_task", list(new_cost), name, changes)
                         _set(
                             sticker_row,
                             "aa_sticker_price",
                             list(new_sticker),
-                            f"{label} (sticker on base)",
+                            sticker_row["name"],
                             changes,
+                            field="aa_sticker_price (via rung)",
                         )
                 elif row["kind"] != "effort" and tuple(row["aa_sticker_price"]) == (
                     1.0,
@@ -544,7 +616,7 @@ def main() -> None:
                     new_tok = rec.get("output_tokens_per_task")
                     if new_tok:
                         cost[1] = round(new_tok) / 1e6
-                        _set(row, "aa_cost_per_task", cost, label, changes)
+                        _set(row, "aa_cost_per_task", cost, name, changes)
 
         if row["kind"] == "effort" or row["provider_type"] != "datacenter":
             continue
@@ -559,8 +631,8 @@ def main() -> None:
                 file=sys.stderr,
             )
         else:
-            _set(row, "or_eff_input_price", eff.input, label, changes)
-            _set(row, "or_eff_output_price", eff.output, label, changes)
+            _set(row, "or_eff_input_price", eff.input, name, changes)
+            _set(row, "or_eff_output_price", eff.output, name, changes)
         sess_key = or_lookup_key(sessions, or_slug)
         if sess_key is not None:
             n = len(session_detail[sess_key])
@@ -573,19 +645,18 @@ def main() -> None:
                 row,
                 "or_session_cost_10_49_turns",
                 sessions[sess_key],
-                label,
+                name,
                 changes,
             )
         new_vol = or_lookup(toks_served, or_slug)
         if new_vol is not None:
-            _set(row, "or_toks_served", int(new_vol), label, changes)
+            _set(row, "or_toks_served", int(new_vol), name, changes)
 
     if changes:
         _validate(doc)
         DATA_PATH.write_text(tomlkit.dumps(doc))
         print(f"Updated {DATA_PATH}: {len(changes)} field change(s)")
-        for change in changes:
-            print("  " + change)
+        _print_changes(changes)
     else:
         print(f"No changes to {DATA_PATH}")
 

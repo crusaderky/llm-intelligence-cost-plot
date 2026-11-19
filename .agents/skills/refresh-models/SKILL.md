@@ -41,7 +41,7 @@ task.
 
 ```bash
 pixi r refresh-models             # cached (6h) fetch, writes data.toml
-pixi r refresh-models --refresh   # force re-fetch of AA pages + OR stats
+pixi r refresh-models --force     # force re-fetch of AA pages + OR stats
 ```
 
 Requires `AA_API_KEY` (exported in the shell profile) and the OpenRouter key at
@@ -49,7 +49,9 @@ Requires `AA_API_KEY` (exported in the shell profile) and the OpenRouter key at
 
 `scripts/refresh_models.py` reads `data.toml` with tomlkit so every
 comment survives, re-fetches AA's and OR's numbers, changes only the stale fields, prints
-one line per changed field, and writes `data.toml` back. It never rewrites `scripts/plot.py`.
+an aligned table of changed fields (with a rounded percentage change where the
+value is numeric), and writes `data.toml` back. It never rewrites
+`scripts/plot.py`.
 Run `pixi r plot` afterwards to see the effect on the displayed prices and PNGs, then
 `pixi r lint`.
 
@@ -137,7 +139,7 @@ Then check the thresholds in `scripts/plot.py`:
 1. Find the model on OpenRouter: the permaslug (dated, e.g.
    `openai/gpt-6-astra-20260903`) from `https://openrouter.ai/<slug>` or the catalog API
    (`/api/frontend/v1/catalog/models`). Verify OR publishes a trailing-week effective
-   price chart for it: `pixi r refresh-models --refresh` then check the slug is in
+   price chart for it: `pixi r refresh-models --force` then check the slug is in
    `.cache/or_effective_pricing.json`. Without one the model plots at AA's own price.
 2. Find it on AA and get the exact record name + page slug: `pixi r aa-query --list`
    (see the `aa-lookup` skill for details).
