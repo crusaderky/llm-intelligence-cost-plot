@@ -215,7 +215,7 @@ rapidly:
 | RAM | Hardware | Price | Models |
 | --- | --- | --- | --- |
 | 4 GB unified | Mobile phone | ~$250 | LFM3-1.7B (Q6_K_S) |
-| 16 GB unified | Strix Point laptop | ~$1,000 | Ternary-Bonsai-2<br>K2 Horizon 7B (Q6_K_M) |
+| 16 GB unified | Strix Point laptop | ~$1,000 | Ternary-Bonsai-2<br>K2 Horizon 7B (Q5_K_M) |
 | 24 GB VRAM + 32 GB host | PC with RTX 3090 | ~$2,400 (used) | Qwen-3.8-27B (IQ4_XS) |
 | 16 GB VRAM + 48 GB host | PC with RTX 5060 Ti | ~$2,700 | Qwen3.8-Flash (Gyro-M on [Strata](https://github.com/Niko1221/Strata)) |
 | 24 GB VRAM + 128 GB host | PC with RTX 3090 | ~$5,200 | DeepSeek V4.1 Flash (UD-IQ1_M on [Xolotl](https://github.com/Indras-Mirror/Xolotl) / [Project Maya](https://github.com/mw00/project-maya))<br>Any model from the 128 GB unified row below |

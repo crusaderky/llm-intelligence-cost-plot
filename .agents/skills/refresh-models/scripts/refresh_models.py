@@ -143,27 +143,19 @@ AA_LOOKUPS: dict[str, tuple[str, str, bool]] = {
     "MiMo-V2.6-Flash": ("mimo-v2-6-flash", "MiMo-V2.6-Flash", False),
     "MiMo-V2.6-Pro": ("mimo-v2-6-pro", "MiMo-V2.6-Pro", False),
     "MiniMax-M3.1-Flash": ("minimax-m3-1-flash", "MiniMax-M3.1-Flash", False),
-    "Gemini 4 Carbon": ("gemini-4-carbon", "Gemini 4 Carbon (High)", False),
-    # AA scores all four efforts of the Hydrogen ladder; every effort has its own
-    # page except (Xhigh), which AA spells with the bare slug.
+    # AA scores all four efforts of the Neon ladder; (Xhigh) lives on the bare
+    # slug, the others have one page each.
+    "Gemini 4 Neon (low)": ("gemini-4-neon-low", "Gemini 4 Neon (Low)", False),
+    "Gemini 4 Neon (medium)": (
+        "gemini-4-neon-medium",
+        "Gemini 4 Neon (Medium)",
+        False,
+    ),
+    "Gemini 4 Neon (high)": ("gemini-4-neon-high", "Gemini 4 Neon (High)", False),
+    "Gemini 4 Neon (xhigh)": ("gemini-4-neon", "Gemini 4 Neon (Xhigh)", False),
     "Gemini 4 Hydrogen (low)": (
         "gemini-4-hydrogen-low",
         "Gemini 4 Hydrogen (Low)",
-        False,
-    ),
-    "Gemini 4 Hydrogen (medium)": (
-        "gemini-4-hydrogen-medium",
-        "Gemini 4 Hydrogen (Medium)",
-        False,
-    ),
-    "Gemini 4 Hydrogen (high)": (
-        "gemini-4-hydrogen-high",
-        "Gemini 4 Hydrogen (High)",
-        False,
-    ),
-    "Gemini 4 Hydrogen (xhigh)": (
-        "gemini-4-hydrogen",
-        "Gemini 4 Hydrogen (Xhigh)",
         False,
     ),
     "GPT-6 Luna (low)": ("gpt-6-luna-low", "GPT-6 Luna (Low)", False),
