@@ -8,7 +8,7 @@ version = "0.1.0"
 [tasks]
 plot = "python scripts/plot.py"
 aa-query = "python scripts/aa_query.py"
-refresh_models = "python scripts/refresh_models.py"
+refresh-models = "python scripts/refresh_models.py"
 lint = "ruff check --fix && ruff format && mdformat README.md AGENTS.md"
 
 [dependencies]

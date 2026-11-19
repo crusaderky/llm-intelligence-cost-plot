@@ -40,8 +40,8 @@ task.
 ## Running the refresh
 
 ```bash
-pixi r refresh_models             # cached (6h) fetch, writes data.toml
-pixi r refresh_models --refresh   # force re-fetch of AA pages + OR stats
+pixi r refresh-models             # cached (6h) fetch, writes data.toml
+pixi r refresh-models --refresh   # force re-fetch of AA pages + OR stats
 ```
 
 Requires `AA_API_KEY` (exported in the shell profile) and the OpenRouter key at
@@ -61,7 +61,7 @@ that comment when it replaces the value, but keeps every other comment. The `--n
 prints a ready-to-paste `[[models]]` block instead of modifying the file:
 
 ```bash
-pixi r refresh_models --new OR_SLUG --aa-slug AA_SLUG --aa-name "AA Record Name" \
+pixi r refresh-models --new OR_SLUG --aa-slug AA_SLUG --aa-name "AA Record Name" \
     --publisher "Publisher" --name "Display Name"
 ```
 
@@ -137,11 +137,11 @@ Then check the thresholds in `scripts/plot.py`:
 1. Find the model on OpenRouter: the permaslug (dated, e.g.
    `openai/gpt-6-astra-20260903`) from `https://openrouter.ai/<slug>` or the catalog API
    (`/api/frontend/v1/catalog/models`). Verify OR publishes a trailing-week effective
-   price chart for it: `pixi r refresh_models --refresh` then check the slug is in
+   price chart for it: `pixi r refresh-models --refresh` then check the slug is in
    `.cache/or_effective_pricing.json`. Without one the model plots at AA's own price.
 2. Find it on AA and get the exact record name + page slug: `pixi r aa-query --list`
    (see the `aa-lookup` skill for details).
-3. Print the TOML row with `pixi r refresh_models --new ...` as shown above.
+3. Print the TOML row with `pixi r refresh-models --new ...` as shown above.
 4. Paste the row into the `[[models]]` array in `data.toml`. The publisher must already be
    in `[publishers]` with its artificialanalysis.ai color, or add it first. The printed
    row already includes `aa_page_slug`, `aa_record_name` and `aa_derived = false`.
@@ -154,7 +154,7 @@ Then check the thresholds in `scripts/plot.py`:
    `[tokens/1e6, tokens/1e6, 0.0]` against `aa_sticker_price = [1.0, 1.0, 1.0]`
    (see `K2 Horizon 7B`) if it is priced by electricity, or a hand-derived real split
    (see `Hy4-flash`) if OR prices it. Set `aa_page_slug = ""` and `aa_derived = true`.
-7. Run `pixi r refresh_models` once: a correct new row changes nothing, or only refreshes
+7. Run `pixi r refresh-models` once: a correct new row changes nothing, or only refreshes
    the OR fields that moved between the two fetches.
 
 ## Provenance rules

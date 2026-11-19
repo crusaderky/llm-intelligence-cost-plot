@@ -25,9 +25,9 @@ aa_derived=true and rows pinned to an empty AA slug keep their AA numbers but
 still refresh their OpenRouter fields.
 
 Usage (always through the pixi environment):
-  pixi r refresh_models                 # cached fetches (6h)
-  pixi r refresh_models --refresh       # force re-fetch of everything
-  pixi r refresh_models --new OR_SLUG --aa-slug SLUG --aa-name "AA Record Name" \
+  pixi r refresh-models                 # cached fetches (6h)
+  pixi r refresh-models --refresh       # force re-fetch of everything
+  pixi r refresh-models --new OR_SLUG --aa-slug SLUG --aa-name "AA Record Name" \
         --publisher "Pub" --name "Model Name"    # print a TOML row
 """
 

@@ -1,6 +1,6 @@
 # Data behind the plots: publisher colors, rig prices and every model. Loaded and
 # validated with pydantic by scripts/plot.py; updated in place by
-# scripts/refresh_models.py (pixi r refresh_models).
+# scripts/refresh_models.py (pixi r refresh-models).
 #
 # Numbers are stored as literals. Where a value was derived from another one, the
 # original calculation is kept as a "# computed from:" comment.

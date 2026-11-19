@@ -106,7 +106,7 @@ query with the full exact name (as printed by `--list`) for a reliable page matc
   which the cost is the token count divided by 1e6.
 
 The `.agents/skills/refresh-models` skill automates all of this (AA + OpenRouter):
-`pixi r refresh_models` writes the values into `data.toml` and prints what changed.
+`pixi r refresh-models` writes the values into `data.toml` and prints what changed.
 Prefer it over manual entry.
 
 ## Attribution

@@ -41,7 +41,7 @@ order and leader/dot grazes, and a pin can force one the other labels cannot esc
 
 ## Adding or refreshing a model
 
-Follow `.agents/skills/refresh-models/SKILL.md`: `pixi r refresh_models` re-fetches the
+Follow `.agents/skills/refresh-models/SKILL.md`: `pixi r refresh-models` re-fetches the
 AA and OpenRouter numbers for every existing model and writes them straight into
 `data.toml`. Read the printed change list and `git diff data.toml` before accepting it.
 `.agents/skills/aa-lookup` is the low-level AA query tool it builds on.
