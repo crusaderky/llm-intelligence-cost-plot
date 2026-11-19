@@ -86,6 +86,7 @@ matplotlib.use("agg")  # Agg gives us a measurable renderer; we still save SVG
 # produces a byte-identical SVG that git sees as clean.
 matplotlib.rcParams["svg.hashsalt"] = "llm-intelligence-cost-plot"
 import matplotlib.pyplot as plt
+import sympy
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 from matplotlib.path import Path as MplPath
@@ -341,36 +342,49 @@ PUBLISHERS = {
 }
 
 
-class LocalHardware(NamedTuple):
-    name: str
-    idle_power_draw: int | None = None  # Watts when idling
-    peak_power_draw: int | None = None  # Watts under max load
-    price: int | None = None  # Up-front expense
+# One-off USD price of the rigs the hardware-cost plot prices, keyed by slug.
+# A model's `hardware_bom` is a sympy expression over these keys, e.g.
+# "DGX_SPARK*3+QSFP112_CABLE*3" for three Sparks cabled together.
+HARDWARE_PRICES = {
+    # README's "Larger local models" table, one key per rig a model uses
+    "MOBILE_PHONE": 250,  # 4 GB unified
+    "STRIX_POINT_LAPTOP": 1000,  # 16 GB unified
+    "RTX_3090_PC_32GB": 2400,  # 24 GB VRAM + 32 GB host RAM
+    "RTX_5060TI_PC_48GB": 2700,  # 16 GB VRAM + 48 GB host RAM
+    "RTX_3090_PC_128GB": 5200,  # 24 GB VRAM + 128 GB host RAM
+    "RTX_3090_PC_192GB": 6100,  # 24 GB VRAM + 192 GB host RAM
+    "STRIX_HALO": 3100,  # Bosgame, 128 GB unified
+    "DGX_SPARK": 6000,  # Asus Ascent GX10, 128 GB unified
+    "GORGON_HALO": 6200,  # Bosgame, 192 GB unified
+    # Networking, needed to cluster Sparks
+    "QSFP112_CABLE": 110,  # 200G direct attach (Amazon US)
+    "QSFP_DD_SWITCH": 1200,  # 4-port 400G
+    "QSFP_DD_BREAKOUT_CABLE": 200,  # 400G to 2x200G
+}
 
-    @property
-    def delta_power_draw(self) -> int:
-        assert self.idle_power_draw is not None
-        assert self.peak_power_draw is not None
-        return self.peak_power_draw - self.idle_power_draw
 
-    def cluster(self, count: int, extra_price: int = 0) -> LocalHardware:
-        if self.price is None and extra_price == 0:
-            price = None
-        else:
-            price = (self.price or 0) * count + extra_price
-        return LocalHardware(
-            f"{self.name} x{count}",
-            self.idle_power_draw * count if self.idle_power_draw is not None else None,
-            self.peak_power_draw * count if self.peak_power_draw is not None else None,
-            price,
+def parse_hardware_bom(expr: str) -> int:
+    """Price in USD of a rig, from an expression over HARDWARE_PRICES keys.
+
+    `expr` is a sympy expression such as "DGX_SPARK*3+QSFP112_CABLE*3": every
+    key is substituted by its price and the expression is evaluated. Any name
+    outside HARDWARE_PRICES is an error, so a typo cannot silently delete part
+    of the bill.
+    """
+    prices = {k: sympy.Integer(v) for k, v in HARDWARE_PRICES.items()}
+    value = sympy.sympify(expr, locals=prices)
+    unknown = sorted(str(s) for s in value.free_symbols)
+    if unknown:
+        raise ValueError(
+            f"hardware_bom {expr!r}: not in HARDWARE_PRICES: {', '.join(unknown)}"
         )
+    if not value.is_Integer:
+        raise ValueError(f"hardware_bom {expr!r}: not a whole USD amount: {value}")
+    return int(value)
 
 
-RTX3090 = LocalHardware("RTX 3090", 43, 350)
-STRIX_HALO = LocalHardware("Strix Halo", 15, 140, price=3100)  # Bosgame
-GORGON_HALO = LocalHardware("Gorgon Halo", 15, 140, price=6200)  # Bosgame
-DGX_SPARK = LocalHardware("DGX Spark", price=6000)  # Asus Ascent GX10
-QSFP112_CABLE = 112  # USD (Amazon US). Needed to cluster DGX Spark
+# Watts drawn by a RTX 3090 rig under load
+RTX3090_POWER_DRAW = 350
 
 # Residential electricity, weighted by population, May 2026 (USD/KWh)
 # https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a
@@ -437,21 +451,17 @@ class Model:
     # no paid endpoint on OR keeps None and plots at AA's price.
     or_eff_input_price: float | None = field(default=None, kw_only=True)
     or_eff_output_price: float | None = field(default=None, kw_only=True)
-    # Local models: measured throughput on `hardware` (None = RTX3090).
+    # Local models: measured throughput on the RTX 3090 rig.
     local_speed: LocalSpeed | None = field(default=None, kw_only=True)
-    # The rig the model runs on. Local models: the measurement rig
-    # (None = RTX3090). Datacenter models: the cheapest local rig that
-    # can run the model, from the README's "Larger local models" table;
-    # only its price is read, as the hardware-cost plot's x.
-    hardware: LocalHardware | None = field(default=None, kw_only=True)
     # One-off USD price of the cheapest hardware that can run the model
     # locally, from the README's "Larger local models" table. Independent
     # of the per-task price (which is electricity only): this is the
-    # machine, not the power bill. Overrides hardware.price when present,
-    # which is how local models measured on the RTX3090 plot at the price
-    # of the cheaper rig they actually run on (a phone, a laptop). None =
-    # no table entry, so the model is left off the hardware-cost plot.
-    hardware_price_override: int | None = field(default=None, kw_only=True)
+    # machine, not the power bill. A sympy expression over HARDWARE_PRICES
+    # keys -- "DGX_SPARK*3+QSFP112_CABLE*3" is three Sparks cabled
+    # together -- parsed into hardware_cost by __post_init__. None = no
+    # table entry, so the model is left off the hardware-cost plot.
+    hardware_bom: str | None = field(default=None, kw_only=True)
+    hardware_cost: int | None = field(default=None, init=False)
     # Not on AA: the point is extrapolated/estimated. Rendered as a hollow
     # circle, with a matching "Estimated (not on AA)" legend entry.
     estimated: bool = field(default=False, kw_only=True)
@@ -464,17 +474,15 @@ class Model:
     trains_on_your_data: bool = field(default=False, kw_only=True)
 
     def __post_init__(self) -> None:
+        if self.hardware_bom is not None:
+            self.hardware_cost = parse_hardware_bom(self.hardware_bom)
         if self.provider_type is ProviderType.LOCAL:
             if self.local_speed is None:
                 raise ValueError(f"{self.name}: local model needs local_speed")
-            # The ⚡ marker (ICON_PATHS["bolt"]) and the hardware name are
-            # spliced into the label here, unlike the trains_on_your_data and
-            # available flags, which are drawn as glyphs at render time.
-            if self.hardware is None:
-                self.hardware = RTX3090
-                self.name += " ⚡"
-            else:
-                self.name += f" ({self.hardware.name} ⚡)"
+            # The ⚡ marker (ICON_PATHS["bolt"]) is spliced into the label here,
+            # unlike the trains_on_your_data and available flags, which are
+            # drawn as glyphs at render time.
+            self.name += " ⚡"
 
     def aa_total_cost_per_task(self) -> float:
         """AA's posted cost of one task: the sum of its split by token type."""
@@ -526,17 +534,17 @@ class Model:
         posted cost per task.
 
         Local models: the electricity to run the task's uncached input tokens
-        through prefill and its output tokens through decode on `hardware`.
+        through prefill and its output tokens through decode on the RTX 3090
+        measurement rig.
         """
         if self.provider_type is ProviderType.LOCAL:
             assert self.local_speed is not None
-            assert self.hardware is not None
             tokens = self.local_token_counts()
             sec_per_task = (
                 tokens.input_ / self.local_speed.prefill
                 + tokens.output / self.local_speed.decode
             )
-            kwh_per_task = self.hardware.delta_power_draw * sec_per_task / 3_600_000
+            kwh_per_task = RTX3090_POWER_DRAW * sec_per_task / 3_600_000
             return kwh_per_task * US_ELECTRICITY_PRICE
 
         tokens = self.aa_token_counts()
@@ -554,19 +562,6 @@ class Model:
         """
         assert self.provider_type is ProviderType.DATACENTER
         return 100 * (self.price_per_task() / self.aa_total_cost_per_task() - 1)
-
-    def hardware_price(self) -> int | None:
-        """One-off USD price of the cheapest local hardware that can run
-        the model, for the hardware-cost plot: hardware_price_override overrides
-        hardware.price when present. None = no entry, so the model is
-        left off that plot.
-        """
-        if self.hardware_price_override is not None:
-            return self.hardware_price_override
-        elif self.hardware is not None:
-            return self.hardware.price
-        else:
-            return None
 
 
 MODELS = [
@@ -587,16 +582,13 @@ MODELS = [
     #   or_toks_served (GET /api/frontend/v1/rankings/models?view=week:
     #   prompt + completion tokens served in the trailing week, all variants)
     #   are recorded for reference; neither prices the plot.
-    # - local: local_speed, both rates on real hardware. The prefill rate is a
-    #   guesstimate at 10x the decode rate until it gets measured.
-    # - hardware: datacenter models the README's "Larger local models"
-    #   table names get the cheapest rig that fits them
-    #   (DGX_SPARK.cluster(...) and friends); their price tags the
-    #   hardware-cost plot. Local models get the measurement rig
-    #   (None = RTX3090).
-    # - hardware_price_override: one-off price override for the same plot, for the
-    #   local models whose cheapest rig is not a hardware entry (phones,
-    #   laptops, prebuilt PCs); overrides hardware.price when present.
+    # - local: local_speed, both rates on the RTX 3090 measurement rig. The
+    #   prefill rate is a guesstimate at 10x the decode rate until it gets
+    #   measured.
+    # - hardware_bom: one-off price of the cheapest rig that can run the
+    #   model, as a sympy expression over HARDWARE_PRICES keys, e.g.
+    #   "DGX_SPARK*3+QSFP112_CABLE*3" (see README's "Larger local models"
+    #   table). Tags the hardware-cost plot; None leaves the model off it.
     # See .agents/skills/refresh-models for how to re-fetch these numbers.
     # --- Local models (price per task = electricity) ---
     Model(
@@ -609,7 +601,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(0.08, 0.2, 0.02),
         local_speed=LocalSpeed(prefill=14000, decode=250),
-        hardware_price_override=250,  # 4 GB unified: a phone, see README's table
+        hardware_bom="MOBILE_PHONE",
     ),
     # Guesstimate - AA's October 2026 rebuild (v4.3 -> v5) dropped the Intelligence
     # Index of this model, while still publishing its individual benchmark scores.
@@ -661,7 +653,7 @@ MODELS = [
         # price; 0.0 in the cached slot of both splits means "never caches"
         aa_sticker_price=PricedTokens(0.375, 2.25, 0.0),
         local_speed=LocalSpeed(prefill=2215, decode=150),
-        hardware_price_override=2300,  # RTX 3090 + 32 GB RAM
+        hardware_bom="RTX_3090_PC_32GB",
         estimated=True,
     ),
     Model(
@@ -674,7 +666,7 @@ MODELS = [
         aa_cost_per_task=PricedTokens(99_115 * 3.5 / 1e6, 99_115 / 1e6, 0.0),
         aa_sticker_price=PricedTokens(1.0, 1.0, 1.0),  # Dummy
         local_speed=LocalSpeed(prefill=3430, decode=104),
-        hardware_price_override=1000,
+        hardware_bom="STRIX_POINT_LAPTOP",
     ),
     Model(
         "Alibaba",
@@ -686,7 +678,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(0.5, 3.0, 0.1),
         local_speed=LocalSpeed(prefill=963, decode=57),
-        hardware_price_override=2400,
+        hardware_bom="RTX_3090_PC_32GB",
     ),
     # Not on AA: intelligence = 0.9165 x Qwen3.8-27B, the 91.65% of BF16 that
     # ByteShape measured for this ternary quant (see README note); tokens per
@@ -704,7 +696,7 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.5, 3.0, 0.1),
         # Actual measure
         local_speed=LocalSpeed(prefill=949, decode=55),
-        hardware_price_override=1000,
+        hardware_bom="STRIX_POINT_LAPTOP",
         estimated=True,
     ),
     Model(
@@ -717,7 +709,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(0.15, 0.47, 0.016),
         local_speed=LocalSpeed(prefill=2000, decode=84),
-        hardware_price_override=2700,  # 5060 Ti 16 GiB + 48 GiB RAM (Strata Gyro-M)
+        hardware_bom="RTX_5060TI_PC_48GB",
     ),
     # --- Datacenter models (price per task = AA's token mix priced at OR's
     # effective input/output prices) ---
@@ -784,7 +776,7 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
         # From https://github.com/Niko1221/Strata @ 2.0bpw; UD-IQ1_M is 1.95bpw
         local_speed=LocalSpeed(prefill=320, decode=21),
-        hardware_price_override=5200,  # RTX 3090 + 128 GiB RAM (Strata)
+        hardware_bom="RTX_3090_PC_128GB",
         estimated=True,
     ),
     # Local model with negligible performance loss
@@ -802,7 +794,7 @@ MODELS = [
         aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
         # From https://github.com/Niko1221/Strata @ 2.0bpw; UD-Q2_K_XL is 2.8bpw
         local_speed=LocalSpeed(prefill=320, decode=21 * 2.0 / 2.8),
-        hardware_price_override=6100,  # RTX 3090 + 192 GiB RAM (Strata)
+        hardware_bom="RTX_3090_PC_192GB",
     ),
     Model(
         "Tencent",
@@ -819,7 +811,7 @@ MODELS = [
         or_eff_input_price=0.08742,
         or_eff_output_price=2.428,
         # GGUFs not available yet; estimated same as GLM @ UD-Q3_K_XL
-        hardware=DGX_SPARK.cluster(3, extra_price=QSFP112_CABLE * 3),
+        hardware_bom="DGX_SPARK*3+QSFP112_CABLE*3",
         available_local=False,
     ),
     # Guesstimate - not on AA (AA has no Hy4-flash record). Intelligence from
@@ -855,7 +847,7 @@ MODELS = [
         or_eff_input_price=0.00601,
         or_eff_output_price=0.2785,
         estimated=True,
-        hardware=STRIX_HALO,  # 128 GB unified
+        hardware_bom="STRIX_HALO",
     ),
     Model(
         "Meta",
@@ -951,7 +943,7 @@ MODELS = [
         or_toks_served=10873874782464,
         or_eff_input_price=0.04785,
         or_eff_output_price=0.4119,
-        hardware=STRIX_HALO,  # IQ3_XXS
+        hardware_bom="STRIX_HALO",  # IQ3_XXS
     ),
     Model(
         "Z AI",
@@ -963,7 +955,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(1.4, 4.4, 0.26),
         # 384 GiB unified: 3x DGX Spark
-        hardware=DGX_SPARK.cluster(3, extra_price=QSFP112_CABLE * 3),  # Q3_K_XL
+        hardware_bom="DGX_SPARK*3+QSFP112_CABLE*3",  # Q3_K_XL
         or_slug="z-ai/glm-5.3-20260816",
         or_session_cost_10_49_turns=0.19674737,
         or_toks_served=3428617492023,
@@ -980,7 +972,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
         # 1 TB VRAM: 8x DGX Spark + 4-ports 400G switch + 4x 400G to 2x200G cables
-        hardware=DGX_SPARK.cluster(8, extra_price=1200 + 200 * 4),
+        hardware_bom="DGX_SPARK*8+QSFP_DD_SWITCH+QSFP_DD_BREAKOUT_CABLE*4",
         or_slug="moonshotai/kimi-k3.1-pro-20261023",
         or_session_cost_10_49_turns=0.7731742,
         or_toks_served=3549141145635,
@@ -1112,8 +1104,7 @@ MODELS = [
             0.5051213025810452, 0.30637676984880086, 1.5337544881906702
         ),
         aa_sticker_price=PricedTokens(1.0, 2.7, 0.1),
-        # 384 GiB unified: 3x DGX Spark
-        hardware=DGX_SPARK.cluster(3, extra_price=QSFP112_CABLE * 3),
+        hardware_bom="DGX_SPARK*3+QSFP112_CABLE*3",
         or_slug="stepfun/step-5-preview-20261008",
         or_toks_served=6386869272144,
         or_eff_input_price=0.1445,
@@ -1128,7 +1119,7 @@ MODELS = [
             0.04318792692902057, 0.03690574314577558, 0.0484362007653506
         ),
         aa_sticker_price=PricedTokens(0.14, 0.28, 0.0028),
-        hardware=STRIX_HALO,  # 3.0bpw
+        hardware_bom="STRIX_HALO",  # 3.0bpw
         or_slug="xiaomi/mimo-v2.6-flash-20260921",
         or_session_cost_10_49_turns=0.030579708666666667,
         or_toks_served=4045800005008,
@@ -1144,7 +1135,7 @@ MODELS = [
             0.10909531014918307, 0.10533362295314275, 0.04275142965643572
         ),
         aa_sticker_price=PricedTokens(0.435, 0.87, 0.0036),
-        hardware=DGX_SPARK.cluster(3, extra_price=QSFP112_CABLE * 3),  # 3.0bpw
+        hardware_bom="DGX_SPARK*3+QSFP112_CABLE*3",  # 3.0bpw
         or_slug="xiaomi/mimo-v2.6-pro-20260921",
         or_session_cost_10_49_turns=0.08711627666666666,
         or_toks_served=910283952428,
@@ -1165,7 +1156,7 @@ MODELS = [
         or_toks_served=3671993607902,
         or_eff_input_price=0.02254,
         or_eff_output_price=0.489,
-        hardware=GORGON_HALO,
+        hardware_bom="GORGON_HALO",
     ),
     Model(
         "OpenAI",
@@ -1798,7 +1789,7 @@ MODELS = [
         ),
         aa_sticker_price=PricedTokens(0.3, 0.9, 0.06),
         # 256 GiB unified: 2x DGX Spark
-        hardware=DGX_SPARK.cluster(2, extra_price=QSFP112_CABLE * 2),
+        hardware_bom="DGX_SPARK*2+QSFP112_CABLE*2",
         # OpenRouter still only lists the older checkpoint
         available_datacenter=False,
     ),
@@ -1816,7 +1807,7 @@ MODELS = [
         or_toks_served=115568161597,
         or_eff_input_price=0.1538,
         or_eff_output_price=2.121,
-        hardware=DGX_SPARK.cluster(3, extra_price=QSFP112_CABLE * 3),  # UD-Q2_K_XL
+        hardware_bom="DGX_SPARK*3+QSFP112_CABLE*3",  # UD-Q2_K_XL
     ),
 ]
 
@@ -2001,14 +1992,14 @@ PLOTS = [
         one_per_model=True,
     ),
     # Larger local models: x is the one-off hardware bill, not a per-task
-    # price. Kimi K3.1 Pro needs 1 TB of unified memory ($64,600, twice the next
+    # price. Kimi K3.1 Pro needs 1 TB of unified memory ($50,000, twice the next
     # most expensive rig), so x_break splits the axis and gives it a panel of its
     # own instead of squashing the other sixteen models into the leftmost 8%.
     PlotSpec(
         "Intelligence vs. Hardware price",
-        lambda m: m.hardware_price() is not None,
+        lambda m: m.hardware_cost is not None,
         "local_hardware",
-        x_of=Model.hardware_price,
+        x_of=lambda m: m.hardware_cost,
         x_label="Hardware price, one-off (USD)",
         xtick_step=2_000,
         band=False,
@@ -2107,23 +2098,18 @@ EFFORT_TAGS = frozenset({"minimal", "low", "medium", "high", "xhigh", "max"})
 
 
 def _clean_label(m: Model) -> str:
-    """Model name without its reasoning-effort or hardware tag.
+    """Model name without its effort tag.
 
-    "GLM-5.3-Flash (max)" -> "GLM-5.3-Flash", and "Qwen3.8-Flash (Strix Halo ⚡)" ->
-    "Qwen3.8-Flash ⚡": the effort suffix and the hardware name Model.__post_init__
-    splices in are dropped, but the ⚡ itself is kept so the local-electricity marker
-    still renders (the plots have a legend entry for it). A parenthetical that is part
-    of the model's real name -- a release date, or any word outside EFFORT_TAGS --
-    stays.
+    "Qwen3.8-Flash (max) ⚡" -> "Qwen3.8-Flash ⚡": the effort tag is dropped
+    but the ⚡ stays, so the hardware-cost plot can hide it as its hidden icon.
+    A parenthetical that is part of the model's real name -- a quantization or
+    a release date -- stays.
     """
     name, bolt = m.name, ""
     if "⚡" in name:
         head, _, tail = name.partition("⚡")
         name = head.rstrip() + tail.lstrip()  # rejoin around the bolt
         bolt = " ⚡"
-        if m.hardware is not None:
-            tag = f" ({m.hardware.name})"
-            name = name.removesuffix(tag)
     while name.endswith(")"):
         open_ = name.rfind("(")
         if open_ < 0:
@@ -2140,9 +2126,9 @@ def _split_icon(m, name=None, available=True, hidden=()):
     Returns (left, icon, right, strike): the text before the glyph, the icon
     key (None, "bolt", or "mask"), the text after it, and whether the label is
     unavailable (rendered dark grey with a strikethrough, no icon). The icon is
-    drawn between the two text halves, so e.g. "(RTX 3090 ⚡)" keeps its
-    parentheses. Only the ⚡ still lives in the name (Model.__post_init__ splices
-    it in); the thief mask comes from Model.trains_on_your_data and the
+    drawn between the two text halves, so e.g. "Qwen3.8-Flash (max) ⚡" splits
+    around the bolt. Only the ⚡ still lives in the name (Model.__post_init__
+    splices it in); the thief mask comes from Model.trains_on_your_data and the
     strikethrough from an availability flag (whichever of available_datacenter
     or available_local the calling view is governed by), so no marker text is
     carried in the data.

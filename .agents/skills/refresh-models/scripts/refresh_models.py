@@ -571,12 +571,8 @@ def aa_splits(rec: dict | None) -> tuple[plot.PricedTokens, plot.PricedTokens] |
 
 
 def base_name(name: str) -> str:
-    """Strip local hardware suffix eg "(RTX 3090 ⚡)", "(Strix Halo 128GB ⚡)", or just ⚡" """
-    if "⚡" in name and "(" in name:
-        name = name[: name.rfind("(")].strip()
-    elif "⚡" in name:
-        name = name.replace("⚡", "")
-    return name.strip()
+    """The name without the ⚡ __post_init__ splices into a local model's label."""
+    return name.replace("⚡", "").strip()
 
 
 def main() -> None:
@@ -901,7 +897,7 @@ def main() -> None:
                 "   (local: update intelligence, plus the task's token mix — "
                 "aa_cost_per_task + aa_sticker_price when AA publishes them, "
                 "the output leg of the dummy-priced aa_cost_per_task when it "
-                "does not; local_speed and hardware stay)"
+                "does not; local_speed and hardware_bom stay)"
             )
 
     if paste:

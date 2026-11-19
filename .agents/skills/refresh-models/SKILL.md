@@ -95,9 +95,9 @@ plot`, visually inspect the PNGs, `pixi r lint`).
 - A `!!` line means the AA record name in `AA_LOOKUPS` no longer matches AA verbatim;
   the refresh still resolves it by effort tag, but copy the name it prints. The other
   `!!` form, `no AA_LOOKUPS row`, skips the row entirely — AA *and* OR. `AA_LOOKUPS` is
-  keyed by `base_name(display name)` (the name in `plot.py`, minus the `⚡` and the
-  hardware tag), so a ladder row scored at a single effort is keyed by its bare display
-  name: `"Muse Ember"`, not AA's `"Muse Ember (max)"`.
+  keyed by `base_name(display name)` (the name in `plot.py`, minus the `⚡`), so a
+  ladder row scored at a single effort is keyed by its bare display name: `"Muse Ember"`,
+  not AA's `"Muse Ember (max)"`.
 - Reminder lines cover the special cases:
   - `GLM-5.3-Flash (high)` is extrapolated from the `(max)` record — multiply
     intelligence by 28.01/28.99 and tokens **and the whole `aa_cost_per_task` split** by
@@ -114,7 +114,7 @@ plot`, visually inspect the PNGs, `pixi r lint`).
     numbers as `Muse Spark 1.3`, but has its own OR permaslug, effective prices, session
     cost and weekly volume. Watch out: two rows can share a display name.
   - Local models: update `intelligence`; keep
-    `local_speed=LocalSpeed(prefill=…, decode=…)` and `hardware` (measured on real
+    `local_speed=LocalSpeed(prefill=…, decode=…)` and `hardware_price` (measured on real
     hardware, never from AA), but do add `aa_cost_per_task` / `aa_sticker_price` when AA
     publishes them — the electricity cost then uses the real uncached input token count.
     `K2 Horizon 7B` is the one local row

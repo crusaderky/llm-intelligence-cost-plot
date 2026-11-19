@@ -71,14 +71,21 @@ every other field is keyword-only. The displayed price per task is derived on de
   - `or_slug`, `or_session_cost_10_49_turns` and `or_toks_served` are still collected
     but no longer price anything; keep them in sync, don't use them.
 
-- `ProviderType.LOCAL` — electricity to generate the task on `hardware` (None =
-  RTX3090; `hardware=STRIX_HALO` for the ~120B class). Runtime comes from
-  `Model.local_token_counts()`, which is `aa_token_counts()` with the cached
-  input zeroed (free on a local rig), times
+- `ProviderType.LOCAL` — electricity to generate the task on the RTX 3090 rig
+  (`RTX3090_DELTA_POWER_DRAW`; every local measurement was taken on that card).
+  Runtime comes from `Model.local_token_counts()`, which is `aa_token_counts()`
+  with the cached input zeroed (free on a local rig), times
   `LocalSpeed(prefill=…, decode=…)`. Both rates are measured on the
   rig; prefill is currently a hand-typed guesstimate at 10× decode — replace it
-  with the measured number when there is one. The `⚡` and hardware suffix is
-  appended automatically.
+  with the measured number when there is one. The `⚡` is appended
+  automatically.
+
+- `hardware_price` — the hardware-cost plot's x, independent of the per-task price: the
+  one-off bill of the cheapest rig that runs the model. It is a sympy expression over
+  `HARDWARE_PRICES` keys, evaluated into `Model.hardware_cost` by `__post_init__`:
+  `"DGX_SPARK*3+QSFP112_CABLE*3"` is three Sparks cabled together, the same rig as
+  `3 * (6000 + 112)`. An unknown name raises instead of pricing at zero. `None` leaves
+  the model off that plot.
 
 A publisher appearing for the first time must be added to `PUBLISHERS` with its
 artificialanalysis.ai color, or the script KeyErrors.

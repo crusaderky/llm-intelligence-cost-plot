@@ -184,7 +184,7 @@ calculated as follows:
 - Crudely observe prefill and decode speed (tok/s) on local hardware. All measurements
   were taken on the same RTX 3090 video card from 2020, which today is relatively
   affordable at ~$1,400 (used).
-- Measure delta between peak and idle energy draw on said hardware
+- Measure peak power draw on said hardware when running inference
 - Price electricity at $0.2049/kWh, which is the US residential electricity price,
   weighted average by population, as of May 2026.
 - Hardware is priced at zero, on the basis that PCs with RTX 5060 Ti to RTX 3090 are
