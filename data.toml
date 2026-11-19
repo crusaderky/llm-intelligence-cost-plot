@@ -1,0 +1,1124 @@
+# Data behind the plots: publisher colors, rig prices and every model. Loaded and
+# validated with pydantic by plot.py; updated in place by refresh_models.py (pixi r
+# refresh_models).
+#
+# Numbers are stored as literals. Where a value was derived from another one, the
+# original calculation is kept as a "# computed from:" comment.
+
+# Publisher colors, replicated from artificialanalysis.ai
+[publishers]
+"Accio" = "#43674c"
+"Alibaba" = "#ff7018"
+"Anthropic" = "#cc785c"
+"Apodex" = "#30d8d1"
+"DeepSeek" = "#2243e6"
+"Google" = "#34A853"
+"InclusionAI" = "#4fb5ff"
+"Institute of Foundation Models" = "#1521a9"
+"Liquid AI" = "#000000"
+"Meta" = "#0089f4"
+"MiniMax" = "#EB3568"
+"Mistral" = "#f32e02"
+"Moonshot AI" = "#047AFE"
+"OpenAI" = "#1f1f1f"
+"OpenBMB" = "#3B62EC"
+"Ornith AI" = "#dddddd"
+"Prism-ML" = "#d6409f"
+"SpaceXAI" = "#736cd3"
+"StepFun" = "#32f4e6"
+"Tencent" = "#66b7fb"
+"Xiaomi" = "#fb6d25"
+"Z AI" = "#1c7ff8"
+
+# One-off USD price of the rigs the hardware-cost plot prices, keyed by slug. A model's
+# `hardware_bom` is a sympy expression over these keys, e.g.
+# "DGX_SPARK*3+QSFP112_CABLE*3" for three Sparks cabled together.
+[hardware_prices]
+MOBILE_PHONE = 250  # 4 GB unified
+STRIX_POINT_LAPTOP = 1000  # 16 GB unified
+RTX_3090_PC_32GB = 2400  # 24 GB VRAM + 32 GB host RAM
+RTX_5060TI_PC_48GB = 2700  # 16 GB VRAM + 48 GB host RAM
+RTX_3090_PC_128GB = 5200  # 24 GB VRAM + 128 GB host RAM
+RTX_3090_PC_192GB = 6100  # 24 GB VRAM + 192 GB host RAM
+STRIX_HALO = 3100  # Bosgame, 128 GB unified
+DGX_SPARK = 6000  # Asus Ascent GX10, 128 GB unified
+GORGON_HALO = 6200  # Bosgame, 192 GB unified
+QSFP112_CABLE = 110  # 200G direct attach for 2~4x DGX Spark
+QSFP_DD_SWITCH = 1200  # 4-port 400G for 8x DGX Spark
+QSFP_DD_BREAKOUT_CABLE = 200  # 400G to 2x200G
+
+# Price per task is derived by Model.price_per_task(). Stored inputs:
+# - intelligence + aa_cost_per_task + aa_sticker_price: artificialanalysis.ai (AA model
+#   page flight payloads, sub-unit / sub-cent precision). aa_cost_per_task is AA's cost
+#   of one task split by token type (a PricedTokens, whose three streams sum to the
+#   total) and aa_sticker_price is those same three streams in USD per 1M tokens.
+# - datacenter: or_slug + or_eff_input_price / or_eff_output_price (openrouter.ai, GET
+#   /api/frontend/v1/stats/effective-pricing: each endpoint instance's mean effective
+#   price over the trailing week, weighted by the share of the model's tokens that
+#   instance served, $/M tokens). or_session_cost_10_49_turns (GET
+#   /api/frontend/v1/rankings/session-cost: median 10-49-turn session cost, averaged
+#   across the coding harnesses that carry the model) and or_toks_served (GET
+#   /api/frontend/v1/rankings/models?view=week: prompt + completion tokens served in the
+#   trailing week, all variants) are recorded for reference; neither prices the plot.
+# - local: local_speed, both rates on the RTX 3090 measurement rig. The prefill rate is
+#   a guesstimate at 10x the decode rate until it gets measured.
+# - hardware_bom: one-off price of the cheapest rig that can run the model, as a sympy
+#   expression over HARDWARE_PRICES keys, e.g. "DGX_SPARK*3+QSFP112_CABLE*3" (see
+#   README's "Larger local models" table). Tags the hardware-cost plot; None leaves the
+#   model off it.
+#
+# See .agents/skills/refresh-models for how to re-fetch these numbers. A ladder of
+# effort levels is one Model row (any one rung, tag and all) plus one ModelEffort per
+# other rung; expand_model_efforts clones the base row into those rungs below.
+[[models]]
+kind = "model"
+publisher = "Liquid AI"
+name = "LFM3-1.7B"
+intelligence = 5.99389916662478
+provider_type = "local"
+aa_page_slug = "lfm3-1-7b"
+aa_record_name = "LFM3-1.7B"
+aa_derived = false
+aa_cost_per_task = [0.02747071158805385, 0.01952671979253421, 0.12619184126922414]
+aa_sticker_price = [0.08, 0.2, 0.02]
+local_speed = [14000, 250]
+hardware_bom = "MOBILE_PHONE"
+
+[[models]]
+# Guesstimate - AA's October 2026 rebuild (v4.3 -> v5) dropped the Intelligence Index of
+# this model, while still publishing its individual benchmark scores. Re-estimated in
+# November 2026 by comparing those scores with GPT-6 Luna (low), GPT-6 Luna (medium),
+# Muse Glimmer and Granite 4.2 3B, the four scored models of the same class: AA's v5
+# index is a linear function of its nine constituent benchmarks, so regressing the
+# published index on the z-scored constituents of the 91 models AA still scores recovers
+# it exactly - rmse 0.47, R^2 0.999, weights 3.0 (Terminal-Bench Science), 2.6
+# (TerminalBench 4.0), 2.2 (FrontierCode 2.0, AA-Briefcase), 2.0 (HLE-Diamond, CritPT v2
+# Hard), 1.4 (Omniscience), 1.2 (AutomationBench-AA), 0.2 (GDP-PDF), intercept 31.6. AA
+# publishes three of the nine for it: AutomationBench-AA is the record's
+# automationBenchPartialScore, TerminalBench 4.0 its terminalBench40, GDP-PDF its
+# gdpPdfAllPass, and Terminal-Bench Science its terminalBenchScience. AA-Briefcase and
+# Omniscience survive the rebuild unchanged and are read from AA's pre-rebuild record of
+# the same model: across the 88 models AA scored in both revisions, its re-run of
+# AA-Briefcase moved the Elo by sd 7.7 (0.04 index points) and Omniscience by sd 2.9
+# (0.17 points), so the old number is the current one. What is left to invent is what
+# the rebuild introduced and AA never ran on these models - FrontierCode 2.0,
+# HLE-Diamond, CritPT v2 Hard, and Terminal- Bench Science for the smaller one. Each is
+# imputed by a ridge fit (alpha 0.1) on the eight benchmarks both targets and all four
+# anchors report - GDPVal, HLE, LCR, SciCode, CritPT, AutomationBench-AA, TerminalBench
+# 4.0, GDP-PDF - weighted by a Gaussian kernel of bandwidth 1.25 z so that the
+# neighbouring models, not the frontier ones, set the slope. Pushing the completed
+# nine-vector through the map above gives the index. Anchors as the check: each of the
+# four, sent through the same pipeline with its own constituent scores hidden and itself
+# left out of every fit, comes back at 10.75 (published 9.67), 17.73 (18.30), 7.13
+# (6.34) and 3.80 (4.72) - MAE 0.84, worst 1.08. Leave-one-out over the 24 scored models
+# below index 22 misses by 1.0-1.1 points on average (+0.25 bias), so quote +/-1.1.
+# Robustness: adding GPQA / TerminalBench 2.1 / tau-banking / MMMU-Pro / MLCR moves each
+# estimate by <= 0.3, the bandwidth 0.9-1.8 by <= 0.5; trusting no pre-rebuild data at
+# all reads 12.1 instead. 8.9 sits just under GPT-6 Luna (low) (9.67), whose
+# AutomationBench-AA (0.120 vs 0.052), GDPVal (1040 vs 899) and Omniscience (-9.2 vs
+# -22.2) it loses to, and just above Muse Glimmer (6.34) on the strength of AA-Briefcase
+# Elo (708 vs 478), Omniscience (-22.2 vs -32.9) and GDPVal (899 vs 792), even though it
+# trails Glimmer on AutomationBench-AA, LCR, SciCode, GDP-PDF and CritPT.
+kind = "model"
+publisher = "Alibaba"
+name = "Qwen3.6-35B-A3B"
+intelligence = 8.9
+provider_type = "local"
+aa_page_slug = "qwen3-6-35b-a3b"
+aa_record_name = "Qwen3.6 35B A3B (Reasoning)"
+aa_derived = false
+aa_cost_per_task = [0.66, 0.13, 0.0]
+aa_sticker_price = [0.375, 2.25, 0.0]
+local_speed = [2215, 150]
+hardware_bom = "RTX_3090_PC_32GB"
+estimated = true
+
+[[models]]
+kind = "model"
+publisher = "Institute of Foundation Models"
+name = "K2 Horizon 7B"
+intelligence = 10.5630231522891
+provider_type = "local"
+aa_page_slug = "k2-horizon-7b"
+aa_record_name = "K2 Horizon 7B"
+aa_derived = false
+# AA doesn't publish price breakdown; only output tokens (99_115). Guesstimated uncached
+# input tokens as output tokens * 3.5. Use fake datacenter "cost" and "price" variables
+# to calculate number of tokens for the purpose of calculating electricity costs.
+aa_cost_per_task = [0.3469025, 0.099115, 0.0]
+aa_sticker_price = [1.0, 1.0, 1.0]
+local_speed = [3430, 104]
+hardware_bom = "STRIX_POINT_LAPTOP"
+
+[[models]]
+kind = "model"
+publisher = "Alibaba"
+name = "Qwen3.8-27B"
+intelligence = 20.1068756031705
+provider_type = "local"
+aa_page_slug = "qwen3-8-27b"
+aa_record_name = "Qwen3.8 27B (Xhigh)"
+aa_derived = false
+aa_cost_per_task = [2.0194864181153562, 0.3294063915269094, 1.1806566654988]
+aa_sticker_price = [0.5, 3.0, 0.1]
+local_speed = [963, 57]
+hardware_bom = "RTX_3090_PC_32GB"
+
+[[models]]
+# Not on AA: intelligence = 91.65% x Qwen3.8-27B as per ByteShape (see README)
+# tokens per task (probably incorrectly) assumed identical to Qwen3.8-27B.
+kind = "model"
+publisher = "Prism-ML"
+name = "Ternary-Bonsai-2"
+intelligence = 18.427951490305762  # computed from: 0.9165 * 20.1068756031705
+provider_type = "local"
+aa_page_slug = ""
+aa_record_name = ""
+aa_derived = false
+aa_cost_per_task = [2.0194864181153562, 0.3294063915269094, 1.1806566654988]
+aa_sticker_price = [0.5, 3.0, 0.1]
+local_speed = [949, 55]
+hardware_bom = "STRIX_POINT_LAPTOP"
+estimated = true
+
+[[models]]
+kind = "model"
+publisher = "Alibaba"
+name = "Qwen3.8-Flash"
+intelligence = 28.5750026655353
+provider_type = "local"
+aa_page_slug = "qwen3-8-flash-next"
+aa_record_name = "Qwen3.8-Flash-Next"
+aa_derived = false
+aa_cost_per_task = [0.07464306072950636, 0.06942190972050413, 0.4253161214346214]
+aa_sticker_price = [0.15, 0.47, 0.016]
+local_speed = [2000, 84]
+hardware_bom = "RTX_5060TI_PC_48GB"
+
+[[models]]
+kind = "model"
+publisher = "Alibaba"
+name = "Qwen3.8-Flash"
+intelligence = 28.5750026655353
+provider_type = "datacenter"
+aa_page_slug = "qwen3-8-flash-next"
+aa_record_name = "Qwen3.8-Flash-Next"
+aa_derived = false
+aa_cost_per_task = [0.07464306072950636, 0.06942190972050413, 0.4253161214346214]
+aa_sticker_price = [0.15, 0.47, 0.016]
+or_slug = "qwen/qwen3.8-flash-20260826"
+or_session_cost_10_49_turns = 0.0417805715
+or_toks_served = 1324492218657
+or_eff_input_price = 0.02854
+or_eff_output_price = 0.4697
+
+[[models]]
+kind = "model"
+publisher = "Alibaba"
+name = "Qwen4 Max"
+intelligence = 42.8914543287565
+provider_type = "datacenter"
+aa_page_slug = "qwen4-max"
+aa_record_name = "Qwen4 Max"
+aa_derived = false
+aa_cost_per_task = [1.680535461910324, 0.4722289955421897, 1.1153682726372187]
+aa_sticker_price = [1.5, 4.5, 0.075]
+or_slug = "qwen/qwen4-max-20261115"
+or_toks_served = 269765525092
+or_eff_input_price = 0.1739
+or_eff_output_price = 4.379
+
+[[models]]
+# Datacenter version (MXFP4 QAT)
+kind = "model"
+publisher = "DeepSeek"
+name = "DeepSeek V4.1 Flash 1017"
+intelligence = 32.5896393532027
+provider_type = "datacenter"
+aa_page_slug = "deepseek-v4-1-flash-1017"
+aa_record_name = "DeepSeek V4.1 Flash 1017 (Max)"
+aa_derived = false
+aa_cost_per_task = [0.2571473726554651, 0.16675404706375513, 0.1782037281167598]
+aa_sticker_price = [0.3, 1.2, 0.006]
+or_slug = "deepseek/deepseek-v4.1-flash-20261017"
+or_session_cost_10_49_turns = 0.02998787225
+or_toks_served = 62160618320546
+or_eff_input_price = 0.01889
+or_eff_output_price = 0.6933
+
+[[models]]
+# Degraded local model
+kind = "model"
+publisher = "DeepSeek"
+name = "DeepSeek V4.1 Flash 1017 (UD-IQ1_M)"
+# Intelligence: MXFP4 * 85.7 / 87.8 (per Unsloth tests)
+intelligence = 31.81016050762496
+provider_type = "local"
+aa_page_slug = "deepseek-v4-1-flash-1017"
+aa_record_name = "DeepSeek V4.1 Flash 1017 (Max)"
+aa_derived = true
+# Output tokens per task: MXFP4 * 2.8 / 1.5 (per Unsloth tests)
+aa_cost_per_task = [0.2571473726554651, 0.3112742211856762, 0.1782037281167598]
+aa_sticker_price = [0.3, 1.2, 0.006]
+local_speed = [320, 21]  # From Strata docs for a quant of similar size
+hardware_bom = "RTX_3090_PC_128GB"
+estimated = true
+
+[[models]]
+# Local model with negligible performance loss
+kind = "model"
+publisher = "DeepSeek"
+name = "DeepSeek V4.1 Flash 1017 (UD-Q2_K_XL)"
+intelligence = 32.5896393532027  # Same as MXFP4
+provider_type = "local"
+aa_page_slug = "deepseek-v4-1-flash-1017"
+aa_record_name = "DeepSeek V4.1 Flash 1017 (Max)"
+aa_derived = true
+# Output tokens per task: MXFP4 * 2.1 / 1.5 (per Unsloth tests)
+aa_cost_per_task = [0.2571473726554651, 0.23345566588925717, 0.1782037281167598]
+aa_sticker_price = [0.3, 1.2, 0.006]
+# Rescaled output tok/s for 2.0bpw / 2.8bpw
+local_speed = [320, 15]
+hardware_bom = "RTX_3090_PC_192GB"
+
+[[models]]
+kind = "model"
+publisher = "Tencent"
+name = "Hy4"
+intelligence = 34.5552385392508
+provider_type = "datacenter"
+aa_page_slug = "tencent-hy4"
+aa_record_name = "Tencent Hy4"
+aa_derived = false
+aa_cost_per_task = [0.49304540305271105, 0.19522317789568608, 0.34283748969140015]
+aa_sticker_price = [0.834, 2.501, 0.042]
+or_slug = "tencent/hy4-20261104"
+or_toks_served = 12966662144096
+or_eff_input_price = 0.08742
+or_eff_output_price = 2.428
+hardware_bom = "DGX_SPARK*3+QSFP112_CABLE*3"
+available_local = false
+
+[[models]]
+# Guesstimate - not on AA (AA has no Hy4-flash record). Intelligence from Tencent's
+# 17-benchmark appendix (https://hy.tencent.ai/research/hy4-flash): per benchmark, OLS
+# of the five comparison models' AA Intelligence Index on their score in that table (Hy4
+# 34.56, DeepSeek V4.1 Flash 1017 32.59, Qwen3.8-Flash-Next 28.58, GLM-5.3-Flash 27.80,
+# GPT-6 Luna max 27.86; Hy4 preview is excluded because AA does not score it), inverted
+# at Hy4-flash's score and averaged. That gives 29.65 (median 30.33); the pooled
+# within-benchmark z-score form gives 29.73 and a regression on the mean benchmark score
+# gives 30.22. Take 30.0, +/-1.5. Token split: Hy4's AA cost split scaled by 1/24.5, so
+# the same uncached/output/cached proportions as Hy4 but 24.5x cheaper in total. The
+# sticker prices are Hy4-flash's (0.070 / 0.281 / 0.003 per Mtok); dividing the scaled
+# split by them gives 287,490 / 28,357 / 4,664,456 tokens. The displayed price reprices
+# that token mix at OR's effective prices, so it moves with them.
+kind = "model"
+publisher = "Tencent"
+name = "Hy4-flash"
+intelligence = 30.0
+provider_type = "datacenter"
+aa_page_slug = ""
+aa_record_name = ""
+aa_derived = true
+aa_cost_per_task = [0.020124302165416778, 0.007968292975334126, 0.013993366926179598]  
+aa_sticker_price = [0.07, 0.281, 0.003]
+or_slug = "tencent/hy4-flash"
+or_toks_served = 59692570694
+or_eff_input_price = 0.00601
+or_eff_output_price = 0.2785
+hardware_bom = "STRIX_HALO"
+estimated = true
+
+[[models]]
+kind = "model"
+publisher = "Meta"
+name = "Muse Spark 1.3"
+intelligence = 36.6172039139368
+provider_type = "datacenter"
+aa_page_slug = "muse-spark-1-3"
+aa_record_name = "Muse Spark 1.3 (Max)"
+aa_derived = false
+aa_cost_per_task = [0.2848644588586805, 0.3872337907751061, 1.7136831361769378]
+aa_sticker_price = [1.25, 4.25, 0.15]
+or_slug = "meta/muse-spark-1.3-20260902"
+or_session_cost_10_49_turns = 0.5343645
+or_toks_served = 66103430915
+or_eff_input_price = 0.3495
+or_eff_output_price = 4.25
+
+[[models]]
+kind = "model"
+publisher = "Meta"
+name = "Muse Spark 1.3"
+intelligence = 36.6172039139368
+provider_type = "datacenter"
+aa_page_slug = "muse-spark-1-3"
+aa_record_name = "Muse Spark 1.3 (Max)"
+aa_derived = false
+aa_cost_per_task = [0.2848644588586805, 0.3872337907751061, 1.7136831361769378]
+aa_sticker_price = [1.25, 4.25, 0.15]
+or_slug = "meta/muse-spark-1.3-contributor-20260902"
+or_session_cost_10_49_turns = 0.04808478
+or_toks_served = 2954441579455
+or_eff_input_price = 0.008865
+or_eff_output_price = 0.1997
+trains_on_your_data = true
+
+[[models]]
+kind = "model"
+publisher = "Meta"
+name = "Muse Wonder"
+intelligence = 43.5748225998431
+provider_type = "datacenter"
+aa_page_slug = "muse-wonder"
+aa_record_name = "Muse Wonder (Max)"
+aa_derived = false
+aa_cost_per_task = [1.2403611645930221, 1.921261981835536, 3.790413332177666]
+aa_sticker_price = [4.0, 20.0, 0.2]
+or_slug = "meta/muse-wonder-20261012"
+or_toks_served = 92525410011
+or_eff_input_price = 0.5924
+or_eff_output_price = 20.0
+
+[[models]]
+kind = "model"
+publisher = "Meta"
+name = "Muse Ember"
+intelligence = 36.0212987864912
+provider_type = "datacenter"
+aa_page_slug = "muse-ember"
+aa_record_name = "Muse Ember (Max)"
+aa_derived = false
+aa_cost_per_task = [0.027216886792402466, 0.042240832668746175, 0.06647789743748768]
+aa_sticker_price = [0.1, 0.5, 0.004]
+or_slug = "meta/muse-ember-20261109"
+or_toks_served = 824069712578
+or_eff_input_price = 0.02414
+or_eff_output_price = 0.4998
+
+[[models]]
+kind = "model"
+publisher = "Z AI"
+name = "GLM-5.3-Flash (max)"
+intelligence = 27.803889160883
+provider_type = "datacenter"
+aa_page_slug = "glm-5-3-flash"
+aa_record_name = "GLM-5.3-Flash"
+aa_derived = false
+aa_cost_per_task = [0.039832743493184115, 0.0671024626915514, 0.4763751378166728]
+aa_sticker_price = [0.15, 0.5, 0.03]
+or_slug = "z-ai/glm-5.3-flash-20260826"
+or_session_cost_10_49_turns = 0.03632437525
+or_toks_served = 10873874782464
+or_eff_input_price = 0.04785
+or_eff_output_price = 0.4119
+hardware_bom = "STRIX_HALO"  # IQ3_XXS
+
+[[models]]
+# Rescaled from the (max) record above, see README note
+kind = "effort"
+name = "GLM-5.3-Flash (high)"
+# Rescaled: GLM-5.3-Flash (max) * 28.01 / 28.99
+intelligence = 26.863985353443702
+aa_page_slug = "glm-5-3-flash"
+aa_record_name = "GLM-5.3-Flash"
+aa_derived = true
+# Rescaled: GLM-5.3-Flash (max) * 0.51
+aa_cost_per_task = [0.0203146991815239, 0.03422225597269121, 0.24295132028650313]
+estimated = true
+
+[[models]]
+kind = "model"
+publisher = "Z AI"
+name = "GLM-5.3"
+intelligence = 31.653381843882
+provider_type = "datacenter"
+aa_page_slug = "glm-5-3"
+aa_record_name = "GLM-5.3 (Max)"
+aa_derived = false
+aa_cost_per_task = [0.35155644931635205, 0.5235406213267805, 4.134167531076821]
+aa_sticker_price = [1.4, 4.4, 0.26]
+or_slug = "z-ai/glm-5.3-20260816"
+or_session_cost_10_49_turns = 0.19674737
+or_toks_served = 3428617492023
+or_eff_input_price = 0.1988
+or_eff_output_price = 2.982
+hardware_bom = "DGX_SPARK*3+QSFP112_CABLE*3"  # Q3_K_XL
+
+[[models]]
+kind = "model"
+publisher = "Moonshot AI"
+name = "Kimi K3.1 Pro"
+intelligence = 46.4526236744189
+provider_type = "datacenter"
+aa_page_slug = "kimi-k3-1-pro"
+aa_record_name = "Kimi K3.1 Pro"
+aa_derived = false
+aa_cost_per_task = [0.8567468935932564, 0.722389702315149, 2.1020636936657997]
+aa_sticker_price = [2.0, 10.0, 0.2]
+or_slug = "moonshotai/kimi-k3.1-pro-20261023"
+or_session_cost_10_49_turns = 0.7731742
+or_toks_served = 3549141145635
+or_eff_input_price = 0.3009
+or_eff_output_price = 9.693
+hardware_bom = "DGX_SPARK*8+QSFP_DD_SWITCH+QSFP_DD_BREAKOUT_CABLE*4"
+
+[[models]]
+# Not on AA anymore. Intelligence extrapolated from Gemini 3.8 Flash and Gemini 3.5
+# Flash-Lite. Tokens per task arbitrarily set the same as Gemini 3.8 Flash.
+kind = "model"
+publisher = "Google"
+name = "Gemini 3.5 Flash"
+intelligence = 21.0
+provider_type = "datacenter"
+aa_page_slug = ""
+aa_record_name = ""
+aa_derived = true
+aa_cost_per_task = [14.06, 0.888, 0.72]
+aa_sticker_price = [1.5, 9.0, 0.15]
+or_slug = "google/gemini-3.5-flash-20260519"
+or_session_cost_10_49_turns = 0.4776147
+or_toks_served = 61525601182
+or_eff_input_price = 0.9588
+or_eff_output_price = 9.157
+estimated = true
+
+[[models]]
+kind = "model"
+publisher = "Google"
+name = "Gemini 3.8 Flash"
+intelligence = 30.8468119957291
+provider_type = "datacenter"
+aa_page_slug = "gemini-3-8-flash"
+aa_record_name = "Gemini 3.8 Flash (High)"
+aa_derived = false
+aa_cost_per_task = [7.030934890491321, 0.3710231777219156, 0.36404810993927716]
+aa_sticker_price = [0.75, 3.75, 0.075]
+or_slug = "google/gemini-3.8-flash-20260902"
+or_session_cost_10_49_turns = 0.27057648
+or_toks_served = 1671211183733
+or_eff_input_price = 0.3779
+or_eff_output_price = 4.632
+
+[[models]]
+kind = "model"
+publisher = "Google"
+name = "Gemini 4 Neon (low)"
+intelligence = 44.0831506204565
+provider_type = "datacenter"
+aa_page_slug = "gemini-4-neon-low"
+aa_record_name = "Gemini 4 Neon (Low)"
+aa_derived = false
+aa_cost_per_task = [0.29035308375303237, 0.3258874695917085, 0.12898754116418365]
+aa_sticker_price = [3.0, 15.0, 0.15]
+or_slug = "google/gemini-4-neon-20261118"
+or_toks_served = 8100645314
+or_eff_input_price = 0.3364
+or_eff_output_price = 14.83
+
+[[models]]
+kind = "effort"
+name = "Gemini 4 Neon (medium)"
+intelligence = 54.8622945007349
+aa_page_slug = "gemini-4-neon-medium"
+aa_record_name = "Gemini 4 Neon (Medium)"
+aa_derived = false
+aa_cost_per_task = [0.7509135692152394, 0.7500053757390268, 0.403636579150149]
+
+[[models]]
+kind = "effort"
+name = "Gemini 4 Neon (high)"
+intelligence = 59.6189441875232
+aa_page_slug = "gemini-4-neon-high"
+aa_record_name = "Gemini 4 Neon (High)"
+aa_derived = false
+aa_cost_per_task = [1.5054642130384388, 1.3528166104101083, 0.884469085835955]
+
+[[models]]
+kind = "effort"
+name = "Gemini 4 Neon (xhigh)"
+intelligence = 61.3982491392674
+aa_page_slug = "gemini-4-neon"
+aa_record_name = "Gemini 4 Neon (Xhigh)"
+aa_derived = false
+aa_cost_per_task = [2.6590662816514623, 2.1244623990938414, 1.6613094203593957]
+
+[[models]]
+kind = "model"
+publisher = "Google"
+name = "Gemini 4 Hydrogen (low)"
+intelligence = 26.8936694361562
+provider_type = "datacenter"
+aa_page_slug = "gemini-4-hydrogen-low"
+aa_record_name = "Gemini 4 Hydrogen (Low)"
+aa_derived = false
+aa_cost_per_task = [0.13744084227725598, 0.10555363083928798, 0.0492282269035066]
+aa_sticker_price = [1.5, 7.5, 0.075]
+or_slug = "google/gemini-4-hydrogen-20261112"
+or_toks_served = 389599277333
+or_eff_input_price = 0.4505
+or_eff_output_price = 7.327
+
+[[models]]
+kind = "model"
+publisher = "SpaceXAI"
+name = "Grok 4.7"
+intelligence = 35.4850117067196
+provider_type = "datacenter"
+aa_page_slug = "grok-4-7"
+aa_record_name = "Grok 4.7 (Xhigh)"
+aa_derived = false
+aa_cost_per_task = [2.576886728299715, 0.6271856443241712, 4.567467028963252]
+aa_sticker_price = [2.0, 6.0, 0.5]
+or_slug = "x-ai/grok-4.7-20260916"
+or_session_cost_10_49_turns = 0.9020503
+or_toks_served = 592058635690
+or_eff_input_price = 0.8509
+or_eff_output_price = 6.437
+
+[[models]]
+kind = "model"
+publisher = "StepFun"
+name = "Step 5 Preview"
+intelligence = 28.5283090216016
+provider_type = "datacenter"
+aa_page_slug = "step-5"
+aa_record_name = "Step 5 Preview"
+aa_derived = false
+aa_cost_per_task = [0.5051213025810452, 0.30637676984880086, 1.5337544881906702]
+aa_sticker_price = [1.0, 2.7, 0.1]
+or_slug = "stepfun/step-5-preview-20261008"
+or_toks_served = 6386869272144
+or_eff_input_price = 0.1445
+or_eff_output_price = 2.7
+hardware_bom = "DGX_SPARK*3+QSFP112_CABLE*3"
+
+[[models]]
+kind = "model"
+publisher = "Xiaomi"
+name = "MiMo-V2.6-Flash"
+intelligence = 26.7276981444568
+provider_type = "datacenter"
+aa_page_slug = "mimo-v2-6-flash"
+aa_record_name = "MiMo-V2.6-Flash"
+aa_derived = false
+aa_cost_per_task = [0.04318792692902057, 0.03690574314577558, 0.0484362007653506]
+aa_sticker_price = [0.14, 0.28, 0.0028]
+or_slug = "xiaomi/mimo-v2.6-flash-20260921"
+or_session_cost_10_49_turns = 0.030579708666666667
+or_toks_served = 4045800005008
+or_eff_input_price = 0.01648
+or_eff_output_price = 0.2824
+hardware_bom = "STRIX_HALO"  # 3.0bpw
+
+[[models]]
+kind = "model"
+publisher = "Xiaomi"
+name = "MiMo-V2.6-Pro"
+intelligence = 29.8897833093321
+provider_type = "datacenter"
+aa_page_slug = "mimo-v2-6-pro"
+aa_record_name = "MiMo-V2.6-Pro"
+aa_derived = false
+aa_cost_per_task = [0.10909531014918307, 0.10533362295314275, 0.04275142965643572]
+aa_sticker_price = [0.435, 0.87, 0.0036]
+or_slug = "xiaomi/mimo-v2.6-pro-20260921"
+or_session_cost_10_49_turns = 0.08711627666666666
+or_toks_served = 910283952428
+or_eff_input_price = 0.06683
+or_eff_output_price = 1.009
+hardware_bom = "DGX_SPARK*3+QSFP112_CABLE*3"  # 3.0bpw
+
+[[models]]
+kind = "model"
+publisher = "MiniMax"
+name = "MiniMax-M3.1-Flash"
+intelligence = 29.0595214290458
+provider_type = "datacenter"
+aa_page_slug = "minimax-m3-1-flash"
+aa_record_name = "MiniMax-M3.1-Flash"
+aa_derived = false
+aa_cost_per_task = [0.11282161400286993, 0.08290581497833605, 0.29524324450332606]
+aa_sticker_price = [0.15, 0.6, 0.015]
+or_slug = "minimax/minimax-m3.1-flash-20261019"
+or_session_cost_10_49_turns = 0.0387672
+or_toks_served = 3671993607902
+or_eff_input_price = 0.02254
+or_eff_output_price = 0.489
+hardware_bom = "GORGON_HALO"
+
+[[models]]
+kind = "model"
+publisher = "OpenAI"
+name = "GPT-6 Luna (low)"
+intelligence = 9.66610812336462
+provider_type = "datacenter"
+aa_page_slug = "gpt-6-luna-low"
+aa_record_name = "GPT-6 Luna (Low)"
+aa_derived = false
+aa_cost_per_task = [0.0023262275757420735, 0.0016479451676949762, 0.001141082445083342]
+aa_sticker_price = [0.1, 0.5, 0.01]
+or_slug = "openai/gpt-6-luna-20260922"
+or_session_cost_10_49_turns = 0.02663713075
+or_toks_served = 8712691033389
+or_eff_input_price = 0.04224
+or_eff_output_price = 0.5157
+
+[[models]]
+kind = "effort"
+name = "GPT-6 Luna (medium)"
+intelligence = 18.4542156192416
+aa_page_slug = "gpt-6-luna-medium"
+aa_record_name = "GPT-6 Luna (Medium)"
+aa_derived = false
+aa_cost_per_task = [0.008684756771769251, 0.009911619090008737, 0.0236054602447598]
+
+[[models]]
+kind = "effort"
+name = "GPT-6 Luna (high)"
+intelligence = 21.4290170864582
+aa_page_slug = "gpt-6-luna-high"
+aa_record_name = "GPT-6 Luna (High)"
+aa_derived = false
+aa_cost_per_task = [0.013260173743129955, 0.016419570614591268, 0.04326802037422575]
+
+[[models]]
+kind = "effort"
+name = "GPT-6 Luna (xhigh)"
+intelligence = 23.4508728089378
+aa_page_slug = "gpt-6-luna-xhigh"
+aa_record_name = "GPT-6 Luna (Xhigh)"
+aa_derived = false
+aa_cost_per_task = [0.017039746974944057, 0.021946607051674276, 0.06510685518459125]
+
+[[models]]
+kind = "effort"
+name = "GPT-6 Luna (max)"
+intelligence = 27.8552004938153
+aa_page_slug = "gpt-6-luna"
+aa_record_name = "GPT-6 Luna (Max)"
+aa_derived = false
+aa_cost_per_task = [0.024671461535684842, 0.03764802618281935, 0.08963626960255419]
+
+[[models]]
+kind = "model"
+publisher = "OpenAI"
+name = "GPT-6.1 Terra (low)"
+intelligence = 29.4169280792131
+provider_type = "datacenter"
+aa_page_slug = "gpt-6-1-terra-low"
+aa_record_name = "GPT-6.1 Terra (Low)"
+aa_derived = false
+aa_cost_per_task = [0.03421288115320557, 0.022110861337539173, 0.015013819560952543]
+aa_sticker_price = [1.0, 5.0, 0.05]
+or_slug = "openai/gpt-6.1-terra-20261026"
+or_session_cost_10_49_turns = 0.23665103
+or_toks_served = 1060806558521
+or_eff_input_price = 0.2741
+or_eff_output_price = 5.174
+
+[[models]]
+kind = "effort"
+name = "GPT-6.1 Terra (medium)"
+intelligence = 38.1652076677975
+aa_page_slug = "gpt-6-1-terra-medium"
+aa_record_name = "GPT-6.1 Terra (Medium)"
+aa_derived = false
+aa_cost_per_task = [0.06293867838538772, 0.05437731370395206, 0.051488590294554354]
+
+[[models]]
+kind = "effort"
+name = "GPT-6.1 Terra (high)"
+intelligence = 42.4344508712563
+aa_page_slug = "gpt-6-1-terra-high"
+aa_record_name = "GPT-6.1 Terra (High)"
+aa_derived = false
+aa_cost_per_task = [0.08723872309895113, 0.08373238661179763, 0.08830853690622348]
+
+[[models]]
+kind = "effort"
+name = "GPT-6.1 Terra (xhigh)"
+intelligence = 45.250051789066
+aa_page_slug = "gpt-6-1-terra-xhigh"
+aa_record_name = "GPT-6.1 Terra (Xhigh)"
+aa_derived = false
+aa_cost_per_task = [0.12107684361417946, 0.1309982959158254, 0.14861386213662026]
+
+[[models]]
+kind = "effort"
+name = "GPT-6.1 Terra (max)"
+intelligence = 51.3265188577015
+aa_page_slug = "gpt-6-1-terra"
+aa_record_name = "GPT-6.1 Terra (Max)"
+aa_derived = false
+aa_cost_per_task = [0.23526757467699644, 0.2994158235895208, 0.4264246328151169]
+
+[[models]]
+kind = "model"
+publisher = "OpenAI"
+name = "GPT-6.2 Sol (low)"
+intelligence = 40.552508943285
+provider_type = "datacenter"
+aa_page_slug = "gpt-6-2-sol-low"
+aa_record_name = "GPT-6.2 Sol (Low)"
+aa_derived = false
+aa_cost_per_task = [0.0787608473723816, 0.05979721113848632, 0.04502665675485909]
+aa_sticker_price = [2.0, 10.0, 0.1]
+or_slug = "openai/gpt-6.2-sol-20261117"
+or_toks_served = 135977705307
+or_eff_input_price = 0.3845
+or_eff_output_price = 10.34
+
+[[models]]
+kind = "effort"
+name = "GPT-6.2 Sol (medium)"
+intelligence = 52.6777305876603
+aa_page_slug = "gpt-6-2-sol-medium"
+aa_record_name = "GPT-6.2 Sol (Medium)"
+aa_derived = false
+aa_cost_per_task = [0.1521751449100399, 0.13650936026845, 0.11737140442227624]
+
+[[models]]
+kind = "effort"
+name = "GPT-6.2 Sol (high)"
+intelligence = 54.8898658241942
+aa_page_slug = "gpt-6-2-sol-high"
+aa_record_name = "GPT-6.2 Sol (High)"
+aa_derived = false
+aa_cost_per_task = [0.19767967481674203, 0.2016048197625647, 0.1643601576417682]
+
+[[models]]
+kind = "effort"
+name = "GPT-6.2 Sol (xhigh)"
+intelligence = 55.7351067246438
+aa_page_slug = "gpt-6-2-sol-xhigh"
+aa_record_name = "GPT-6.2 Sol (Xhigh)"
+aa_derived = false
+aa_cost_per_task = [0.22213385399692628, 0.2432255664789305, 0.18260825252973775]
+
+[[models]]
+kind = "effort"
+name = "GPT-6.2 Sol (max)"
+intelligence = 57.2576209885477
+aa_page_slug = "gpt-6-2-sol"
+aa_record_name = "GPT-6.2 Sol (Max)"
+aa_derived = false
+aa_cost_per_task = [0.30962703685533033, 0.4036042741824378, 0.30114865926299994]
+
+[[models]]
+kind = "model"
+publisher = "OpenAI"
+name = "GPT-6.2 Astra (low)"
+intelligence = 45.6504174923967
+provider_type = "datacenter"
+aa_page_slug = "gpt-6-2-astra-low"
+aa_record_name = "GPT-6.2 Astra (Low)"
+aa_derived = false
+aa_cost_per_task = [0.27677942824119806, 0.20865491790349983, 0.17627105386560812]
+aa_sticker_price = [8.0, 40.0, 0.4]
+or_slug = "openai/gpt-6.2-astra-20261117"
+or_toks_served = 46216611242
+or_eff_input_price = 1.411
+or_eff_output_price = 42.82
+
+[[models]]
+kind = "effort"
+name = "GPT-6.2 Astra (medium)"
+intelligence = 56.9986252138657
+aa_page_slug = "gpt-6-2-astra-medium"
+aa_record_name = "GPT-6.2 Astra (Medium)"
+aa_derived = false
+aa_cost_per_task = [0.5566169681744552, 0.5265823574084363, 0.5344884107038941]
+
+[[models]]
+kind = "effort"
+name = "GPT-6.2 Astra (high)"
+intelligence = 60.0882280338247
+aa_page_slug = "gpt-6-2-astra-high"
+aa_record_name = "GPT-6.2 Astra (High)"
+aa_derived = false
+aa_cost_per_task = [0.7262683361070965, 0.7131160616044322, 0.6344905596512769]
+
+[[models]]
+kind = "effort"
+name = "GPT-6.2 Astra (xhigh)"
+intelligence = 61.5602325371388
+aa_page_slug = "gpt-6-2-astra-xhigh"
+aa_record_name = "GPT-6.2 Astra (Xhigh)"
+aa_derived = false
+aa_cost_per_task = [0.8437237365519823, 0.8895041947748235, 0.7879154450852321]
+
+[[models]]
+kind = "effort"
+name = "GPT-6.2 Astra (max)"
+intelligence = 62.1387990593969
+aa_page_slug = "gpt-6-2-astra"
+aa_record_name = "GPT-6.2 Astra (Max)"
+aa_derived = false
+aa_cost_per_task = [1.162089239145493, 1.6411792220465897, 1.1946376954881024]
+
+[[models]]
+kind = "model"
+publisher = "Anthropic"
+name = "Claude Fable 5.2 (low)"
+intelligence = 53.9249388799182
+provider_type = "datacenter"
+aa_page_slug = "claude-fable-5-2-low"
+aa_record_name = "Claude Fable 5.2 (Low, Default Fallback)"
+aa_derived = false
+aa_cost_per_task = [1.040665157646971, 1.4240919609594807, 0.6324847856680946]
+aa_sticker_price = [8.0, 40.0, 0.2]
+or_slug = "anthropic/claude-fable-5.2-20261109"
+or_toks_served = 841685024720
+or_eff_input_price = 1.146
+or_eff_output_price = 40.68
+
+[[models]]
+kind = "effort"
+name = "Claude Fable 5.2 (medium)"
+intelligence = 56.4083157101519
+aa_page_slug = "claude-fable-5-2-medium"
+aa_record_name = "Claude Fable 5.2 (Medium, Default Fallback)"
+aa_derived = false
+aa_cost_per_task = [1.228047020697479, 1.7102304491697624, 0.8643275943115216]
+
+[[models]]
+kind = "effort"
+name = "Claude Fable 5.2 (high)"
+intelligence = 61.8218785440284
+aa_page_slug = "claude-fable-5-2-high"
+aa_record_name = "Claude Fable 5.2 (High, Default Fallback)"
+aa_derived = false
+aa_cost_per_task = [2.59311518192607, 3.8883159624114056, 2.596983633522906]
+
+[[models]]
+kind = "effort"
+name = "Claude Fable 5.2 (xhigh)"
+intelligence = 62.2167392403357
+aa_page_slug = "claude-fable-5-2-xhigh"
+aa_record_name = "Claude Fable 5.2 (Xhigh, Default Fallback)"
+aa_derived = false
+aa_cost_per_task = [4.014762523548346, 6.430695367722222, 4.383129741240549]
+
+[[models]]
+kind = "effort"
+name = "Claude Fable 5.2 (max)"
+intelligence = 64.563595756626
+aa_page_slug = "claude-fable-5-2"
+aa_record_name = "Claude Fable 5.2 (Max, Default Fallback)"
+aa_derived = false
+aa_cost_per_task = [7.121424801990003, 10.891777372657142, 8.52535562933377]
+
+[[models]]
+kind = "model"
+publisher = "Anthropic"
+name = "Claude Sonnet 5.5 (low)"
+intelligence = 25.649704549789
+provider_type = "datacenter"
+aa_page_slug = "claude-sonnet-5-5-low"
+aa_record_name = "Claude Sonnet 5.5 (Low, Default Fallback)"
+aa_derived = false
+aa_cost_per_task = [0.15495829818267776, 0.20856371779750618, 0.14782043040956583]
+aa_sticker_price = [2.0, 10.0, 0.1]
+or_slug = "anthropic/claude-sonnet-5.5-20260928"
+or_session_cost_10_49_turns = 0.6073499333333333
+or_toks_served = 2841023269410
+or_eff_input_price = 0.5344
+or_eff_output_price = 10.03
+
+[[models]]
+kind = "effort"
+name = "Claude Sonnet 5.5 (medium)"
+intelligence = 30.8195522148431
+aa_page_slug = "claude-sonnet-5-5-medium"
+aa_record_name = "Claude Sonnet 5.5 (Medium, Default Fallback)"
+aa_derived = false
+aa_cost_per_task = [0.2229816006675009, 0.3074589477415119, 0.25021548679343536]
+
+[[models]]
+kind = "effort"
+name = "Claude Sonnet 5.5 (high)"
+intelligence = 41.515109087048
+aa_page_slug = "claude-sonnet-5-5-high"
+aa_record_name = "Claude Sonnet 5.5 (High, Default Fallback)"
+aa_derived = false
+aa_cost_per_task = [0.42919145427046057, 0.5842121201361333, 0.6227258655718849]
+
+[[models]]
+kind = "effort"
+name = "Claude Sonnet 5.5 (xhigh)"
+intelligence = 49.9240327787242
+aa_page_slug = "claude-sonnet-5-5-xhigh"
+aa_record_name = "Claude Sonnet 5.5 (Xhigh, Default Fallback)"
+aa_derived = false
+aa_cost_per_task = [0.9742263747522919, 1.2220489885977281, 1.895709552971899]
+
+[[models]]
+kind = "effort"
+name = "Claude Sonnet 5.5 (max)"
+intelligence = 54.54133407109
+aa_page_slug = "claude-sonnet-5-5"
+aa_record_name = "Claude Sonnet 5.5 (Max, Default Fallback)"
+aa_derived = false
+aa_cost_per_task = [2.2877209769653377, 2.853871133504894, 4.879029232925522]
+
+[[models]]
+kind = "model"
+publisher = "Anthropic"
+name = "Claude Opus 5.5 (low)"
+intelligence = 34.752785007759
+provider_type = "datacenter"
+aa_page_slug = "claude-opus-5-5-low"
+aa_record_name = "Claude Opus 5.5 (Low, Default Fallback)"
+aa_derived = false
+aa_cost_per_task = [0.26830032873330867, 0.38125266891205145, 0.3259763248005245]
+aa_sticker_price = [4.0, 20.0, 0.2]
+or_slug = "anthropic/claude-opus-5.5-20260921"
+or_session_cost_10_49_turns = 1.66286375
+or_toks_served = 7634916420586
+or_eff_input_price = 0.7258
+or_eff_output_price = 20.16
+
+[[models]]
+kind = "effort"
+name = "Claude Opus 5.5 (medium)"
+intelligence = 48.2081024960691
+aa_page_slug = "claude-opus-5-5-medium"
+aa_record_name = "Claude Opus 5.5 (Medium, Default Fallback)"
+aa_derived = false
+aa_cost_per_task = [0.5747918883798223, 0.8764203544840845, 0.9998771947972656]
+
+[[models]]
+kind = "effort"
+name = "Claude Opus 5.5 (high)"
+intelligence = 51.8359958227294
+aa_page_slug = "claude-opus-5-5-high"
+aa_record_name = "Claude Opus 5.5 (High, Default Fallback)"
+aa_derived = false
+aa_cost_per_task = [0.751725695304029, 1.201514087031893, 1.5114224997613959]
+
+[[models]]
+kind = "effort"
+name = "Claude Opus 5.5 (xhigh)"
+intelligence = 57.4447060170507
+aa_page_slug = "claude-opus-5-5-xhigh"
+aa_record_name = "Claude Opus 5.5 (Xhigh, Default Fallback)"
+aa_derived = false
+aa_cost_per_task = [1.1864324939748008, 2.0680263131828958, 2.7927356836910775]
+
+[[models]]
+kind = "effort"
+name = "Claude Opus 5.5 (max)"
+intelligence = 59.1060336078904
+aa_page_slug = "claude-opus-5-5"
+aa_record_name = "Claude Opus 5.5 (Max, Default Fallback)"
+aa_derived = false
+aa_cost_per_task = [1.8315729353173493, 3.4664583713189643, 4.738378412876434]
+
+[[models]]
+kind = "model"
+publisher = "Anthropic"
+name = "Claude Haiku 5.5 (low)"
+intelligence = 18.6180055310996
+provider_type = "datacenter"
+aa_page_slug = "claude-haiku-5-5-low"
+aa_record_name = "Claude Haiku 5.5 (Low)"
+aa_derived = false
+aa_cost_per_task = [0.009711032547690896, 0.014080275004595064, 0.01996637882970253]
+aa_sticker_price = [0.1, 0.5, 0.01]
+or_slug = "anthropic/claude-haiku-5.5-20261007"
+or_session_cost_10_49_turns = 0.063899343
+or_toks_served = 2821526946589
+or_eff_input_price = 0.08066
+or_eff_output_price = 0.5842
+
+[[models]]
+kind = "effort"
+name = "Claude Haiku 5.5 (medium)"
+intelligence = 24.6013254343023
+aa_page_slug = "claude-haiku-5-5-medium"
+aa_record_name = "Claude Haiku 5.5 (Medium)"
+aa_derived = false
+aa_cost_per_task = [0.017755535648584567, 0.026667558259885586, 0.04734146449820697]
+
+[[models]]
+kind = "effort"
+name = "Claude Haiku 5.5 (high)"
+intelligence = 29.874315467743
+aa_page_slug = "claude-haiku-5-5-high"
+aa_record_name = "Claude Haiku 5.5 (High)"
+aa_derived = false
+aa_cost_per_task = [0.028172450783792408, 0.04403217390244535, 0.08635569488055722]
+
+[[models]]
+kind = "effort"
+name = "Claude Haiku 5.5 (xhigh)"
+intelligence = 34.6387759486628
+aa_page_slug = "claude-haiku-5-5-xhigh"
+aa_record_name = "Claude Haiku 5.5 (Xhigh)"
+aa_derived = false
+aa_cost_per_task = [0.04176397260319096, 0.06808849536432662, 0.1385086332984472]
+
+[[models]]
+kind = "effort"
+name = "Claude Haiku 5.5 (max)"
+intelligence = 36.4845435880142
+aa_page_slug = "claude-haiku-5-5"
+aa_record_name = "Claude Haiku 5.5 (Max)"
+aa_derived = false
+aa_cost_per_task = [0.06550207604700437, 0.11298297985798467, 0.23252235946317396]
+
+# AA dropped the pre-1019 Ling 3.1 Flash record in its 2026-10 methodology change, so
+# its index is regressed from benchmarks (see README), using only the nine benchmarks it
+# shares with its successor -- the 1019 record AA kept, which the same fit puts at 29.9
+# against its published 29.5. The old revision is a little weaker than the 1019 on seven
+# of those nine, so this must come out below it, and does.
+[[models]]
+kind = "model"
+publisher = "InclusionAI"
+name = "Ling 3.1 Flash"
+intelligence = 28.41
+provider_type = "datacenter"
+aa_page_slug = ""
+aa_record_name = ""
+aa_derived = false
+aa_cost_per_task = [0.5426813344872892, 0.1426962308047775, 0.8686886280125741]
+aa_sticker_price = [0.3, 0.9, 0.06]
+or_slug = "inclusionai/ling-3.1-flash-20261002"
+or_session_cost_10_49_turns = 0.0342785
+or_toks_served = 64175186569
+or_eff_input_price = 0.03264
+or_eff_output_price = 0.2033
+estimated = true
+
+[[models]]
+kind = "model"
+publisher = "InclusionAI"
+name = "Ling 3.1 Flash 1019"
+intelligence = 29.570119369837
+provider_type = "datacenter"
+aa_page_slug = "ling-3-1-flash"
+aa_record_name = "Ling 3.1 Flash 1019"
+aa_derived = false
+aa_cost_per_task = [1.1261695939526823, 0.20223972528697784, 1.8567356990981327]
+aa_sticker_price = [0.3, 0.9, 0.06]
+hardware_bom = "DGX_SPARK*2+QSFP112_CABLE*2"
+available_datacenter = false
+
+[[models]]
+kind = "model"
+publisher = "Mistral"
+name = "Mistral Large 4"
+intelligence = 26.1249946754784
+provider_type = "datacenter"
+aa_page_slug = "mistral-large-4"
+aa_record_name = "Mistral Large 4 (High)"
+aa_derived = false
+aa_cost_per_task = [1.1078363678887329, 0.172096563210152, 0.7817976957138006]
+aa_sticker_price = [0.7, 2.1, 0.07]
+or_slug = "mistralai/mistral-large-4-0-20261006"
+or_session_cost_10_49_turns = 0.28279102
+or_toks_served = 115568161597
+or_eff_input_price = 0.1538
+or_eff_output_price = 2.121
+hardware_bom = "DGX_SPARK*3+QSFP112_CABLE*3"  # UD-Q2_K_XL

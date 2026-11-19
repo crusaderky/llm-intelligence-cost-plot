@@ -63,11 +63,14 @@ labels never reads as the wrong model, and a final pass slides every label to
 the nearest free height above or below its own dot so nothing stays parked a
 slot away from its point -- see place_labels. The handful of labels the
 automatic search reads wrong can be hand-pinned to one slot in LABEL_PINS, per
-view. So MODELS only needs publisher / name / intelligence / provider type plus
-the raw cost inputs -- just add rows and re-run. A model published as a ladder
-of effort levels (GPT-6.2 Sol low..max) is one Model row plus one ModelEffort
-row per extra rung: a rung carries its own name, Intelligence Index and token
-mix, and shares every other field with its base row.
+view. So a data.toml row only needs publisher / name / intelligence / provider
+type plus the raw cost inputs -- just add a row and re-run. All the data,
+including publisher colors, hardware prices and the AA record each row refreshes
+from, lives in data.toml and is validated with pydantic at import time. A model
+published as a ladder of effort levels (GPT-6.2 Sol low..max) is one
+kind="model" row plus one kind="effort" row per extra rung: a rung carries its
+own name, Intelligence Index, token mix and AA record, and shares every other
+field with its base row.
 """
 
 from __future__ import annotations
@@ -76,11 +79,13 @@ import argparse
 import math
 import os
 import re
+import tomllib
 import unicodedata
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field, replace
 from enum import Enum
-from typing import Literal, NamedTuple
+from pathlib import Path
+from typing import Annotated, Literal, NamedTuple
 
 import matplotlib
 
@@ -95,6 +100,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 from matplotlib.path import Path as MplPath
 from matplotlib.ticker import FormatStrFormatter, MultipleLocator, StrMethodFormatter
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 # --- knobs -----------------------------------------------------------------
 FIG_W, FIG_H = 26, 14  # inches
@@ -319,52 +325,7 @@ ICON_COLORS = {
     "mask": ("#1f2937", "#09090b"),  # black fill, blacker edge
 }
 
-# Publisher colors, replicated from artificialanalysis.ai
-PUBLISHERS = {
-    "Accio": "#43674c",
-    "Alibaba": "#ff7018",
-    "Anthropic": "#cc785c",
-    "Apodex": "#30d8d1",
-    "DeepSeek": "#2243e6",
-    "Google": "#34A853",
-    "InclusionAI": "#4fb5ff",
-    "Institute of Foundation Models": "#1521a9",
-    "Liquid AI": "#000000",
-    "Meta": "#0089f4",
-    "MiniMax": "#EB3568",
-    "Mistral": "#f32e02",
-    "Moonshot AI": "#047AFE",
-    "OpenAI": "#1f1f1f",
-    "OpenBMB": "#3B62EC",
-    "Ornith AI": "#dddddd",
-    "Prism-ML": "#d6409f",
-    "SpaceXAI": "#736cd3",
-    "StepFun": "#32f4e6",
-    "Tencent": "#66b7fb",
-    "Xiaomi": "#fb6d25",
-    "Z AI": "#1c7ff8",
-}
-
-
-# One-off USD price of the rigs the hardware-cost plot prices, keyed by slug.
-# A model's `hardware_bom` is a sympy expression over these keys, e.g.
-# "DGX_SPARK*3+QSFP112_CABLE*3" for three Sparks cabled together.
-HARDWARE_PRICES = {
-    # README's "Larger local models" table, one key per rig a model uses
-    "MOBILE_PHONE": 250,  # 4 GB unified
-    "STRIX_POINT_LAPTOP": 1000,  # 16 GB unified
-    "RTX_3090_PC_32GB": 2400,  # 24 GB VRAM + 32 GB host RAM
-    "RTX_5060TI_PC_48GB": 2700,  # 16 GB VRAM + 48 GB host RAM
-    "RTX_3090_PC_128GB": 5200,  # 24 GB VRAM + 128 GB host RAM
-    "RTX_3090_PC_192GB": 6100,  # 24 GB VRAM + 192 GB host RAM
-    "STRIX_HALO": 3100,  # Bosgame, 128 GB unified
-    "DGX_SPARK": 6000,  # Asus Ascent GX10, 128 GB unified
-    "GORGON_HALO": 6200,  # Bosgame, 192 GB unified
-    # Networking, needed to cluster Sparks
-    "QSFP112_CABLE": 110,  # 200G direct attach (Amazon US)
-    "QSFP_DD_SWITCH": 1200,  # 4-port 400G
-    "QSFP_DD_BREAKOUT_CABLE": 200,  # 400G to 2x200G
-}
+# Publisher colors and hardware prices live in data.toml, loaded below.
 
 
 def parse_hardware_bom(expr: str) -> int:
@@ -491,6 +452,14 @@ class Model:
     # The provider trains on your prompts. Rendered with the thief mask icon
     # and kept out of the Pareto frontier (same offer, worse provider).
     trains_on_your_data: bool = field(default=False, kw_only=True)
+    # Artificial Analysis record to refresh this row from. Merged into each
+    # model from refresh_models.py's old AA_LOOKUPS table; an empty pair means
+    # the numbers are hand-entered and the AA side cannot be refreshed.
+    aa_page_slug: str = field(default="", kw_only=True)
+    aa_record_name: str = field(default="", kw_only=True)
+    # Extrapolated/derived from another record: the refresh keeps the AA
+    # numbers but still updates the OpenRouter fields.
+    aa_derived: bool = field(default=False, kw_only=True)
 
     def __post_init__(self) -> None:
         if self.hardware_bom is not None:
@@ -509,6 +478,10 @@ class Model:
         intelligence: float,
         aa_cost_per_task: PricedTokens,
         estimated: bool | None = None,
+        *,
+        aa_page_slug: str | None = None,
+        aa_record_name: str | None = None,
+        aa_derived: bool | None = None,
     ) -> Model:
         """The same model at another effort level: a copy of self with self's
         (effort) tag swapped for new_effort, and with intelligence and
@@ -531,6 +504,11 @@ class Model:
             intelligence=intelligence,
             aa_cost_per_task=aa_cost_per_task,
             estimated=self.estimated if estimated is None else estimated,
+            aa_page_slug=self.aa_page_slug if aa_page_slug is None else aa_page_slug,
+            aa_record_name=(
+                self.aa_record_name if aa_record_name is None else aa_record_name
+            ),
+            aa_derived=self.aa_derived if aa_derived is None else aa_derived,
         )
 
     def aa_total_cost_per_task(self) -> float:
@@ -628,6 +606,9 @@ class ModelEffort(NamedTuple):
     intelligence: float
     aa_cost_per_task: PricedTokens
     estimated: bool | None = None
+    aa_page_slug: str = ""
+    aa_record_name: str = ""
+    aa_derived: bool = False
 
 
 def expand_model_efforts(specs: Iterable[Model | ModelEffort]) -> list[Model]:
@@ -670,919 +651,136 @@ def expand_model_efforts(specs: Iterable[Model | ModelEffort]) -> list[Model]:
                     spec.intelligence,
                     spec.aa_cost_per_task,
                     spec.estimated,
+                    aa_page_slug=spec.aa_page_slug,
+                    aa_record_name=spec.aa_record_name,
+                    aa_derived=spec.aa_derived,
                 )
             )
     return models
 
 
-MODELS: list[Model | ModelEffort] = [
-    # Price per task is derived by Model.price_per_task(). Stored inputs:
-    # - intelligence + aa_cost_per_task + aa_sticker_price:
-    #   artificialanalysis.ai (AA model page flight payloads, sub-unit /
-    #   sub-cent precision). aa_cost_per_task is AA's cost of one task split by
-    #   token type (a PricedTokens, whose three streams sum to the total) and
-    #   aa_sticker_price is those same three streams in USD per 1M tokens.
-    # - datacenter: or_slug + or_eff_input_price / or_eff_output_price
-    #   (openrouter.ai, GET /api/frontend/v1/stats/effective-pricing: each
-    #   endpoint instance's mean effective price over the trailing week,
-    #   weighted by the share of the model's tokens that instance served,
-    #   $/M tokens).
-    #   or_session_cost_10_49_turns (GET
-    #   /api/frontend/v1/rankings/session-cost: median 10-49-turn session
-    #   cost, averaged across the coding harnesses that carry the model) and
-    #   or_toks_served (GET /api/frontend/v1/rankings/models?view=week:
-    #   prompt + completion tokens served in the trailing week, all variants)
-    #   are recorded for reference; neither prices the plot.
-    # - local: local_speed, both rates on the RTX 3090 measurement rig. The
-    #   prefill rate is a guesstimate at 10x the decode rate until it gets
-    #   measured.
-    # - hardware_bom: one-off price of the cheapest rig that can run the
-    #   model, as a sympy expression over HARDWARE_PRICES keys, e.g.
-    #   "DGX_SPARK*3+QSFP112_CABLE*3" (see README's "Larger local models"
-    #   table). Tags the hardware-cost plot; None leaves the model off it.
-    # See .agents/skills/refresh-models for how to re-fetch these numbers.
-    # A ladder of effort levels is one Model row (any one rung, tag and all) plus
-    # one ModelEffort per other rung; expand_model_efforts clones the base row
-    # into those rungs below.
-    # --- Local models (price per task = electricity) ---
-    Model(
-        "Liquid AI",
-        "LFM3-1.7B",
-        5.99389916662478,
-        ProviderType.LOCAL,
-        aa_cost_per_task=PricedTokens(
-            0.02747071158805385, 0.01952671979253421, 0.12619184126922414
-        ),
-        aa_sticker_price=PricedTokens(0.08, 0.2, 0.02),
-        local_speed=LocalSpeed(prefill=14000, decode=250),
-        hardware_bom="MOBILE_PHONE",
-    ),
-    # Guesstimate - AA's October 2026 rebuild (v4.3 -> v5) dropped the Intelligence
-    # Index of this model, while still publishing its individual benchmark scores.
-    # Re-estimated in November 2026 by comparing those scores with GPT-6 Luna (low),
-    # GPT-6 Luna (medium), Muse Glimmer and
-    # Granite 4.2 3B, the four scored models of the same class:
-    # AA's v5 index is a linear function of its nine constituent benchmarks, so
-    # regressing the published index on the z-scored constituents of the 91 models
-    # AA still scores recovers it exactly - rmse 0.47, R^2 0.999, weights 3.0
-    # (Terminal-Bench Science), 2.6 (TerminalBench 4.0), 2.2 (FrontierCode 2.0,
-    # AA-Briefcase), 2.0 (HLE-Diamond, CritPT v2 Hard), 1.4 (Omniscience), 1.2
-    # (AutomationBench-AA), 0.2 (GDP-PDF), intercept 31.6.
-    # AA publishes three of the nine for it: AutomationBench-AA is the record's
-    # automationBenchPartialScore,
-    # TerminalBench 4.0 its terminalBench40, GDP-PDF its gdpPdfAllPass, and
-    # Terminal-Bench Science its terminalBenchScience. AA-Briefcase and
-    # Omniscience survive the rebuild unchanged and are read from AA's pre-rebuild
-    # record of the same model: across the 88 models AA scored in both revisions,
-    # its re-run of AA-Briefcase moved the Elo by sd 7.7 (0.04 index points) and
-    # Omniscience by sd 2.9 (0.17 points), so the old number is the current one.
-    # What is left to invent is what the rebuild introduced and AA never ran on
-    # these models - FrontierCode 2.0, HLE-Diamond, CritPT v2 Hard, and Terminal-
-    # Bench Science for the smaller one. Each is imputed by a ridge fit
-    # (alpha 0.1) on the eight benchmarks both targets and all four anchors
-    # report - GDPVal, HLE, LCR, SciCode, CritPT, AutomationBench-AA, TerminalBench
-    # 4.0, GDP-PDF - weighted by a Gaussian kernel of bandwidth 1.25 z so that the
-    # neighbouring models, not the frontier ones, set the slope. Pushing the
-    # completed nine-vector through the map above gives the index.
-    # Anchors as the check: each of the four, sent through the same pipeline with
-    # its own constituent scores hidden and itself left out of every fit, comes back
-    # at 10.75 (published 9.67), 17.73 (18.30), 7.13 (6.34) and 3.80 (4.72) - MAE
-    # 0.84, worst 1.08. Leave-one-out over the 24 scored models below index 22
-    # misses by 1.0-1.1 points on average (+0.25 bias), so quote +/-1.1.
-    # Robustness: adding GPQA / TerminalBench 2.1 / tau-banking / MMMU-Pro / MLCR
-    # moves each estimate by <= 0.3, the bandwidth 0.9-1.8 by <= 0.5; trusting no
-    # pre-rebuild data at all reads 12.1 instead.
-    # 8.9 sits just under GPT-6 Luna (low) (9.67), whose AutomationBench-AA (0.120
-    # vs 0.052), GDPVal (1040 vs 899) and Omniscience (-9.2 vs -22.2) it loses to,
-    # and just above Muse Glimmer (6.34) on the strength of AA-Briefcase Elo (708 vs
-    # 478), Omniscience (-22.2 vs -32.9) and GDPVal (899 vs 792), even though it
-    # trails Glimmer on AutomationBench-AA, LCR, SciCode, GDP-PDF and CritPT.
-    Model(
-        "Alibaba",
-        "Qwen3.6-35B-A3B",
-        8.9,
-        ProviderType.LOCAL,
-        aa_cost_per_task=PricedTokens(0.66, 0.13, 0.0),
-        # AA reports no cache reads for this model and publishes no cache-read
-        # price; 0.0 in the cached slot of both splits means "never caches"
-        aa_sticker_price=PricedTokens(0.375, 2.25, 0.0),
-        local_speed=LocalSpeed(prefill=2215, decode=150),
-        hardware_bom="RTX_3090_PC_32GB",
-        estimated=True,
-    ),
-    Model(
-        "Institute of Foundation Models",
-        "K2 Horizon 7B",
-        10.5630231522891,
-        ProviderType.LOCAL,
-        # AA publishes output tokens but not input ones.
-        # Guesstimate uncached input tokens as 3.5x the output tokens.
-        aa_cost_per_task=PricedTokens(99_115 * 3.5 / 1e6, 99_115 / 1e6, 0.0),
-        aa_sticker_price=PricedTokens(1.0, 1.0, 1.0),  # Dummy
-        local_speed=LocalSpeed(prefill=3430, decode=104),
-        hardware_bom="STRIX_POINT_LAPTOP",
-    ),
-    Model(
-        "Alibaba",
-        "Qwen3.8-27B",
-        20.1068756031705,
-        ProviderType.LOCAL,
-        aa_cost_per_task=PricedTokens(
-            2.0194864181153562, 0.3294063915269094, 1.1806566654988
-        ),
-        aa_sticker_price=PricedTokens(0.5, 3.0, 0.1),
-        local_speed=LocalSpeed(prefill=963, decode=57),
-        hardware_bom="RTX_3090_PC_32GB",
-    ),
-    # Not on AA: intelligence = 0.9165 x Qwen3.8-27B, the 91.65% of BF16 that
-    # ByteShape measured for this ternary quant (see README note); tokens per
-    # task assumed identical to Qwen3.8-27B.
-    Model(
-        "Prism-ML",
-        "Ternary-Bonsai-2",
-        0.9165 * 20.1068756031705,
-        ProviderType.LOCAL,
-        # Verbatim copies from Qwen3.8-27B. This doesn't keep in to consideration that
-        # lower quants tend to be more verbose.
-        aa_cost_per_task=PricedTokens(
-            2.0194864181153562, 0.3294063915269094, 1.1806566654988
-        ),
-        aa_sticker_price=PricedTokens(0.5, 3.0, 0.1),
-        # Actual measure
-        local_speed=LocalSpeed(prefill=949, decode=55),
-        hardware_bom="STRIX_POINT_LAPTOP",
-        estimated=True,
-    ),
-    Model(
-        "Alibaba",
-        "Qwen3.8-Flash",
-        28.5750026655353,
-        ProviderType.LOCAL,
-        aa_cost_per_task=PricedTokens(
-            0.07464306072950636, 0.06942190972050413, 0.4253161214346214
-        ),
-        aa_sticker_price=PricedTokens(0.15, 0.47, 0.016),
-        local_speed=LocalSpeed(prefill=2000, decode=84),
-        hardware_bom="RTX_5060TI_PC_48GB",
-    ),
-    # --- Datacenter models (price per task = AA's token mix priced at OR's
-    # effective input/output prices) ---
-    # Datacenter twin of the row above; same AA record and numbers.
-    Model(
-        "Alibaba",
-        "Qwen3.8-Flash",
-        28.5750026655353,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.07464306072950636, 0.06942190972050413, 0.4253161214346214
-        ),
-        aa_sticker_price=PricedTokens(0.15, 0.47, 0.016),
-        or_slug="qwen/qwen3.8-flash-20260826",
-        or_session_cost_10_49_turns=0.0417805715,
-        or_toks_served=1324492218657,
-        or_eff_input_price=0.02854,
-        or_eff_output_price=0.4697,
-    ),
-    # OR's chart for this one is a single day old: one provider, one day of
-    # price history, so the trailing-week volume ranking does not carry it yet.
-    Model(
-        "Alibaba",
-        "Qwen4 Max",
-        42.8914543287565,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            1.680535461910324, 0.4722289955421897, 1.1153682726372187
-        ),
-        aa_sticker_price=PricedTokens(1.5, 4.5, 0.075),
-        or_slug="qwen/qwen4-max-20261115",
-        or_toks_served=269765525092,
-        or_eff_input_price=0.1739,
-        or_eff_output_price=4.379,
-    ),
-    # Datacenter version (MXFP4 QAT)
-    Model(
-        "DeepSeek",
-        "DeepSeek V4.1 Flash 1017",
-        32.5896393532027,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.2571473726554651, 0.16675404706375513, 0.1782037281167598
-        ),
-        aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
-        or_slug="deepseek/deepseek-v4.1-flash-20261017",
-        or_session_cost_10_49_turns=0.02998787225,
-        or_toks_served=62160618320546,
-        or_eff_input_price=0.01889,
-        or_eff_output_price=0.6933,
-    ),
-    # Degraded local model
-    Model(
-        "DeepSeek",
-        "DeepSeek V4.1 Flash 1017 (UD-IQ1_M)",
-        # https://unsloth.ai/docs/models/deepseek-v4.1-flash
-        # Average recovery over 6 benchmarks; Unsloth 3.1
-        32.5896393532027 * 85.7 / 87.8,
-        ProviderType.LOCAL,
-        # https://unsloth.ai/docs/models/deepseek-v4.1-flash#quantization-increases-reasoning-lengths
-        aa_cost_per_task=PricedTokens(
-            0.2571473726554651, 0.16675404706375513 * 2.8 / 1.5, 0.1782037281167598
-        ),
-        aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
-        # From https://github.com/Niko1221/Strata @ 2.0bpw; UD-IQ1_M is 1.95bpw
-        local_speed=LocalSpeed(prefill=320, decode=21),
-        hardware_bom="RTX_3090_PC_128GB",
-        estimated=True,
-    ),
-    # Local model with negligible performance loss
-    Model(
-        "DeepSeek",
-        "DeepSeek V4.1 Flash 1017 (UD-Q2_K_XL)",
-        # https://unsloth.ai/docs/models/deepseek-v4.1-flash
-        # Average recovery over 6 benchmarks; Unsloth 3.1
-        32.5896393532027,
-        ProviderType.LOCAL,
-        # https://unsloth.ai/docs/models/deepseek-v4.1-flash#quantization-increases-reasoning-lengths
-        aa_cost_per_task=PricedTokens(
-            0.2571473726554651, 0.16675404706375513 * 2.1 / 1.5, 0.1782037281167598
-        ),
-        aa_sticker_price=PricedTokens(0.3, 1.2, 0.006),
-        # From https://github.com/Niko1221/Strata @ 2.0bpw; UD-Q2_K_XL is 2.8bpw
-        local_speed=LocalSpeed(prefill=320, decode=21 * 2.0 / 2.8),
-        hardware_bom="RTX_3090_PC_192GB",
-    ),
-    Model(
-        "Tencent",
-        "Hy4",
-        34.5552385392508,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.49304540305271105, 0.19522317789568608, 0.34283748969140015
-        ),
-        # nominal list price; OR's endpoint carries a 0.5 launch discount
-        aa_sticker_price=PricedTokens(0.834, 2.501, 0.042),
-        or_slug="tencent/hy4-20261104",
-        or_toks_served=12966662144096,
-        or_eff_input_price=0.08742,
-        or_eff_output_price=2.428,
-        # GGUFs not available yet; estimated same as GLM @ UD-Q3_K_XL
-        hardware_bom="DGX_SPARK*3+QSFP112_CABLE*3",
-        available_local=False,
-    ),
-    # Guesstimate - not on AA (AA has no Hy4-flash record). Intelligence from
-    # Tencent's 17-benchmark appendix (https://hy.tencent.ai/research/hy4-flash):
-    # per benchmark, OLS of the five comparison models' AA Intelligence Index on
-    # their score in that table (Hy4 34.56, DeepSeek V4.1 Flash 1017 32.59,
-    # Qwen3.8-Flash-Next 28.58, GLM-5.3-Flash 27.80, GPT-6 Luna max 27.86; Hy4
-    # preview is excluded because AA does not score it), inverted at Hy4-flash's
-    # score and averaged. That gives 29.65 (median 30.33); the pooled
-    # within-benchmark z-score form gives 29.73 and a regression on the mean
-    # benchmark score gives 30.22. Take 30.0, +/-1.5.
-    # Token split: Hy4's AA cost split scaled by 1/24.5, so the same
-    # uncached/output/cached proportions as Hy4 but 24.5x cheaper in total.
-    # The sticker prices are Hy4-flash's (0.070 / 0.281 / 0.003 per Mtok);
-    # dividing the scaled split by them gives 287,490 / 28,357 / 4,664,456
-    # tokens. The displayed price reprices that token mix at OR's effective
-    # prices, so it moves with them.
-    Model(
-        "Tencent",
-        "Hy4-flash",
-        30.0,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.49304540305271105 / 24.5,
-            0.19522317789568608 / 24.5,
-            0.34283748969140015 / 24.5,
-        ),
-        aa_sticker_price=PricedTokens(0.070, 0.281, 0.003),
-        or_slug="tencent/hy4-flash",
-        # OR's rolling weekly-volume ranking has not carried this slug since the
-        # reading below, so the refresh cannot update it
-        or_toks_served=59692570694,
-        or_eff_input_price=0.00601,
-        or_eff_output_price=0.2785,
-        estimated=True,
-        hardware_bom="STRIX_HALO",
-    ),
-    Model(
-        "Meta",
-        "Muse Spark 1.3",
-        36.6172039139368,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.2848644588586805, 0.3872337907751061, 1.7136831361769378
-        ),
-        aa_sticker_price=PricedTokens(1.25, 4.25, 0.15),
-        or_slug="meta/muse-spark-1.3-20260902",
-        or_session_cost_10_49_turns=0.5343645,
-        or_toks_served=66103430915,
-        or_eff_input_price=0.3495,
-        or_eff_output_price=4.25,
-    ),
-    Model(
-        "Meta",
-        "Muse Spark 1.3",
-        36.6172039139368,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.2848644588586805, 0.3872337907751061, 1.7136831361769378
-        ),
-        aa_sticker_price=PricedTokens(1.25, 4.25, 0.15),
-        or_slug="meta/muse-spark-1.3-contributor-20260902",
-        or_session_cost_10_49_turns=0.04808478,
-        or_toks_served=2954441579455,
-        or_eff_input_price=0.008865,
-        or_eff_output_price=0.1997,
-        trains_on_your_data=True,
-    ),
-    Model(
-        "Meta",
-        "Muse Wonder",
-        43.5748225998431,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            1.2403611645930221, 1.921261981835536, 3.790413332177666
-        ),
-        aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
-        or_slug="meta/muse-wonder-20261012",
-        or_toks_served=92525410011,
-        or_eff_input_price=0.5924,
-        or_eff_output_price=20.0,
-    ),
-    Model(
-        "Meta",
-        "Muse Ember",
-        36.0212987864912,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.027216886792402466, 0.042240832668746175, 0.06647789743748768
-        ),
-        aa_sticker_price=PricedTokens(0.1, 0.5, 0.004),
-        or_slug="meta/muse-ember-20261109",
-        or_toks_served=824069712578,
-        or_eff_input_price=0.02414,
-        or_eff_output_price=0.4998,
-    ),
-    Model(
-        "Z AI",
-        "GLM-5.3-Flash (max)",
-        27.803889160883,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.039832743493184115, 0.0671024626915514, 0.4763751378166728
-        ),
-        aa_sticker_price=PricedTokens(0.15, 0.5, 0.03),
-        or_slug="z-ai/glm-5.3-flash-20260826",
-        or_session_cost_10_49_turns=0.03632437525,
-        or_toks_served=10873874782464,
-        or_eff_input_price=0.04785,
-        or_eff_output_price=0.4119,
-        hardware_bom="STRIX_HALO",  # IQ3_XXS
-    ),
-    # scaled from the (max) record above, see README note
-    ModelEffort(
-        "GLM-5.3-Flash (high)",
-        27.803889160883 * 28.01 / 28.99,
-        PricedTokens(
-            0.039832743493184115 * 0.51,
-            0.0671024626915514 * 0.51,
-            0.4763751378166728 * 0.51,
-        ),
-        estimated=True,
-    ),
-    Model(
-        "Z AI",
-        "GLM-5.3",
-        31.653381843882,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.35155644931635205, 0.5235406213267805, 4.134167531076821
-        ),
-        aa_sticker_price=PricedTokens(1.4, 4.4, 0.26),
-        # 384 GiB unified: 3x DGX Spark
-        hardware_bom="DGX_SPARK*3+QSFP112_CABLE*3",  # Q3_K_XL
-        or_slug="z-ai/glm-5.3-20260816",
-        or_session_cost_10_49_turns=0.19674737,
-        or_toks_served=3428617492023,
-        or_eff_input_price=0.1988,
-        or_eff_output_price=2.982,
-    ),
-    Model(
-        "Moonshot AI",
-        "Kimi K3.1 Pro",
-        46.4526236744189,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.8567468935932564, 0.722389702315149, 2.1020636936657997
-        ),
-        aa_sticker_price=PricedTokens(2.0, 10.0, 0.2),
-        # 1 TB VRAM: 8x DGX Spark + 4-ports 400G switch + 4x 400G to 2x200G cables
-        hardware_bom="DGX_SPARK*8+QSFP_DD_SWITCH+QSFP_DD_BREAKOUT_CABLE*4",
-        or_slug="moonshotai/kimi-k3.1-pro-20261023",
-        or_session_cost_10_49_turns=0.7731742,
-        or_toks_served=3549141145635,
-        or_eff_input_price=0.3009,
-        or_eff_output_price=9.693,
-    ),
-    # Not on AA anymore. Intelligence extrapolated from Gemini 3.8 Flash and Gemini 3.5
-    # Flash-Lite. Tokens per task arbitrarily set the same as Gemini 3.8 Flash.
-    Model(
-        "Google",
-        "Gemini 3.5 Flash",
-        21.0,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(7.03 * 2, 0.37 * 9 / 3.75, 0.36 * 2),
-        aa_sticker_price=PricedTokens(1.5, 9.0, 0.15),
-        or_slug="google/gemini-3.5-flash-20260519",
-        or_session_cost_10_49_turns=0.4776147,
-        or_toks_served=61525601182,
-        or_eff_input_price=0.9588,
-        or_eff_output_price=9.157,
-        estimated=True,
-    ),
-    Model(
-        "Google",
-        "Gemini 3.8 Flash",
-        30.8468119957291,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            7.030934890491321, 0.3710231777219156, 0.36404810993927716
-        ),
-        aa_sticker_price=PricedTokens(0.75, 3.75, 0.075),
-        or_slug="google/gemini-3.8-flash-20260902",
-        or_session_cost_10_49_turns=0.27057648,
-        or_toks_served=1671211183733,
-        or_eff_input_price=0.3779,
-        or_eff_output_price=4.632,
-    ),
-    Model(
-        "Google",
-        "Gemini 4 Neon (low)",
-        44.0831506204565,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.29035308375303237, 0.3258874695917085, 0.12898754116418365
-        ),
-        aa_sticker_price=PricedTokens(3.0, 15.0, 0.15),
-        or_slug="google/gemini-4-neon-20261118",
-        or_toks_served=8100645314,
-        or_eff_input_price=0.3364,
-        or_eff_output_price=14.83,
-    ),
-    ModelEffort(
-        "Gemini 4 Neon (medium)",
-        54.8622945007349,
-        PricedTokens(0.7509135692152394, 0.7500053757390268, 0.403636579150149),
-    ),
-    ModelEffort(
-        "Gemini 4 Neon (high)",
-        59.6189441875232,
-        PricedTokens(1.5054642130384388, 1.3528166104101083, 0.884469085835955),
-    ),
-    ModelEffort(
-        "Gemini 4 Neon (xhigh)",
-        61.3982491392674,
-        PricedTokens(2.6590662816514623, 2.1244623990938414, 1.6613094203593957),
-    ),
-    Model(
-        "Google",
-        "Gemini 4 Hydrogen (low)",
-        26.8936694361562,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.13744084227725598, 0.10555363083928798, 0.0492282269035066
-        ),
-        aa_sticker_price=PricedTokens(1.5, 7.5, 0.075),
-        or_slug="google/gemini-4-hydrogen-20261112",
-        or_toks_served=389599277333,
-        or_eff_input_price=0.4505,
-        or_eff_output_price=7.327,
-    ),
-    Model(
-        "SpaceXAI",
-        "Grok 4.7",
-        35.4850117067196,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            2.576886728299715, 0.6271856443241712, 4.567467028963252
-        ),
-        aa_sticker_price=PricedTokens(2.0, 6.0, 0.5),
-        or_slug="x-ai/grok-4.7-20260916",
-        or_session_cost_10_49_turns=0.9020503,
-        or_toks_served=592058635690,
-        or_eff_input_price=0.8509,
-        or_eff_output_price=6.437,
-    ),
-    Model(
-        "StepFun",
-        "Step 5 Preview",
-        28.5283090216016,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.5051213025810452, 0.30637676984880086, 1.5337544881906702
-        ),
-        aa_sticker_price=PricedTokens(1.0, 2.7, 0.1),
-        hardware_bom="DGX_SPARK*3+QSFP112_CABLE*3",
-        or_slug="stepfun/step-5-preview-20261008",
-        or_toks_served=6386869272144,
-        or_eff_input_price=0.1445,
-        or_eff_output_price=2.7,
-    ),
-    Model(
-        "Xiaomi",
-        "MiMo-V2.6-Flash",
-        26.7276981444568,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.04318792692902057, 0.03690574314577558, 0.0484362007653506
-        ),
-        aa_sticker_price=PricedTokens(0.14, 0.28, 0.0028),
-        hardware_bom="STRIX_HALO",  # 3.0bpw
-        or_slug="xiaomi/mimo-v2.6-flash-20260921",
-        or_session_cost_10_49_turns=0.030579708666666667,
-        or_toks_served=4045800005008,
-        or_eff_input_price=0.01648,
-        or_eff_output_price=0.2824,
-    ),
-    Model(
-        "Xiaomi",
-        "MiMo-V2.6-Pro",
-        29.8897833093321,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.10909531014918307, 0.10533362295314275, 0.04275142965643572
-        ),
-        aa_sticker_price=PricedTokens(0.435, 0.87, 0.0036),
-        hardware_bom="DGX_SPARK*3+QSFP112_CABLE*3",  # 3.0bpw
-        or_slug="xiaomi/mimo-v2.6-pro-20260921",
-        or_session_cost_10_49_turns=0.08711627666666666,
-        or_toks_served=910283952428,
-        or_eff_input_price=0.06683,
-        or_eff_output_price=1.009,
-    ),
-    Model(
-        "MiniMax",
-        "MiniMax-M3.1-Flash",
-        29.0595214290458,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.11282161400286993, 0.08290581497833605, 0.29524324450332606
-        ),
-        aa_sticker_price=PricedTokens(0.15, 0.6, 0.015),
-        or_slug="minimax/minimax-m3.1-flash-20261019",
-        or_session_cost_10_49_turns=0.0387672,
-        or_toks_served=3671993607902,
-        or_eff_input_price=0.02254,
-        or_eff_output_price=0.489,
-        hardware_bom="GORGON_HALO",
-    ),
-    Model(
-        "OpenAI",
-        "GPT-6 Luna (low)",
-        9.66610812336462,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.0023262275757420735, 0.0016479451676949762, 0.001141082445083342
-        ),
-        aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
-        or_slug="openai/gpt-6-luna-20260922",
-        or_session_cost_10_49_turns=0.02663713075,
-        or_toks_served=8712691033389,
-        or_eff_input_price=0.04224,
-        or_eff_output_price=0.5157,
-    ),
-    ModelEffort(
-        "GPT-6 Luna (medium)",
-        18.4542156192416,
-        PricedTokens(0.008684756771769251, 0.009911619090008737, 0.0236054602447598),
-    ),
-    ModelEffort(
-        "GPT-6 Luna (high)",
-        21.4290170864582,
-        PricedTokens(0.013260173743129955, 0.016419570614591268, 0.04326802037422575),
-    ),
-    ModelEffort(
-        "GPT-6 Luna (xhigh)",
-        23.4508728089378,
-        PricedTokens(0.017039746974944057, 0.021946607051674276, 0.06510685518459125),
-    ),
-    ModelEffort(
-        "GPT-6 Luna (max)",
-        27.8552004938153,
-        PricedTokens(0.024671461535684842, 0.03764802618281935, 0.08963626960255419),
-    ),
-    # GPT-6.1 Terra released 2026-10-26, after OR's session-cost window rolled
-    # (windowEnd 2026-10-25), so it carries no session-cost figure yet.
-    Model(
-        "OpenAI",
-        "GPT-6.1 Terra (low)",
-        29.4169280792131,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.03421288115320557, 0.022110861337539173, 0.015013819560952543
-        ),
-        aa_sticker_price=PricedTokens(1.0, 5.0, 0.05),
-        or_slug="openai/gpt-6.1-terra-20261026",
-        or_session_cost_10_49_turns=0.23665103,
-        or_toks_served=1060806558521,
-        or_eff_input_price=0.2741,
-        or_eff_output_price=5.174,
-    ),
-    ModelEffort(
-        "GPT-6.1 Terra (medium)",
-        38.1652076677975,
-        PricedTokens(0.06293867838538772, 0.05437731370395206, 0.051488590294554354),
-    ),
-    ModelEffort(
-        "GPT-6.1 Terra (high)",
-        42.4344508712563,
-        PricedTokens(0.08723872309895113, 0.08373238661179763, 0.08830853690622348),
-    ),
-    ModelEffort(
-        "GPT-6.1 Terra (xhigh)",
-        45.250051789066,
-        PricedTokens(0.12107684361417946, 0.1309982959158254, 0.14861386213662026),
-    ),
-    ModelEffort(
-        "GPT-6.1 Terra (max)",
-        51.3265188577015,
-        PricedTokens(0.23526757467699644, 0.2994158235895208, 0.4264246328151169),
-    ),
-    # Released 2026-11-17: OR's trailing week covers only its two days of
-    # traffic, and OR has no session-cost history for the permaslug yet. All five
-    # effort levels share the one permaslug, so they share one pair of effective
-    # prices; each burns a different token mix.
-    Model(
-        "OpenAI",
-        "GPT-6.2 Sol (low)",
-        40.552508943285,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.0787608473723816, 0.05979721113848632, 0.04502665675485909
-        ),
-        aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
-        or_slug="openai/gpt-6.2-sol-20261117",
-        or_toks_served=135977705307,
-        or_eff_input_price=0.3845,
-        or_eff_output_price=10.34,
-    ),
-    ModelEffort(
-        "GPT-6.2 Sol (medium)",
-        52.6777305876603,
-        PricedTokens(0.1521751449100399, 0.13650936026845, 0.11737140442227624),
-    ),
-    ModelEffort(
-        "GPT-6.2 Sol (high)",
-        54.8898658241942,
-        PricedTokens(0.19767967481674203, 0.2016048197625647, 0.1643601576417682),
-    ),
-    ModelEffort(
-        "GPT-6.2 Sol (xhigh)",
-        55.7351067246438,
-        PricedTokens(0.22213385399692628, 0.2432255664789305, 0.18260825252973775),
-    ),
-    ModelEffort(
-        "GPT-6.2 Sol (max)",
-        57.2576209885477,
-        PricedTokens(0.30962703685533033, 0.4036042741824378, 0.30114865926299994),
-    ),
-    # Released 2026-11-17: OR's trailing week covers only its two days of
-    # traffic, and OR has no session-cost history for the permaslug yet. All five
-    # effort levels share the one permaslug, so they share one pair of effective
-    # prices; each burns a different token mix.
-    Model(
-        "OpenAI",
-        "GPT-6.2 Astra (low)",
-        45.6504174923967,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.27677942824119806, 0.20865491790349983, 0.17627105386560812
-        ),
-        aa_sticker_price=PricedTokens(8.0, 40.0, 0.4),
-        or_slug="openai/gpt-6.2-astra-20261117",
-        or_toks_served=46216611242,
-        or_eff_input_price=1.411,
-        or_eff_output_price=42.82,
-    ),
-    ModelEffort(
-        "GPT-6.2 Astra (medium)",
-        56.9986252138657,
-        PricedTokens(0.5566169681744552, 0.5265823574084363, 0.5344884107038941),
-    ),
-    ModelEffort(
-        "GPT-6.2 Astra (high)",
-        60.0882280338247,
-        PricedTokens(0.7262683361070965, 0.7131160616044322, 0.6344905596512769),
-    ),
-    ModelEffort(
-        "GPT-6.2 Astra (xhigh)",
-        61.5602325371388,
-        PricedTokens(0.8437237365519823, 0.8895041947748235, 0.7879154450852321),
-    ),
-    ModelEffort(
-        "GPT-6.2 Astra (max)",
-        62.1387990593969,
-        PricedTokens(1.162089239145493, 1.6411792220465897, 1.1946376954881024),
-    ),
-    # Released 2026-11-09: OR's trailing week is a single day so far, and OR has
-    # no session-cost or weekly-volume history for the permaslug yet. All five
-    # effort levels share the one permaslug, so they share one pair of effective
-    # prices; each burns a different token mix.
-    Model(
-        "Anthropic",
-        "Claude Fable 5.2 (low)",
-        53.9249388799182,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            1.040665157646971, 1.4240919609594807, 0.6324847856680946
-        ),
-        aa_sticker_price=PricedTokens(8.0, 40.0, 0.2),
-        or_slug="anthropic/claude-fable-5.2-20261109",
-        or_toks_served=841685024720,
-        or_eff_input_price=1.146,
-        or_eff_output_price=40.68,
-    ),
-    ModelEffort(
-        "Claude Fable 5.2 (medium)",
-        56.4083157101519,
-        PricedTokens(1.228047020697479, 1.7102304491697624, 0.8643275943115216),
-    ),
-    ModelEffort(
-        "Claude Fable 5.2 (high)",
-        61.8218785440284,
-        PricedTokens(2.59311518192607, 3.8883159624114056, 2.596983633522906),
-    ),
-    ModelEffort(
-        "Claude Fable 5.2 (xhigh)",
-        62.2167392403357,
-        PricedTokens(4.014762523548346, 6.430695367722222, 4.383129741240549),
-    ),
-    ModelEffort(
-        "Claude Fable 5.2 (max)",
-        64.563595756626,
-        PricedTokens(7.121424801990003, 10.891777372657142, 8.52535562933377),
-    ),
-    Model(
-        "Anthropic",
-        "Claude Sonnet 5.5 (low)",
-        25.649704549789,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.15495829818267776, 0.20856371779750618, 0.14782043040956583
-        ),
-        aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
-        or_slug="anthropic/claude-sonnet-5.5-20260928",
-        or_session_cost_10_49_turns=0.6073499333333333,
-        or_toks_served=2841023269410,
-        or_eff_input_price=0.5344,
-        or_eff_output_price=10.03,
-    ),
-    ModelEffort(
-        "Claude Sonnet 5.5 (medium)",
-        30.8195522148431,
-        PricedTokens(0.2229816006675009, 0.3074589477415119, 0.25021548679343536),
-    ),
-    ModelEffort(
-        "Claude Sonnet 5.5 (high)",
-        41.515109087048,
-        PricedTokens(0.42919145427046057, 0.5842121201361333, 0.6227258655718849),
-    ),
-    ModelEffort(
-        "Claude Sonnet 5.5 (xhigh)",
-        49.9240327787242,
-        PricedTokens(0.9742263747522919, 1.2220489885977281, 1.895709552971899),
-    ),
-    ModelEffort(
-        "Claude Sonnet 5.5 (max)",
-        54.54133407109,
-        PricedTokens(2.2877209769653377, 2.853871133504894, 4.879029232925522),
-    ),
-    Model(
-        "Anthropic",
-        "Claude Opus 5.5 (low)",
-        34.752785007759,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.26830032873330867, 0.38125266891205145, 0.3259763248005245
-        ),
-        aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
-        or_slug="anthropic/claude-opus-5.5-20260921",
-        or_session_cost_10_49_turns=1.66286375,
-        or_toks_served=7634916420586,
-        or_eff_input_price=0.7258,
-        or_eff_output_price=20.16,
-    ),
-    ModelEffort(
-        "Claude Opus 5.5 (medium)",
-        48.2081024960691,
-        PricedTokens(0.5747918883798223, 0.8764203544840845, 0.9998771947972656),
-    ),
-    ModelEffort(
-        "Claude Opus 5.5 (high)",
-        51.8359958227294,
-        PricedTokens(0.751725695304029, 1.201514087031893, 1.5114224997613959),
-    ),
-    ModelEffort(
-        "Claude Opus 5.5 (xhigh)",
-        57.4447060170507,
-        PricedTokens(1.1864324939748008, 2.0680263131828958, 2.7927356836910775),
-    ),
-    ModelEffort(
-        "Claude Opus 5.5 (max)",
-        59.1060336078904,
-        PricedTokens(1.8315729353173493, 3.4664583713189643, 4.738378412876434),
-    ),
-    Model(
-        "Anthropic",
-        "Claude Haiku 5.5 (low)",
-        18.6180055310996,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.009711032547690896, 0.014080275004595064, 0.01996637882970253
-        ),
-        aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
-        or_slug="anthropic/claude-haiku-5.5-20261007",
-        or_session_cost_10_49_turns=0.063899343,
-        or_toks_served=2821526946589,
-        or_eff_input_price=0.08066,
-        or_eff_output_price=0.5842,
-    ),
-    ModelEffort(
-        "Claude Haiku 5.5 (medium)",
-        24.6013254343023,
-        PricedTokens(0.017755535648584567, 0.026667558259885586, 0.04734146449820697),
-    ),
-    ModelEffort(
-        "Claude Haiku 5.5 (high)",
-        29.874315467743,
-        PricedTokens(0.028172450783792408, 0.04403217390244535, 0.08635569488055722),
-    ),
-    ModelEffort(
-        "Claude Haiku 5.5 (xhigh)",
-        34.6387759486628,
-        PricedTokens(0.04176397260319096, 0.06808849536432662, 0.1385086332984472),
-    ),
-    ModelEffort(
-        "Claude Haiku 5.5 (max)",
-        36.4845435880142,
-        PricedTokens(0.06550207604700437, 0.11298297985798467, 0.23252235946317396),
-    ),
-    # AA dropped the pre-1019 Ling 3.1 Flash record in its 2026-10 methodology
-    # change, so its index is regressed from benchmarks (see README), using only
-    # the nine benchmarks it shares with its successor -- the 1019 record AA
-    # kept, which the same fit puts at 29.9 against its published 29.5. The old
-    # revision is a little weaker than the 1019 on seven of those nine, so this
-    # must come out below it, and does.
-    Model(
-        "InclusionAI",
-        "Ling 3.1 Flash",
-        28.41,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.5426813344872892, 0.1426962308047775, 0.8686886280125741
-        ),
-        aa_sticker_price=PricedTokens(0.3, 0.9, 0.06),
-        or_slug="inclusionai/ling-3.1-flash-20261002",
-        or_session_cost_10_49_turns=0.0342785,
-        or_toks_served=64175186569,
-        or_eff_input_price=0.03264,
-        or_eff_output_price=0.2033,
-        estimated=True,
-    ),
-    Model(
-        "InclusionAI",
-        "Ling 3.1 Flash 1019",
-        29.570119369837,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            1.1261695939526823, 0.20223972528697784, 1.8567356990981327
-        ),
-        aa_sticker_price=PricedTokens(0.3, 0.9, 0.06),
-        # 256 GiB unified: 2x DGX Spark
-        hardware_bom="DGX_SPARK*2+QSFP112_CABLE*2",
-        # OpenRouter still only lists the older checkpoint
-        available_datacenter=False,
-    ),
-    Model(
-        "Mistral",
-        "Mistral Large 4",
-        26.1249946754784,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            1.1078363678887329, 0.172096563210152, 0.7817976957138006
-        ),
-        aa_sticker_price=PricedTokens(0.7, 2.1, 0.07),
-        or_slug="mistralai/mistral-large-4-0-20261006",
-        or_session_cost_10_49_turns=0.28279102,
-        or_toks_served=115568161597,
-        or_eff_input_price=0.1538,
-        or_eff_output_price=2.121,
-        hardware_bom="DGX_SPARK*3+QSFP112_CABLE*3",  # UD-Q2_K_XL
-    ),
-]
+# --- data.toml schema -------------------------------------------------------
+# plot.py owns the runtime objects; data.toml is the human-editable source of
+# truth. pydantic validates the file before any of it reaches Matplotlib.
+class PricedTokensSpec(RootModel[tuple[float, float, float]]):
+    """Three token streams, in the file's [input, output, cached] order."""
 
-# What the plots and the refresh read: the list above with every ModelEffort
-# replaced in place by the Model it derives from its base row.
-MODELS = expand_model_efforts(MODELS)
+
+class LocalSpeedSpec(RootModel[tuple[float, float]]):
+    """[prefill, decode] tokens per second."""
+
+
+class AaLookupFields(BaseModel):
+    """Which Artificial Analysis record refreshes this row."""
+
+    aa_page_slug: str
+    aa_record_name: str
+    aa_derived: bool
+
+
+class ModelSpec(AaLookupFields):
+    kind: Literal["model"]
+    publisher: str
+    name: str
+    intelligence: float
+    provider_type: ProviderType
+    aa_cost_per_task: PricedTokensSpec
+    aa_sticker_price: PricedTokensSpec
+    or_slug: str | None = None
+    or_session_cost_10_49_turns: float | None = None
+    or_toks_served: int | None = None
+    or_eff_input_price: float | None = None
+    or_eff_output_price: float | None = None
+    local_speed: LocalSpeedSpec | None = None
+    hardware_bom: str | None = None
+    estimated: bool = False
+    available_datacenter: bool = True
+    available_local: bool = True
+    trains_on_your_data: bool = False
+
+    def to_model(self) -> Model:
+        return Model(
+            self.publisher,
+            self.name,
+            self.intelligence,
+            self.provider_type,
+            aa_cost_per_task=PricedTokens(*self.aa_cost_per_task.root),
+            aa_sticker_price=PricedTokens(*self.aa_sticker_price.root),
+            or_slug=self.or_slug,
+            or_session_cost_10_49_turns=self.or_session_cost_10_49_turns,
+            or_toks_served=self.or_toks_served,
+            or_eff_input_price=self.or_eff_input_price,
+            or_eff_output_price=self.or_eff_output_price,
+            local_speed=(
+                None if self.local_speed is None else LocalSpeed(*self.local_speed.root)
+            ),
+            hardware_bom=self.hardware_bom,
+            estimated=self.estimated,
+            available_datacenter=self.available_datacenter,
+            available_local=self.available_local,
+            trains_on_your_data=self.trains_on_your_data,
+            aa_page_slug=self.aa_page_slug,
+            aa_record_name=self.aa_record_name,
+            aa_derived=self.aa_derived,
+        )
+
+
+class EffortSpec(AaLookupFields):
+    kind: Literal["effort"]
+    name: str
+    intelligence: float
+    aa_cost_per_task: PricedTokensSpec
+    estimated: bool | None = None
+
+    def to_model(self) -> ModelEffort:
+        return ModelEffort(
+            self.name,
+            self.intelligence,
+            PricedTokens(*self.aa_cost_per_task.root),
+            self.estimated,
+            self.aa_page_slug,
+            self.aa_record_name,
+            self.aa_derived,
+        )
+
+
+ModelRow = Annotated[ModelSpec | EffortSpec, Field(discriminator="kind")]
+
+
+class DataFile(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    publishers: dict[str, str]
+    hardware_prices: dict[str, int]
+    models: list[ModelRow]
+
+    @classmethod
+    def load(cls, path: Path | None = None) -> DataFile:
+        if path is None:
+            path = DATA_PATH
+        with path.open("rb") as f:
+            data = cls.model_validate(tomllib.load(f))
+        global PUBLISHERS, HARDWARE_PRICES
+        PUBLISHERS = data.publishers
+        HARDWARE_PRICES = data.hardware_prices
+        missing = sorted(
+            {row.publisher for row in data.models if isinstance(row, ModelSpec)}
+            - data.publishers.keys()
+        )
+        if missing:
+            raise ValueError(f"{path}: publishers missing from [publishers]: {missing}")
+        for row in data.models:
+            if isinstance(row, ModelSpec) and row.hardware_bom is not None:
+                # parse_hardware_bom reads HARDWARE_PRICES, set just above.
+                parse_hardware_bom(row.hardware_bom)
+        return data
+
+
+DATA_PATH = Path(__file__).with_name("data.toml")
+DATA = DataFile.load()
+PUBLISHERS: dict[str, str]
+HARDWARE_PRICES: dict[str, int]
+MODELS: list[Model] = expand_model_efforts(row.to_model() for row in DATA.models)
 
 
 class PlotSpec(NamedTuple):

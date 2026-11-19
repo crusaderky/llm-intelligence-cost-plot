@@ -16,13 +16,16 @@
 
 ## Structure
 
-Single script, `plot.py`. All model data lives in the `MODELS` list; label placement is
-automatic, so adding a model = adding one row and re-running. The `PLOTS` list defines
-which filtered views get generated.
+One plotting script, `plot.py`, and one data file, `data.toml`. All model data, the
+publisher colors and the hardware prices live in `data.toml`, loaded and validated with
+pydantic at import time; label placement is automatic, so adding a model = adding one row
+and re-running. The `PLOTS` list in `plot.py` defines which filtered views get generated.
 
-The `MODELS` literal holds `Model | ModelEffort` rows; right below it, `MODELS` is rebound
-to the flattened `list[Model]` (`expand_model_efforts`) that the plots and the refresh
-actually read.
+The `[[models]]` array in `data.toml` holds `kind = "model"` and `kind = "effort"` rows,
+converted to `Model | ModelEffort` and then flattened into the `list[Model]` (`MODELS`)
+that the plots and the refresh actually read. The AA record name/slug for each row lives
+on the row itself (the old `AA_LOOKUPS` table was merged in), with `aa_derived = true`
+for rows that must not have their AA values refreshed.
 
 ## Label placement
 
@@ -38,20 +41,21 @@ order and leader/dot grazes, and a pin can force one the other labels cannot esc
 
 ## Adding or refreshing a model
 
-Follow `.agents/skills/refresh-models/SKILL.md`: it re-fetches the AA and OpenRouter
-numbers for every existing model (and prints a ready-to-paste constructor row for a new
-one). `.agents/skills/aa-lookup` is the low-level AA query tool it builds on.
+Follow `.agents/skills/refresh-models/SKILL.md`: `pixi r refresh_models` re-fetches the
+AA and OpenRouter numbers for every existing model and writes them straight into
+`data.toml`. Read the printed change list and `git diff data.toml` before accepting it.
+`.agents/skills/aa-lookup` is the low-level AA query tool it builds on.
 
-Models are `Model(...)` dataclasses: `publisher`, `name`, `intelligence` and
-`provider_type` (`ProviderType.LOCAL` or `ProviderType.DATACENTER`) are positional,
-every other field is keyword-only. The displayed price per task is derived on demand by
+Each `[[models]]` row holds the fields of one `Model` (or `ModelEffort`) dataclass;
+`publisher`, `name`, `intelligence` and `provider_type` are the leading columns. pydantic
+validates the file before plotting. The displayed price per task is derived on demand by
 `Model.price_per_task()` (see README for the full rationale):
 
 - `ProviderType.DATACENTER` — AA's token mix for the task, priced at OR's synthetic
   effective prices:
 
-  - `aa_cost_per_task` is AA's cost of one task as a
-    `PricedTokens(input_, output, cached_input)`
+  - `aa_cost_per_task` is a three-element TOML array `[input, output, cached_input]`,
+    loaded as `PricedTokens(input_, output, cached_input)`
     (`input_` = nonCacheInput + cacheWrite, `output` = reasoning + answer,
     `cached_input` = cacheRead; the three sum to the total). A `cached_input` of
     0.0 means "AA reports no cache reads for this model", which is also how the
@@ -61,7 +65,7 @@ every other field is keyword-only. The displayed price per task is derived on de
     cost ÷ price × 1e6 reads the token count straight back out (0.347 = 347k
     tokens). Its summed total is then a fiction — harmless, because only
     datacenter rows ever fall back to an AA cost.
-  - `aa_sticker_price=PricedTokens(...)` is the same shape in USD per **1M tokens**: the
+  - `aa_sticker_price` is the same three-element array in USD per **1M tokens**: the
     sticker price each stream was billed at. Cost ÷ price × 1e6 recovers the token counts.
   - `or_eff_input_price` / `or_eff_output_price` (USD per 1M tokens) come from OR's
     trailing-week effective-pricing chart: every endpoint instance is priced at its mean
@@ -75,31 +79,33 @@ every other field is keyword-only. The displayed price per task is derived on de
   - `or_slug`, `or_session_cost_10_49_turns` and `or_toks_served` are still collected
     but no longer price anything; keep them in sync, don't use them.
 
-- `ProviderType.LOCAL` — electricity to generate the task on the RTX 3090 rig
-  (`RTX3090_DELTA_POWER_DRAW`; every local measurement was taken on that card).
+- `provider_type = "local"` — electricity to generate the task on the RTX 3090 rig
+  (`RTX3090_POWER_DRAW`; every local measurement was taken on that card).
   Runtime comes from `Model.local_token_counts()`, which is `aa_token_counts()`
   with the cached input zeroed (free on a local rig), times
-  `LocalSpeed(prefill=…, decode=…)`. Both rates are measured on the
+  `local_speed = [prefill, decode]` in tokens/second. Both rates are measured on the
   rig; prefill is currently a hand-typed guesstimate at 10× decode — replace it
   with the measured number when there is one. The `⚡` is appended
   automatically.
 
-- `hardware_price` — the hardware-cost plot's x, independent of the per-task price: the
+- `hardware_bom` — the hardware-cost plot's x, independent of the per-task price: the
   one-off bill of the cheapest rig that runs the model. It is a sympy expression over
-  `HARDWARE_PRICES` keys, evaluated into `Model.hardware_cost` by `__post_init__`:
+  the `[hardware_prices]` keys in `data.toml`, evaluated into `Model.hardware_cost` by
+  `__post_init__`:
   `"DGX_SPARK*3+QSFP112_CABLE*3"` is three Sparks cabled together, the same rig as
   `3 * (6000 + 112)`. An unknown name raises instead of pricing at zero. `None` leaves
   the model off that plot.
 
-A publisher appearing for the first time must be added to `PUBLISHERS` with its
-artificialanalysis.ai color, or the script KeyErrors.
+A publisher appearing for the first time must be added to `[publishers]` in `data.toml`
+with its artificialanalysis.ai color, or loading the file raises.
 
 ### Effort ladders
 
-A model sold at several thinking levels (low/medium/high/xhigh/max) is one `Model` row —
-any one rung, tag and all — plus one
-`ModelEffort(name, intelligence, aa_cost_per_task, estimated=…)` row per other rung,
-listed directly after it. `name` is that rung's own label, `"GPT-6.2 Sol (max)"`:
+A model sold at several thinking levels (low/medium/high/xhigh/max) is one
+`kind = "model"` row — any one rung, tag and all — plus one `kind = "effort"` row per
+other rung, listed directly after it. An effort row carries only `name`, `intelligence`,
+`aa_cost_per_task`, `estimated` and its own AA record fields. `name` is that rung's own
+label, `"GPT-6.2 Sol (max)"`:
 `expand_model_efforts` splits it with `_split_effort` and matches the stem against the
 rows above, so the base row is found by name, not by position. Each rung becomes
 `Model.effort()`, which clones the base row swapping the name tag, the intelligence and
@@ -138,8 +144,8 @@ name:
 A view can drop a glyph entirely with `PlotSpec.hidden_icons` (labels and legend entry
 alike); the hardware plot hides `bolt` because its filter admits only local models.
 
-A publisher appearing for the first time must be added to `PUBLISHERS` with its
-artificialanalysis.ai color, or the script KeyErrors.
+A publisher appearing for the first time must be added to `[publishers]` in `data.toml`
+with its artificialanalysis.ai color, or loading the file raises.
 
 ## Keep README.md in sync
 

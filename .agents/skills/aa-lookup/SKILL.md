@@ -82,9 +82,9 @@ python. Multiple queries in one call share the cached fetch. The Intelligence In
 cost-per-task numbers are taken from the model page (sub-unit / sub-cent precision);
 query with the full exact name (as printed by `--list`) for a reliable page match.
 
-## Feeding results into plot.py
+## Feeding results into data.toml
 
-`plot.py` consumes, per model:
+`data.toml` stores, per model:
 
 - `intelligence` — the page record's sub-unit value (the API-side
   `evaluations.artificial_analysis_intelligence_index` may be rounded).
@@ -105,9 +105,9 @@ query with the full exact name (as printed by `--list`) for a reliable page matc
   token mix in `aa_cost_per_task` against `aa_sticker_price=PricedTokens(1, 1, 1)`, in
   which the cost is the token count divided by 1e6.
 
-The `.agents/skills/refresh-models` skill automates all of this (AA + OpenRouter)
-and prints old -> new values plus paste-ready constructor rows; prefer it over
-manual entry.
+The `.agents/skills/refresh-models` skill automates all of this (AA + OpenRouter):
+`pixi r refresh_models` writes the values into `data.toml` and prints what changed.
+Prefer it over manual entry.
 
 ## Attribution
 

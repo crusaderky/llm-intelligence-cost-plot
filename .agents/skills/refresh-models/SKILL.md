@@ -1,16 +1,20 @@
 ---
 name: refresh-models
-description: Refreshes the ArtificialAnalysis (intelligence, output tokens per task, cost per task and its token-type breakdown, sticker prices) and OpenRouter (permaslug, effective input/output prices from the trailing week, 10-49-turn session cost, weekly tokens served) numbers behind every model in plot.py, or prints a ready-to-paste constructor row for a new model. Use when asked to refresh/re-fetch model scores and prices, or to add a model to the plots.
+description: Refreshes the ArtificialAnalysis (intelligence, output tokens per task, cost per task and its token-type breakdown, sticker prices) and OpenRouter (permaslug, effective input/output prices from the trailing week, 10-49-turn session cost, weekly tokens served) numbers behind every model in data.toml, writing the file back in place, or prints a ready-to-paste TOML row for a new model. Use when asked to refresh/re-fetch model scores and prices, or to add a model to the plots.
 ---
 
-# Refresh or add models in plot.py
+# Refresh or add models in data.toml
 
-`plot.py` stores, per model: AA's Intelligence Index (y axis), AA's output tokens per
-task, AA's cost per task and its split by token type, the sticker price per 1M tokens
-that split was billed at, the OpenRouter permaslug and its synthetic effective
+`data.toml` is the source of truth for every plotted number, the publisher colors and the
+hardware prices. `plot.py` loads and validates it with pydantic. Each `[[models]]` row
+stores AA's Intelligence Index (y axis), AA's output tokens per task (indirectly, via
+the cost split), AA's cost per task and its split by token type, the sticker price per 1M
+tokens that split was billed at, the OpenRouter permaslug and its synthetic effective
 input/output prices, and (recorded but unplotted) OR's median cost of a 10-49-turn
-session plus the prompt + completion tokens OR served for the model in the trailing week.
-The displayed price per task is derived by `Model.price_per_task()`:
+session plus the prompt + completion tokens OR served in the trailing week. Each row also
+carries its own `aa_page_slug` / `aa_record_name` / `aa_derived` — the old `AA_LOOKUPS`
+table was merged into the models. The displayed price per task is derived by
+`Model.price_per_task()`:
 
 ```text
 datacenter: price = (input tokens x OR input $/M + output tokens x OR output $/M) / 1e6,
@@ -21,153 +25,67 @@ local:      price = electricity to run those tokens on the local rig
                     (uncached input tokens / prefill tok/s + output tokens / decode tok/s)
 ```
 
-`aa_cost_per_task` holds that split as a `PricedTokens(input_, output, cached_input)`
-(USD per task, the three summing to the total) and `aa_sticker_price` is the same three
-streams in USD per 1M tokens; a `cached_input` of 0.0 in either means "AA reports no
-cache reads for this model". Every row carries both. The one model AA publishes no
-split for, `K2 Horizon 7B`, stores its token mix in the cost slot against a dummy
-`aa_sticker_price=PricedTokens(1, 1, 1)`, so cost ÷ price × 1e6 is just the token
-count (0.347 = 347,000 tokens) and its summed "cost per task" is a fiction no plot
-reads.
+`aa_cost_per_task` is a three-element TOML array `[input, output, cached_input]` in USD
+per task (input includes cache writes, output is reasoning + answer, cached is cache
+reads; the three sum to the total). `aa_sticker_price` is the same shape in USD per 1M
+tokens. A `cached_input` of 0.0 in either means "AA reports no cache reads for this
+model". Every row carries both. The one model AA publishes no split for, `K2 Horizon 7B`,
+stores its token mix in the cost slot against a dummy `aa_sticker_price = [1.0, 1.0, 1.0]`,
+so cost ÷ price × 1e6 is just the token count (0.347 = 347,000 tokens) and its summed
+"cost per task" is a fiction no plot reads.
 
-A datacenter model with no OR price chart or no paid OR endpoint keeps AA's own cost
-per task.
+A datacenter model with no OR price chart or no paid OR endpoint keeps AA's own cost per
+task.
 
 ## Running the refresh
 
 ```bash
-pixi r refresh-models             # cached (6h) fetch, prints old -> new table
-pixi r refresh-models --refresh   # force re-fetch of AA pages + OR stats
+pixi r refresh_models             # cached (6h) fetch, writes data.toml
+pixi r refresh_models --refresh   # force re-fetch of AA pages + OR stats
 ```
 
 Requires `AA_API_KEY` (exported in the shell profile) and the OpenRouter key at
 `~/.pi/agent/auth.json` (field `openrouter.key`).
 
-The script prints one row per `MODELS` entry — old vs new intelligence, output tokens per task,
-AA cost per task, AA token split and sticker prices (`SPL!`), OR effective input/output
-prices (`ORP!`), OR session cost, and weekly tokens served — plus a **paste-ready
-constructor kwargs** block for every row that drifted, and reminders. It **never edits
-`plot.py`**: apply the changes yourself, then follow the AGENTS.md workflow (`pixi r
-plot`, visually inspect the PNGs, `pixi r lint`).
+`refresh_models.py` lives at the repo root. It reads `data.toml` with tomlkit so every
+comment survives, re-fetches AA's and OR's numbers, changes only the stale fields, prints
+one line per changed field, and writes `data.toml` back. It never rewrites `plot.py`.
+Run `pixi r plot` afterwards to see the effect on the displayed prices and PNGs, then
+`pixi r lint`.
 
-## Reading the report
+Rows with `aa_derived = true` and rows pinned to `aa_page_slug = ""` keep their AA
+numbers: the derived ones are scaled or extrapolated from another record, and the pinned
+ones have no AA record at all. Their OpenRouter fields still refresh. A `# computed from:
+...` trailing comment records the hand calculation behind a literal; the refresh removes
+that comment when it replaces the value, but keeps every other comment. The `--new` mode
+prints a ready-to-paste `[[models]]` block instead of modifying the file:
 
-- Every flag is exact — there is no tolerance anywhere. `plot.py` stores every value
-  verbatim at full precision, including the Intelligence Index (paste AA's
-  `41.807466113455`, never a rounded `41.8075`), so any nonzero difference between a
-  stored value and what AA/OR publishes now flags the row and must be applied. `INT!`
-  therefore fires on sub-unit moves: AA republishes the index at sub-unit precision, so
-  a 0.003-point move is a real change, not rounding noise. `TOK!` compares AA's output
-  tokens per task against the count the row *derives* from `aa_cost_per_task ÷
-  aa_sticker_price`. A real split inherits AA's rounding of its dollars, which puts the
-  derived count a few tenths of a percent off AA's published integer, so only a drift
-  over 1% flags (and `SPL!` reports the mix itself either way). A row with the dummy
-  `PricedTokens(1, 1, 1)` sticker price stores its token mix verbatim, so any drift
-  flags and gets a paste comment telling you which leg of the split to edit.
-- AA's own cost per task is printed as a column but never flagged: it is the sum of the
-  split, and `SPL!` already compares that split stream-by-stream. Comparing the total
-  too would flag a few ULP of float noise on every run.
-- A ladder prints one report row per rung. A rung's `INT!` and the cost-split half of its
-  `SPL!` go in its own `ModelEffort` row; the sticker-price half of `SPL!` and every
-  `ORP!`/`VOL!` line live on the base `Model` row, so applying those once clears all the
-  rungs at once.
-- `SPL!` (AA cost split + sticker prices), `ORP!` (OR effective prices) and `VOL!`
-  (weekly volume) are expected on every refresh: they move with every AA page republish
-  and every rolling window. Always apply them. The OR prices are rounded to 4
-  significant digits (~0.01%) before they are stored, so sub-noise wobble in the
-  trailing-week token-share average does not dirty plot.py or the plots.
-- If OR ever returns a trailing week with no days at all (it does so transiently for a
-  model whose traffic just moved permaslug), the refresh warns on stderr and keeps the
-  last chart that had days in it, so a hiccup cannot silently drop a model back to AA's
-  price.
-- OR spells a dated release two ways and its endpoints disagree: the stats endpoints
-  (session cost, weekly volume) key on the **permaslug**, which dashes the dots inside a
-  version name (`google/gemini-3-8-flash-20260902`), while the effective-pricing chart
-  keys on the developer slug plus the release date and keeps the dots
-  (`google/gemini-3.8-flash-20260902`). `plot.py` stores the dotted form - the only
-  spelling the price chart answers for - and `or_lookup_key` tries the dashed twin for
-  the stats lookups. Asking only one spelling makes a heavily used model look like it
-  has no price history at all: `gemini-3.8-flash`, at 1.53T tokens a week, did exactly
-  that before the fallback was added.
-- The session-cost statistic is a **30-day trailing median, and OR only rolls its window
-  periodically** (observed `windowEnd` frozen for 8+ days at 2026-09-13); between rolls a
-  refresh returns byte-identical session values, so an `OR$!` flag signals a real roll,
-  not sampling noise. It is no longer used to price the plot — it is kept as a record of
-  real session spend.
-- The weekly-volume endpoint returns the trailing few days, not a calendar week; the
-  window rolls every day, so `VOL!` fires on every datacenter row every time.
-- A `!!` line means the AA record name in `AA_LOOKUPS` no longer matches AA verbatim;
-  the refresh still resolves it by effort tag, but copy the name it prints. The other
-  `!!` form, `no AA_LOOKUPS row`, skips the row entirely — AA *and* OR. `AA_LOOKUPS` is
-  keyed by `base_name(display name)` (the name in `plot.py`, minus the `⚡`), so a
-  ladder row scored at a single effort is keyed by its bare display name: `"Muse Ember"`,
-  not AA's `"Muse Ember (max)"`.
-- Reminder lines cover the special cases:
-  - `GLM-5.3-Flash (high)` is extrapolated from the `(max)` record — multiply
-    intelligence by 28.01/28.99 and tokens **and the whole `aa_cost_per_task` split** by
-    70610/138690 (the sticker prices are the model's list prices and do not scale).
-  - `Gemini 3.5 Flash` prints `(not on AA: intelligence + tokens are manual)` even
-    though AA still has the record: since the 2026-10 rebuild `Gemini 3.5 Flash`
-    publishes only its sticker prices and its individual benchmarks — no index, no
-    tokens per task, no cost split — and the row is pinned to `("", "")` so
-    `pick_record`'s stem fallback cannot hand it the `Gemini 3.5 Flash-Lite` record that
-    sits on the same page. Intelligence and the whole token mix are hand-derived in
-    `plot.py` from the two scored siblings (see the comment above that row); only its OR
-    prices and weekly volume refresh.
-  - The `trains_on_your_data=True` twin of `Muse Spark 1.3` must always get the same AA
-    numbers as `Muse Spark 1.3`, but has its own OR permaslug, effective prices, session
-    cost and weekly volume. Watch out: two rows can share a display name.
-  - Local models: update `intelligence`; keep
-    `local_speed=LocalSpeed(prefill=…, decode=…)` and `hardware_price` (measured on real
-    hardware, never from AA), but do add `aa_cost_per_task` / `aa_sticker_price` when AA
-    publishes them — the electricity cost then uses the real uncached input token count.
-    `K2 Horizon 7B` is the one local row
-    AA scores but publishes no cost split for (it hosts the model nowhere), so its token
-    mix stays hand-entered in `aa_cost_per_task` against the dummy
-    `aa_sticker_price=PricedTokens(1, 1, 1)`: the refresh
-    flags `TOK!` when AA moves the output count and you edit that leg in place (as
-    tokens ÷ 1e6), leaving the guessed input leg alone. `Ternary-Bonsai-2` is not
-    on AA at all — manual entry, no refresh.
-  - The two quantised `DeepSeek V4.1 Flash 1017` rows store the AA record of the
-    *datacenter* row scaled by the Unsloth recovery and reasoning-length ratios, so the
-    refresh always flags their `intelligence`, output `tokens/task` and
-    `aa_cost_per_task`
-    with the unscaled values, and its paste block would overwrite the scaling
-    expressions. Do not apply them; check that the datacenter row itself did not move,
-    and retype the constants in those rows if it did.
-  - Effort variants of one ladder share a single OR permaslug, so they share one pair of
-    effective prices, one session cost and one weekly volume. A `derived=True` row
-    (`GLM-5.3-Flash (high)`) is never flagged, so copy the OR fields of its scored twin
-    into it by hand.
-  - A model AA has retired (no record on its page any more) cannot be refreshed; drop
-    the row rather than freezing its numbers. `Claude Sonnet 5.5 (low)` was dropped for
-    this reason.
-  - **2026-10, AA rebuilt the Intelligence Index**: it re-benchmarked only a subset of
-    models, and a record it left without an index publishes neither a task cost nor a
-    token count any more. The refresh prints
-    `(AA has no index for this model since the 2026-10 rebuild: stored values are manual
-    estimates)` and skips the row: `plot.py` keeps it with `estimated=True` (hollow
-    dot, out of the Pareto frontier) and values extrapolated from the pre-rebuild ones
-    — intelligence and tokens per task from a fit of the new index on the old one over
-    the rows that kept both (log-log for intelligence, linear for tokens; the current
-    constants and fits are in the README bullet). AA may still publish the model's
-    sticker prices; if so the task cost is the estimated token mix at those prices, so
-    it still re-prices at OR's real prices. These rows are currently MiniCPM5-2B,
-    Qwen3.6-35B-A3B and Ling 3.1 Flash — AA has re-benchmarked `K2 Horizon 7B` and
-    `Ling 3.1 Flash 1019` since the rebuild, so those two refresh normally again.
-  - Rows whose AA record is gone *and* whose display name stems into another record
-    (as `Ling 3.1 Flash` did into `Ling 3.1 Flash 1019`) must be pinned to `("", "")`
-    in `AA_LOOKUPS`, or `pick_record`'s stem fallback will silently refresh them with
-    the successor's numbers.
-  - Local-only rows with no OR presence (`Ling 3.1 Flash 1019`) plot at AA's posted
-    price and carry `available_datacenter=False`, so they render greyed out on the
-    price plots. Models OR carries no chart for are reported as
-    `(no usable OR price: plots at AA's price)`.
-- `pixi r plot` reprints the recomputed displayed price per task of every model
-  (AA's cost per task -> displayed price, the relative delta, and the OR $/M pair), so
-  use it to sanity check the numbers.
+```bash
+pixi r refresh_models --new OR_SLUG --aa-slug AA_SLUG --aa-name "AA Record Name" \
+    --publisher "Publisher" --name "Display Name"
+```
 
-## Threshold sanity after a refresh
+## Double-check the diff
+
+The script prints what it changed; the agent must still read `git diff data.toml` before
+accepting a refresh. Expected in a normal run: sub-unit moves in `intelligence`,
+`aa_cost_per_task` and `aa_sticker_price` on AA-scored rows, OR effective prices (a
+trailing-week average), session cost (only when OR rolls its 30-day window) and weekly
+tokens served (a rolling window, so it moves every time).
+
+Treat these as abnormal and investigate before running `pixi r plot`:
+
+- a change to `aa_derived`, `aa_page_slug`, `aa_record_name`, `provider_type`,
+  `local_speed`, `hardware_bom`, availability flags, `publisher`, `name`, `[publishers]`
+  or `[hardware_prices]`;
+- an AA-side change on a derived/manual row or a row AA no longer scores;
+- a large jump in intelligence or tokens per task on one model while its siblings stay
+  put — check the AA record name in the `!!` warnings on stderr;
+- a field disappearing, or a comment other than `# computed from:` being lost;
+- a changed OR price when the script warned that the chart was empty (it keeps the last
+  stored chart on purpose).
+
+Then check the thresholds in `plot.py`:
 
 - `LOW_COST_THRESHOLD` must still catch the cheap cluster *and* keep the green
   "cheap AND smart" band non-empty (at least one model with intelligence ≥
@@ -176,40 +94,68 @@ plot`, visually inspect the PNGs, `pixi r lint`).
 - If a refresh moves a model across a threshold, update the threshold and say so in the
   commit message.
 
+## Special cases
+
+- Every value is stored verbatim at full precision (intelligence to 12+ digits, OR prices
+  rounded to 4 significant digits before storage), so a tiny nonzero move is real and is
+  applied. The derived token count from `aa_cost_per_task ÷ aa_sticker_price` lags AA's
+  published integer by a few tenths of a percent because AA rounds the dollars; a
+  hand-priced `[1.0, 1.0, 1.0]` split stores exact token counts.
+- Ladders: each rung has its own row with its own AA record fields. The rung's
+  `intelligence` and `aa_cost_per_task` are refreshed from its record; the sticker prices,
+  OR fields and hardware live on the `kind = "model"` base row and refresh there once.
+  Effort variants share one OR permaslug.
+- `!! no AA index/cost for ...` on stderr means AA has no usable record for that name
+  (since the 2026-10 index rebuild it drops the index, task cost and token count for
+  models it did not re-benchmark). The row keeps its hand-derived numbers and is marked
+  `aa_derived = true` / `estimated = true`; its OR side still refreshes. Rows whose AA
+  record is gone *and* whose name would stem into another record must stay pinned to
+  `aa_page_slug = ""`.
+- `!! AA record ... is now ...` updates `aa_record_name` in the file. Check the change is
+  the same model, not the stem fallback picking a sibling.
+- `Muse Spark 1.3` has two rows with the same AA record (the `trains_on_your_data` twin)
+  but different OR permaslugs; keep their AA numbers in sync.
+- `K2 Horizon 7B` is local, AA-published but has no cost split: only its `intelligence`
+  and the output leg of its dummy-priced `aa_cost_per_task` refresh. Leave the guessed
+  input leg alone. `Ternary-Bonsai-2` is not on AA at all (`aa_page_slug = ""`,
+  `aa_derived = true`): nothing on its AA side refreshes.
+- The two quantised `DeepSeek V4.1 Flash 1017` rows are `aa_derived = true`: their
+  numbers are the datacenter record scaled by Unsloth's recovery and reasoning-length
+  ratios. Check that the datacenter row itself did not move, then retype the constants in
+  those rows if it did.
+- Rows with `estimated = true` render as hollow dots and sit out the Pareto frontier; a
+  refresh must not flip that flag.
+- Models OR carries no chart for are reported on stderr as `(no usable OR price)` and
+  keep their stored prices; a model OR carries no session data for keeps its old session
+  cost. `Ling 3.1 Flash 1019` is local-only at AA's price and has
+  `available_datacenter = false`.
+- A model AA has retired cannot be refreshed: drop the row rather than freezing its
+  numbers. `Claude Sonnet 5.5 (low)` was dropped for this reason.
+
 ## Adding a new model
 
-1. Find the model on OpenRouter: the permaslug (dated, e.g. `openai/gpt-6-astra-20260903`)
-   from `https://openrouter.ai/<slug>` or the catalog API
+1. Find the model on OpenRouter: the permaslug (dated, e.g.
+   `openai/gpt-6-astra-20260903`) from `https://openrouter.ai/<slug>` or the catalog API
    (`/api/frontend/v1/catalog/models`). Verify OR publishes a trailing-week effective
-   price chart for it: `pixi r refresh-models --refresh` then check the slug is in
+   price chart for it: `pixi r refresh_models --refresh` then check the slug is in
    `.cache/or_effective_pricing.json`. Without one the model plots at AA's own price.
-  (A model that is free on OR — every endpoint priced at 0 — also plots at AA's price.)
 2. Find it on AA and get the exact record name + page slug: `pixi r aa-query --list`
    (see the `aa-lookup` skill for details).
-3. Print the constructor row:
-
-```bash
-pixi r refresh-models --new OR_SLUG --aa-slug AA_SLUG --aa-name "AA Record Name" \
-    --publisher "Publisher" --name "Display Name"
-```
-
-4. Paste the row into `MODELS` (publisher already in `PUBLISHERS` with its
-   artificialanalysis.ai color, or add it first). `AA_LOOKUPS` in
-   `refresh_models.py` needs a matching row so future refreshes find it.
-5. Effort variants are `ModelEffort("GPT-6.2 Sol (max)", intelligence, PricedTokens(...),
-   estimated=…)` rows listed after the ladder's base `Model` row (any one rung, tag and
-   all), each carrying its own full label — `expand_model_efforts` finds the base by
-   matching the name minus its `(effort)` tag. The rungs share the base row's permaslug
-   (one pair of OR prices, one session cost and one weekly volume for the whole ladder),
-   its sticker prices and its `hardware_bom`; only the tag, the Intelligence Index and
-   `aa_cost_per_task` differ, plus `estimated` when it does not match the base. Their
-   price per task still differs: each burns a different mix of input and output tokens.
+3. Print the TOML row with `pixi r refresh_models --new ...` as shown above.
+4. Paste the row into the `[[models]]` array in `data.toml`. The publisher must already be
+   in `[publishers]` with its artificialanalysis.ai color, or add it first. The printed
+   row already includes `aa_page_slug`, `aa_record_name` and `aa_derived = false`.
+5. Effort variants are `kind = "effort"` rows listed after the ladder's `kind = "model"`
+   base row, each with its own AA record fields, intelligence and `aa_cost_per_task`.
+   They inherit the base's sticker prices, OR fields and hardware through `Model.effort()`;
    `local_hardware` draws a ladder once, at its highest effort. See AGENTS.md's "Effort
    ladders".
 6. A model not on AA (or one AA has retired) needs a hand-entered token mix:
-   `aa_cost_per_task` in tokens ÷ 1e6 against `aa_sticker_price=PricedTokens(1, 1, 1)`
+   `[tokens/1e6, tokens/1e6, 0.0]` against `aa_sticker_price = [1.0, 1.0, 1.0]`
    (see `K2 Horizon 7B`) if it is priced by electricity, or a hand-derived real split
-   (see `Hy4-flash`) if OR prices it.
+   (see `Hy4-flash`) if OR prices it. Set `aa_page_slug = ""` and `aa_derived = true`.
+7. Run `pixi r refresh_models` once: a correct new row changes nothing, or only refreshes
+   the OR fields that moved between the two fetches.
 
 ## Provenance rules
 
@@ -233,6 +179,10 @@ pixi r refresh-models --new OR_SLUG --aa-slug AA_SLUG --aa-name "AA Record Name"
 - OR weekly tokens served: `GET /api/frontend/v1/rankings/models?view=week` (`data[]`,
   one daily row per permaslug and variant). Sum `total_prompt_tokens` +
   `total_completion_tokens` over every day and every variant (standard, batch, free).
+- OR spells a dated release two ways: the stats endpoints use the dashed permaslug
+  (`google/gemini-3-8-flash-20260902`), the effective-pricing chart keeps the dots
+  (`google/gemini-3.8-flash-20260902`). `or_slug` stores the dotted form and
+  `or_slug_variants` tries both for the stats lookups.
 - Effort variants share one permaslug; the ×-tokens-per-task factor is what separates
   them on the plot.
 - Keep README.md in sync with any value change (AGENTS.md rule).
