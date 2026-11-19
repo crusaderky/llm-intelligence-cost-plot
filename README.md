@@ -229,7 +229,9 @@ rapidly:
 | 1 TB unified | 8x DGX Spark + QSFP-DD switch | $50,000 | Kimi K3.1 Pro (UD-Q2_K_XL) |
 
 The same models on a hardware-cost axis at the highest available quantization that
-doesn't incur in major degradation. Running electricity prices are negligible in
+doesn't incur in major degradation. Models benchmarked at several thinking efforts need
+the same rig whatever the effort, so each of them is plotted once, at its highest effort,
+with the effort tag dropped from its label. Running electricity prices are negligible in
 comparison.
 
 <a href="https://raw.githubusercontent.com/crusaderky/llm-intelligence-cost-plot/main/plots/local_hardware.svg"><img src="plots/local_hardware.png" alt="Intelligence vs. Hardware Price (Larger Local Models)"></a>

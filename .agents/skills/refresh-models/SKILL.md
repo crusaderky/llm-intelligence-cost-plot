@@ -67,6 +67,10 @@ plot`, visually inspect the PNGs, `pixi r lint`).
 - AA's own cost per task is printed as a column but never flagged: it is the sum of the
   split, and `SPL!` already compares that split stream-by-stream. Comparing the total
   too would flag a few ULP of float noise on every run.
+- A ladder prints one report row per rung. A rung's `INT!` and the cost-split half of its
+  `SPL!` go in its own `ModelEffort` row; the sticker-price half of `SPL!` and every
+  `ORP!`/`VOL!` line live on the base `Model` row, so applying those once clears all the
+  rungs at once.
 - `SPL!` (AA cost split + sticker prices), `ORP!` (OR effective prices) and `VOL!`
   (weekly volume) are expected on every refresh: they move with every AA page republish
   and every rolling window. Always apply them. The OR prices are rounded to 4
@@ -192,10 +196,16 @@ pixi r refresh-models --new OR_SLUG --aa-slug AA_SLUG --aa-name "AA Record Name"
 4. Paste the row into `MODELS` (publisher already in `PUBLISHERS` with its
    artificialanalysis.ai color, or add it first). `AA_LOOKUPS` in
    `refresh_models.py` needs a matching row so future refreshes find it.
-5. Effort variants are separate rows sharing one permaslug (and therefore one pair of OR
-   prices, one session cost and one weekly volume each), like the Luna/Opus/Sonnet/Astra
-   ladders. Their price per task still differs: each burns a different mix of input and
-   output tokens.
+5. Effort variants are `ModelEffort("GPT-6.2 Sol (max)", intelligence, PricedTokens(...),
+   estimated=…)` rows listed after the ladder's base `Model` row (any one rung, tag and
+   all), each carrying its own full label — `expand_model_efforts` finds the base by
+   matching the name minus its `(effort)` tag. The rungs share the base row's permaslug
+   (one pair of OR prices, one session cost and one weekly volume for the whole ladder),
+   its sticker prices and its `hardware_bom`; only the tag, the Intelligence Index and
+   `aa_cost_per_task` differ, plus `estimated` when it does not match the base. Their
+   price per task still differs: each burns a different mix of input and output tokens.
+   `local_hardware` draws a ladder once, at its highest effort. See AGENTS.md's "Effort
+   ladders".
 6. A model not on AA (or one AA has retired) needs a hand-entered token mix:
    `aa_cost_per_task` in tokens ÷ 1e6 against `aa_sticker_price=PricedTokens(1, 1, 1)`
    (see `K2 Horizon 7B`) if it is priced by electricity, or a hand-derived real split

@@ -64,7 +64,10 @@ the nearest free height above or below its own dot so nothing stays parked a
 slot away from its point -- see place_labels. The handful of labels the
 automatic search reads wrong can be hand-pinned to one slot in LABEL_PINS, per
 view. So MODELS only needs publisher / name / intelligence / provider type plus
-the raw cost inputs -- just add rows and re-run.
+the raw cost inputs -- just add rows and re-run. A model published as a ladder
+of effort levels (GPT-6.2 Sol low..max) is one Model row plus one ModelEffort
+row per extra rung: a rung carries its own name, Intelligence Index and token
+mix, and shares every other field with its base row.
 """
 
 from __future__ import annotations
@@ -72,9 +75,10 @@ from __future__ import annotations
 import argparse
 import math
 import os
+import re
 import unicodedata
-from collections.abc import Callable
-from dataclasses import dataclass, field
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Literal, NamedTuple
 
@@ -424,6 +428,21 @@ class ProviderType(Enum):
     DATACENTER = "datacenter"
 
 
+# "<model> (<effort>)", optionally carrying the ⚡ __post_init__ splices on.
+_EFFORT_TAG = re.compile(r"(?P<stem>.*?) \((?P<effort>[^()]*)\)(?P<bolt> ⚡)?$")
+
+
+def _split_effort(name: str) -> tuple[str, str | None, str]:
+    """Split "<model> (<effort>) ⚡" into stem, effort and the ⚡ suffix.
+
+    effort is None when the name carries no parenthesised tag; the stem keeps
+    any other parenthesis ("Foo (a) (b)" -> "Foo (a)", "b") and never the ⚡.
+    """
+    if m := _EFFORT_TAG.search(name):
+        return m.group("stem"), m.group("effort"), m.group("bolt")
+    return name.removesuffix(" ⚡"), None, ""
+
+
 @dataclass
 class Model:
     """One model on the plots. Only the first four fields are positional.
@@ -483,6 +502,36 @@ class Model:
             # unlike the trains_on_your_data and available flags, which are
             # drawn as glyphs at render time.
             self.name += " ⚡"
+
+    def effort(
+        self,
+        new_effort: str,
+        intelligence: float,
+        aa_cost_per_task: PricedTokens,
+        estimated: bool | None = None,
+    ) -> Model:
+        """The same model at another effort level: a copy of self with self's
+        (effort) tag swapped for new_effort, and with intelligence and
+        aa_cost_per_task replaced. estimated is swapped too unless it is None,
+        which keeps self's value.
+
+        Everything else is inherited, because it is genuinely the same offer:
+        the rungs of a ladder share one publisher, one provider type, one AA
+        sticker price, one OR permaslug and one pair of OR effective prices, one
+        rig and the same availability flags. They differ only in how hard the
+        model thinks, which is what the index and the token mix measure.
+        """
+        stem, tag, _ = _split_effort(self.name)
+        assert tag is not None, f"{self.name}: no (effort) tag to swap"
+        # replace(), not copy.copy(): re-running __post_init__ re-splices the ⚡
+        # onto a local model's label, so the name passed here stays bare.
+        return replace(
+            self,
+            name=f"{stem} ({new_effort})",
+            intelligence=intelligence,
+            aa_cost_per_task=aa_cost_per_task,
+            estimated=self.estimated if estimated is None else estimated,
+        )
 
     def aa_total_cost_per_task(self) -> float:
         """AA's posted cost of one task: the sum of its split by token type."""
@@ -564,7 +613,69 @@ class Model:
         return 100 * (self.price_per_task() / self.aa_total_cost_per_task() - 1)
 
 
-MODELS = [
+class ModelEffort(NamedTuple):
+    """One extra rung of the effort ladder of the Model row above it.
+
+    `name` is the rung's own label, "<model> (<effort>)" -- the same text the row
+    it replaces would have carried, minus everything it shares with its base row.
+    That base is the row above it whose name matches once `_split_effort` drops
+    the tag; `intelligence` and `aa_cost_per_task` are the rung's own and
+    estimated=None inherits the base's -- see Model.effort, which does the
+    cloning. Written bare: a local ladder's rungs get their ⚡ from the base row.
+    """
+
+    name: str
+    intelligence: float
+    aa_cost_per_task: PricedTokens
+    estimated: bool | None = None
+
+
+def expand_model_efforts(specs: Iterable[Model | ModelEffort]) -> list[Model]:
+    """Flatten MODELS into one Model per plotted point.
+
+    A ModelEffort's name is split with `_split_effort`; its stem is matched
+    against the rows parsed above it, compared the same way, and the rung is
+    replaced in place by a Model cloned off the match. The base row therefore
+    has to be listed first, and every field the rung does not carry is read off
+    it.
+    """
+    models: list[Model] = []
+    # stem -> its Model row, or None once two rows have claimed the stem
+    bases: dict[str, Model | None] = {}
+    for spec in specs:
+        if isinstance(spec, Model):
+            models.append(spec)
+            stem = _split_effort(spec.name)[0]
+            # Twin rows of one stem (a local/datacenter pair, a
+            # trains_on_your_data pair) leave the ladder base ambiguous: a
+            # ModelEffort cannot say which twin it belongs to, so refuse to
+            # guess rather than silently cloning the wrong one.
+            bases[stem] = None if stem in bases else spec
+        else:
+            stem, tag, _ = _split_effort(spec.name)
+            if tag is None:
+                raise ValueError(
+                    f"{spec.name}: a ModelEffort's name must carry its "
+                    f"(effort) tag, e.g. {spec.name} (max)"
+                )
+            base = bases.get(stem)
+            if base is None:
+                raise ValueError(
+                    f"{spec.name}: no Model row above it named {stem!r} alone "
+                    f"(no such row, or two twins share that name)"
+                )
+            models.append(
+                base.effort(
+                    tag,
+                    spec.intelligence,
+                    spec.aa_cost_per_task,
+                    spec.estimated,
+                )
+            )
+    return models
+
+
+MODELS: list[Model | ModelEffort] = [
     # Price per task is derived by Model.price_per_task(). Stored inputs:
     # - intelligence + aa_cost_per_task + aa_sticker_price:
     #   artificialanalysis.ai (AA model page flight payloads, sub-unit /
@@ -590,6 +701,9 @@ MODELS = [
     #   "DGX_SPARK*3+QSFP112_CABLE*3" (see README's "Larger local models"
     #   table). Tags the hardware-cost plot; None leaves the model off it.
     # See .agents/skills/refresh-models for how to re-fetch these numbers.
+    # A ladder of effort levels is one Model row (any one rung, tag and all) plus
+    # one ModelEffort per other rung; expand_model_efforts clones the base row
+    # into those rungs below.
     # --- Local models (price per task = electricity) ---
     Model(
         "Liquid AI",
@@ -910,27 +1024,6 @@ MODELS = [
     ),
     Model(
         "Z AI",
-        "GLM-5.3-Flash (high)",
-        # scaled from the (max) record, see the README note
-        27.803889160883 * 28.01 / 28.99,
-        ProviderType.DATACENTER,
-        # the token split scales with the token count; the sticker prices are
-        # the model's list prices and do not
-        aa_cost_per_task=PricedTokens(
-            0.039832743493184115 * 70610 / 138690,
-            0.0671024626915514 * 70610 / 138690,
-            0.4763751378166728 * 70610 / 138690,
-        ),
-        aa_sticker_price=PricedTokens(0.15, 0.5, 0.03),
-        or_slug="z-ai/glm-5.3-flash-20260826",
-        or_session_cost_10_49_turns=0.03632437525,
-        or_toks_served=10873874782464,
-        or_eff_input_price=0.04785,
-        or_eff_output_price=0.4119,
-        estimated=True,
-    ),
-    Model(
-        "Z AI",
         "GLM-5.3-Flash (max)",
         27.803889160883,
         ProviderType.DATACENTER,
@@ -944,6 +1037,17 @@ MODELS = [
         or_eff_input_price=0.04785,
         or_eff_output_price=0.4119,
         hardware_bom="STRIX_HALO",  # IQ3_XXS
+    ),
+    # scaled from the (max) record above, see README note
+    ModelEffort(
+        "GLM-5.3-Flash (high)",
+        27.803889160883 * 28.01 / 28.99,
+        PricedTokens(
+            0.039832743493184115 * 0.51,
+            0.0671024626915514 * 0.51,
+            0.4763751378166728 * 0.51,
+        ),
+        estimated=True,
     ),
     Model(
         "Z AI",
@@ -1024,47 +1128,20 @@ MODELS = [
         or_eff_input_price=0.3364,
         or_eff_output_price=14.83,
     ),
-    Model(
-        "Google",
+    ModelEffort(
         "Gemini 4 Neon (medium)",
         54.8622945007349,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.7509135692152394, 0.7500053757390268, 0.403636579150149
-        ),
-        aa_sticker_price=PricedTokens(3.0, 15.0, 0.15),
-        or_slug="google/gemini-4-neon-20261118",
-        or_toks_served=8100645314,
-        or_eff_input_price=0.3364,
-        or_eff_output_price=14.83,
+        PricedTokens(0.7509135692152394, 0.7500053757390268, 0.403636579150149),
     ),
-    Model(
-        "Google",
+    ModelEffort(
         "Gemini 4 Neon (high)",
         59.6189441875232,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            1.5054642130384388, 1.3528166104101083, 0.884469085835955
-        ),
-        aa_sticker_price=PricedTokens(3.0, 15.0, 0.15),
-        or_slug="google/gemini-4-neon-20261118",
-        or_toks_served=8100645314,
-        or_eff_input_price=0.3364,
-        or_eff_output_price=14.83,
+        PricedTokens(1.5054642130384388, 1.3528166104101083, 0.884469085835955),
     ),
-    Model(
-        "Google",
+    ModelEffort(
         "Gemini 4 Neon (xhigh)",
         61.3982491392674,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            2.6590662816514623, 2.1244623990938414, 1.6613094203593957
-        ),
-        aa_sticker_price=PricedTokens(3.0, 15.0, 0.15),
-        or_slug="google/gemini-4-neon-20261118",
-        or_toks_served=8100645314,
-        or_eff_input_price=0.3364,
-        or_eff_output_price=14.83,
+        PricedTokens(2.6590662816514623, 2.1244623990938414, 1.6613094203593957),
     ),
     Model(
         "Google",
@@ -1173,65 +1250,25 @@ MODELS = [
         or_eff_input_price=0.04224,
         or_eff_output_price=0.5157,
     ),
-    Model(
-        "OpenAI",
+    ModelEffort(
         "GPT-6 Luna (medium)",
         18.4542156192416,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.008684756771769251, 0.009911619090008737, 0.0236054602447598
-        ),
-        aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
-        or_slug="openai/gpt-6-luna-20260922",
-        or_session_cost_10_49_turns=0.02663713075,
-        or_toks_served=8712691033389,
-        or_eff_input_price=0.04224,
-        or_eff_output_price=0.5157,
+        PricedTokens(0.008684756771769251, 0.009911619090008737, 0.0236054602447598),
     ),
-    Model(
-        "OpenAI",
+    ModelEffort(
         "GPT-6 Luna (high)",
         21.4290170864582,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.013260173743129955, 0.016419570614591268, 0.04326802037422575
-        ),
-        aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
-        or_slug="openai/gpt-6-luna-20260922",
-        or_session_cost_10_49_turns=0.02663713075,
-        or_toks_served=8712691033389,
-        or_eff_input_price=0.04224,
-        or_eff_output_price=0.5157,
+        PricedTokens(0.013260173743129955, 0.016419570614591268, 0.04326802037422575),
     ),
-    Model(
-        "OpenAI",
+    ModelEffort(
         "GPT-6 Luna (xhigh)",
         23.4508728089378,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.017039746974944057, 0.021946607051674276, 0.06510685518459125
-        ),
-        aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
-        or_slug="openai/gpt-6-luna-20260922",
-        or_session_cost_10_49_turns=0.02663713075,
-        or_toks_served=8712691033389,
-        or_eff_input_price=0.04224,
-        or_eff_output_price=0.5157,
+        PricedTokens(0.017039746974944057, 0.021946607051674276, 0.06510685518459125),
     ),
-    Model(
-        "OpenAI",
+    ModelEffort(
         "GPT-6 Luna (max)",
         27.8552004938153,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.024671461535684842, 0.03764802618281935, 0.08963626960255419
-        ),
-        aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
-        or_slug="openai/gpt-6-luna-20260922",
-        or_session_cost_10_49_turns=0.02663713075,
-        or_toks_served=8712691033389,
-        or_eff_input_price=0.04224,
-        or_eff_output_price=0.5157,
+        PricedTokens(0.024671461535684842, 0.03764802618281935, 0.08963626960255419),
     ),
     # GPT-6.1 Terra released 2026-10-26, after OR's session-cost window rolled
     # (windowEnd 2026-10-25), so it carries no session-cost figure yet.
@@ -1250,65 +1287,25 @@ MODELS = [
         or_eff_input_price=0.2741,
         or_eff_output_price=5.174,
     ),
-    Model(
-        "OpenAI",
+    ModelEffort(
         "GPT-6.1 Terra (medium)",
         38.1652076677975,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.06293867838538772, 0.05437731370395206, 0.051488590294554354
-        ),
-        aa_sticker_price=PricedTokens(1.0, 5.0, 0.05),
-        or_slug="openai/gpt-6.1-terra-20261026",
-        or_session_cost_10_49_turns=0.23665103,
-        or_toks_served=1060806558521,
-        or_eff_input_price=0.2741,
-        or_eff_output_price=5.174,
+        PricedTokens(0.06293867838538772, 0.05437731370395206, 0.051488590294554354),
     ),
-    Model(
-        "OpenAI",
+    ModelEffort(
         "GPT-6.1 Terra (high)",
         42.4344508712563,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.08723872309895113, 0.08373238661179763, 0.08830853690622348
-        ),
-        aa_sticker_price=PricedTokens(1.0, 5.0, 0.05),
-        or_slug="openai/gpt-6.1-terra-20261026",
-        or_session_cost_10_49_turns=0.23665103,
-        or_toks_served=1060806558521,
-        or_eff_input_price=0.2741,
-        or_eff_output_price=5.174,
+        PricedTokens(0.08723872309895113, 0.08373238661179763, 0.08830853690622348),
     ),
-    Model(
-        "OpenAI",
+    ModelEffort(
         "GPT-6.1 Terra (xhigh)",
         45.250051789066,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.12107684361417946, 0.1309982959158254, 0.14861386213662026
-        ),
-        aa_sticker_price=PricedTokens(1.0, 5.0, 0.05),
-        or_slug="openai/gpt-6.1-terra-20261026",
-        or_session_cost_10_49_turns=0.23665103,
-        or_toks_served=1060806558521,
-        or_eff_input_price=0.2741,
-        or_eff_output_price=5.174,
+        PricedTokens(0.12107684361417946, 0.1309982959158254, 0.14861386213662026),
     ),
-    Model(
-        "OpenAI",
+    ModelEffort(
         "GPT-6.1 Terra (max)",
         51.3265188577015,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.23526757467699644, 0.2994158235895208, 0.4264246328151169
-        ),
-        aa_sticker_price=PricedTokens(1.0, 5.0, 0.05),
-        or_slug="openai/gpt-6.1-terra-20261026",
-        or_session_cost_10_49_turns=0.23665103,
-        or_toks_served=1060806558521,
-        or_eff_input_price=0.2741,
-        or_eff_output_price=5.174,
+        PricedTokens(0.23526757467699644, 0.2994158235895208, 0.4264246328151169),
     ),
     # Released 2026-11-17: OR's trailing week covers only its two days of
     # traffic, and OR has no session-cost history for the permaslug yet. All five
@@ -1328,61 +1325,25 @@ MODELS = [
         or_eff_input_price=0.3845,
         or_eff_output_price=10.34,
     ),
-    Model(
-        "OpenAI",
+    ModelEffort(
         "GPT-6.2 Sol (medium)",
         52.6777305876603,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.1521751449100399, 0.13650936026845, 0.11737140442227624
-        ),
-        aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
-        or_slug="openai/gpt-6.2-sol-20261117",
-        or_toks_served=135977705307,
-        or_eff_input_price=0.3845,
-        or_eff_output_price=10.34,
+        PricedTokens(0.1521751449100399, 0.13650936026845, 0.11737140442227624),
     ),
-    Model(
-        "OpenAI",
+    ModelEffort(
         "GPT-6.2 Sol (high)",
         54.8898658241942,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.19767967481674203, 0.2016048197625647, 0.1643601576417682
-        ),
-        aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
-        or_slug="openai/gpt-6.2-sol-20261117",
-        or_toks_served=135977705307,
-        or_eff_input_price=0.3845,
-        or_eff_output_price=10.34,
+        PricedTokens(0.19767967481674203, 0.2016048197625647, 0.1643601576417682),
     ),
-    Model(
-        "OpenAI",
+    ModelEffort(
         "GPT-6.2 Sol (xhigh)",
         55.7351067246438,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.22213385399692628, 0.2432255664789305, 0.18260825252973775
-        ),
-        aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
-        or_slug="openai/gpt-6.2-sol-20261117",
-        or_toks_served=135977705307,
-        or_eff_input_price=0.3845,
-        or_eff_output_price=10.34,
+        PricedTokens(0.22213385399692628, 0.2432255664789305, 0.18260825252973775),
     ),
-    Model(
-        "OpenAI",
+    ModelEffort(
         "GPT-6.2 Sol (max)",
         57.2576209885477,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.30962703685533033, 0.4036042741824378, 0.30114865926299994
-        ),
-        aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
-        or_slug="openai/gpt-6.2-sol-20261117",
-        or_toks_served=135977705307,
-        or_eff_input_price=0.3845,
-        or_eff_output_price=10.34,
+        PricedTokens(0.30962703685533033, 0.4036042741824378, 0.30114865926299994),
     ),
     # Released 2026-11-17: OR's trailing week covers only its two days of
     # traffic, and OR has no session-cost history for the permaslug yet. All five
@@ -1402,61 +1363,25 @@ MODELS = [
         or_eff_input_price=1.411,
         or_eff_output_price=42.82,
     ),
-    Model(
-        "OpenAI",
+    ModelEffort(
         "GPT-6.2 Astra (medium)",
         56.9986252138657,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.5566169681744552, 0.5265823574084363, 0.5344884107038941
-        ),
-        aa_sticker_price=PricedTokens(8.0, 40.0, 0.4),
-        or_slug="openai/gpt-6.2-astra-20261117",
-        or_toks_served=46216611242,
-        or_eff_input_price=1.411,
-        or_eff_output_price=42.82,
+        PricedTokens(0.5566169681744552, 0.5265823574084363, 0.5344884107038941),
     ),
-    Model(
-        "OpenAI",
+    ModelEffort(
         "GPT-6.2 Astra (high)",
         60.0882280338247,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.7262683361070965, 0.7131160616044322, 0.6344905596512769
-        ),
-        aa_sticker_price=PricedTokens(8.0, 40.0, 0.4),
-        or_slug="openai/gpt-6.2-astra-20261117",
-        or_toks_served=46216611242,
-        or_eff_input_price=1.411,
-        or_eff_output_price=42.82,
+        PricedTokens(0.7262683361070965, 0.7131160616044322, 0.6344905596512769),
     ),
-    Model(
-        "OpenAI",
+    ModelEffort(
         "GPT-6.2 Astra (xhigh)",
         61.5602325371388,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.8437237365519823, 0.8895041947748235, 0.7879154450852321
-        ),
-        aa_sticker_price=PricedTokens(8.0, 40.0, 0.4),
-        or_slug="openai/gpt-6.2-astra-20261117",
-        or_toks_served=46216611242,
-        or_eff_input_price=1.411,
-        or_eff_output_price=42.82,
+        PricedTokens(0.8437237365519823, 0.8895041947748235, 0.7879154450852321),
     ),
-    Model(
-        "OpenAI",
+    ModelEffort(
         "GPT-6.2 Astra (max)",
         62.1387990593969,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            1.162089239145493, 1.6411792220465897, 1.1946376954881024
-        ),
-        aa_sticker_price=PricedTokens(8.0, 40.0, 0.4),
-        or_slug="openai/gpt-6.2-astra-20261117",
-        or_toks_served=46216611242,
-        or_eff_input_price=1.411,
-        or_eff_output_price=42.82,
+        PricedTokens(1.162089239145493, 1.6411792220465897, 1.1946376954881024),
     ),
     # Released 2026-11-09: OR's trailing week is a single day so far, and OR has
     # no session-cost or weekly-volume history for the permaslug yet. All five
@@ -1476,61 +1401,25 @@ MODELS = [
         or_eff_input_price=1.146,
         or_eff_output_price=40.68,
     ),
-    Model(
-        "Anthropic",
+    ModelEffort(
         "Claude Fable 5.2 (medium)",
         56.4083157101519,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            1.228047020697479, 1.7102304491697624, 0.8643275943115216
-        ),
-        aa_sticker_price=PricedTokens(8.0, 40.0, 0.2),
-        or_slug="anthropic/claude-fable-5.2-20261109",
-        or_toks_served=841685024720,
-        or_eff_input_price=1.146,
-        or_eff_output_price=40.68,
+        PricedTokens(1.228047020697479, 1.7102304491697624, 0.8643275943115216),
     ),
-    Model(
-        "Anthropic",
+    ModelEffort(
         "Claude Fable 5.2 (high)",
         61.8218785440284,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            2.59311518192607, 3.8883159624114056, 2.596983633522906
-        ),
-        aa_sticker_price=PricedTokens(8.0, 40.0, 0.2),
-        or_slug="anthropic/claude-fable-5.2-20261109",
-        or_toks_served=841685024720,
-        or_eff_input_price=1.146,
-        or_eff_output_price=40.68,
+        PricedTokens(2.59311518192607, 3.8883159624114056, 2.596983633522906),
     ),
-    Model(
-        "Anthropic",
+    ModelEffort(
         "Claude Fable 5.2 (xhigh)",
         62.2167392403357,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            4.014762523548346, 6.430695367722222, 4.383129741240549
-        ),
-        aa_sticker_price=PricedTokens(8.0, 40.0, 0.2),
-        or_slug="anthropic/claude-fable-5.2-20261109",
-        or_toks_served=841685024720,
-        or_eff_input_price=1.146,
-        or_eff_output_price=40.68,
+        PricedTokens(4.014762523548346, 6.430695367722222, 4.383129741240549),
     ),
-    Model(
-        "Anthropic",
+    ModelEffort(
         "Claude Fable 5.2 (max)",
         64.563595756626,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            7.121424801990003, 10.891777372657142, 8.52535562933377
-        ),
-        aa_sticker_price=PricedTokens(8.0, 40.0, 0.2),
-        or_slug="anthropic/claude-fable-5.2-20261109",
-        or_toks_served=841685024720,
-        or_eff_input_price=1.146,
-        or_eff_output_price=40.68,
+        PricedTokens(7.121424801990003, 10.891777372657142, 8.52535562933377),
     ),
     Model(
         "Anthropic",
@@ -1547,65 +1436,25 @@ MODELS = [
         or_eff_input_price=0.5344,
         or_eff_output_price=10.03,
     ),
-    Model(
-        "Anthropic",
+    ModelEffort(
         "Claude Sonnet 5.5 (medium)",
         30.8195522148431,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.2229816006675009, 0.3074589477415119, 0.25021548679343536
-        ),
-        aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
-        or_slug="anthropic/claude-sonnet-5.5-20260928",
-        or_session_cost_10_49_turns=0.6073499333333333,
-        or_toks_served=2841023269410,
-        or_eff_input_price=0.5344,
-        or_eff_output_price=10.03,
+        PricedTokens(0.2229816006675009, 0.3074589477415119, 0.25021548679343536),
     ),
-    Model(
-        "Anthropic",
+    ModelEffort(
         "Claude Sonnet 5.5 (high)",
         41.515109087048,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.42919145427046057, 0.5842121201361333, 0.6227258655718849
-        ),
-        aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
-        or_slug="anthropic/claude-sonnet-5.5-20260928",
-        or_session_cost_10_49_turns=0.6073499333333333,
-        or_toks_served=2841023269410,
-        or_eff_input_price=0.5344,
-        or_eff_output_price=10.03,
+        PricedTokens(0.42919145427046057, 0.5842121201361333, 0.6227258655718849),
     ),
-    Model(
-        "Anthropic",
+    ModelEffort(
         "Claude Sonnet 5.5 (xhigh)",
         49.9240327787242,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.9742263747522919, 1.2220489885977281, 1.895709552971899
-        ),
-        aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
-        or_slug="anthropic/claude-sonnet-5.5-20260928",
-        or_session_cost_10_49_turns=0.6073499333333333,
-        or_toks_served=2841023269410,
-        or_eff_input_price=0.5344,
-        or_eff_output_price=10.03,
+        PricedTokens(0.9742263747522919, 1.2220489885977281, 1.895709552971899),
     ),
-    Model(
-        "Anthropic",
+    ModelEffort(
         "Claude Sonnet 5.5 (max)",
         54.54133407109,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            2.2877209769653377, 2.853871133504894, 4.879029232925522
-        ),
-        aa_sticker_price=PricedTokens(2.0, 10.0, 0.1),
-        or_slug="anthropic/claude-sonnet-5.5-20260928",
-        or_session_cost_10_49_turns=0.6073499333333333,
-        or_toks_served=2841023269410,
-        or_eff_input_price=0.5344,
-        or_eff_output_price=10.03,
+        PricedTokens(2.2877209769653377, 2.853871133504894, 4.879029232925522),
     ),
     Model(
         "Anthropic",
@@ -1622,65 +1471,25 @@ MODELS = [
         or_eff_input_price=0.7258,
         or_eff_output_price=20.16,
     ),
-    Model(
-        "Anthropic",
+    ModelEffort(
         "Claude Opus 5.5 (medium)",
         48.2081024960691,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.5747918883798223, 0.8764203544840845, 0.9998771947972656
-        ),
-        aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
-        or_slug="anthropic/claude-opus-5.5-20260921",
-        or_session_cost_10_49_turns=1.66286375,
-        or_toks_served=7634916420586,
-        or_eff_input_price=0.7258,
-        or_eff_output_price=20.16,
+        PricedTokens(0.5747918883798223, 0.8764203544840845, 0.9998771947972656),
     ),
-    Model(
-        "Anthropic",
+    ModelEffort(
         "Claude Opus 5.5 (high)",
         51.8359958227294,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.751725695304029, 1.201514087031893, 1.5114224997613959
-        ),
-        aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
-        or_slug="anthropic/claude-opus-5.5-20260921",
-        or_session_cost_10_49_turns=1.66286375,
-        or_toks_served=7634916420586,
-        or_eff_input_price=0.7258,
-        or_eff_output_price=20.16,
+        PricedTokens(0.751725695304029, 1.201514087031893, 1.5114224997613959),
     ),
-    Model(
-        "Anthropic",
+    ModelEffort(
         "Claude Opus 5.5 (xhigh)",
         57.4447060170507,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            1.1864324939748008, 2.0680263131828958, 2.7927356836910775
-        ),
-        aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
-        or_slug="anthropic/claude-opus-5.5-20260921",
-        or_session_cost_10_49_turns=1.66286375,
-        or_toks_served=7634916420586,
-        or_eff_input_price=0.7258,
-        or_eff_output_price=20.16,
+        PricedTokens(1.1864324939748008, 2.0680263131828958, 2.7927356836910775),
     ),
-    Model(
-        "Anthropic",
+    ModelEffort(
         "Claude Opus 5.5 (max)",
         59.1060336078904,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            1.8315729353173493, 3.4664583713189643, 4.738378412876434
-        ),
-        aa_sticker_price=PricedTokens(4.0, 20.0, 0.2),
-        or_slug="anthropic/claude-opus-5.5-20260921",
-        or_session_cost_10_49_turns=1.66286375,
-        or_toks_served=7634916420586,
-        or_eff_input_price=0.7258,
-        or_eff_output_price=20.16,
+        PricedTokens(1.8315729353173493, 3.4664583713189643, 4.738378412876434),
     ),
     Model(
         "Anthropic",
@@ -1697,65 +1506,25 @@ MODELS = [
         or_eff_input_price=0.08066,
         or_eff_output_price=0.5842,
     ),
-    Model(
-        "Anthropic",
+    ModelEffort(
         "Claude Haiku 5.5 (medium)",
         24.6013254343023,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.017755535648584567, 0.026667558259885586, 0.04734146449820697
-        ),
-        aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
-        or_slug="anthropic/claude-haiku-5.5-20261007",
-        or_session_cost_10_49_turns=0.063899343,
-        or_toks_served=2821526946589,
-        or_eff_input_price=0.08066,
-        or_eff_output_price=0.5842,
+        PricedTokens(0.017755535648584567, 0.026667558259885586, 0.04734146449820697),
     ),
-    Model(
-        "Anthropic",
+    ModelEffort(
         "Claude Haiku 5.5 (high)",
         29.874315467743,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.028172450783792408, 0.04403217390244535, 0.08635569488055722
-        ),
-        aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
-        or_slug="anthropic/claude-haiku-5.5-20261007",
-        or_session_cost_10_49_turns=0.063899343,
-        or_toks_served=2821526946589,
-        or_eff_input_price=0.08066,
-        or_eff_output_price=0.5842,
+        PricedTokens(0.028172450783792408, 0.04403217390244535, 0.08635569488055722),
     ),
-    Model(
-        "Anthropic",
+    ModelEffort(
         "Claude Haiku 5.5 (xhigh)",
         34.6387759486628,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.04176397260319096, 0.06808849536432662, 0.1385086332984472
-        ),
-        aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
-        or_slug="anthropic/claude-haiku-5.5-20261007",
-        or_session_cost_10_49_turns=0.063899343,
-        or_toks_served=2821526946589,
-        or_eff_input_price=0.08066,
-        or_eff_output_price=0.5842,
+        PricedTokens(0.04176397260319096, 0.06808849536432662, 0.1385086332984472),
     ),
-    Model(
-        "Anthropic",
+    ModelEffort(
         "Claude Haiku 5.5 (max)",
         36.4845435880142,
-        ProviderType.DATACENTER,
-        aa_cost_per_task=PricedTokens(
-            0.06550207604700437, 0.11298297985798467, 0.23252235946317396
-        ),
-        aa_sticker_price=PricedTokens(0.1, 0.5, 0.01),
-        or_slug="anthropic/claude-haiku-5.5-20261007",
-        or_session_cost_10_49_turns=0.063899343,
-        or_toks_served=2821526946589,
-        or_eff_input_price=0.08066,
-        or_eff_output_price=0.5842,
+        PricedTokens(0.06550207604700437, 0.11298297985798467, 0.23252235946317396),
     ),
     # AA dropped the pre-1019 Ling 3.1 Flash record in its 2026-10 methodology
     # change, so its index is regressed from benchmarks (see README), using only
@@ -1811,6 +1580,10 @@ MODELS = [
     ),
 ]
 
+# What the plots and the refresh read: the list above with every ModelEffort
+# replaced in place by the Model it derives from its base row.
+MODELS = expand_model_efforts(MODELS)
+
 
 class PlotSpec(NamedTuple):
     """One filtered view.
@@ -1839,8 +1612,10 @@ class PlotSpec(NamedTuple):
     zero_line: bool = False
     x_min: float = -math.inf  # hard lower bound on a signed x axis
     bar: bool = False  # draw horizontal bars (sorted by intelligence) not dots
-    one_per_model: bool = False  # collapse a model's effort variants to one
-    # bar (the rows OR carries no price for would all draw the same empty bar)
+    one_per_model: bool = False  # collapse a model's effort variants to one row
+    # (see _one_per_model): the bar plot needs it because a permaslug carries
+    # every thinking level and the variants OR prices none of share only a name,
+    # the hardware plot because one rig runs the model at every effort
     x_break: float | None = None  # split the x axis here: points at or above
     # the break go into a second panel (see make_broken_axis_plot)
     fig_w: float = FIG_W  # SVG figure width in inches, when this view needs
@@ -2007,6 +1782,10 @@ PLOTS = [
         break_xtick_format="${x:,.0f}",
         available_of=lambda m: m.available_local,
         label_of=lambda m: _clean_label(m),
+        # A rig is a rig at every thinking level: GLM-5.3-Flash's Strix Halo is
+        # bought once whether it runs (high) or (max), so the ladder is drawn
+        # once, at its highest effort, and _clean_label drops the tag.
+        one_per_model=True,
         hidden_icons=frozenset({"bolt"}),
     ),
 ]
@@ -2118,6 +1897,28 @@ def _clean_label(m: Model) -> str:
             break
         name = name[:open_].rstrip()
     return name + bolt
+
+
+def _one_per_model(models: list[Model]) -> list[Model]:
+    """One row per model: a ladder's effort variants collapse to one rung.
+
+    Rows belong together when they share an OR permaslug -- one endpoint carries
+    every thinking level -- and, for the rows OR has no slug for, when their
+    names match with the effort tag dropped (else five "GPT-6.1 Sol" rows all
+    draw the same empty bar). The smartest rung -- the max effort -- stands in.
+    Two rows of one name stay separate only if their permaslugs differ: Muse
+    Spark 1.3 and its -contributor endpoint are different offers, not thinking
+    levels. A quantisation parenthetical is not an effort tag, so the DeepSeek
+    UD-IQ1_M and UD-Q2_K_XL rigs stay two separate points. Where the views use
+    this, they also draw the survivor with _clean_label, so one name means one
+    model.
+    """
+    best: dict[str, Model] = {}
+    for m in models:
+        key = m.or_slug or _clean_label(m)
+        if key not in best or m.intelligence > best[key].intelligence:
+            best[key] = m
+    return list(best.values())
 
 
 def _split_icon(m, name=None, available=True, hidden=()):
@@ -3439,25 +3240,13 @@ def make_bar_plot(spec, models):
     tick string: they are stripped from the label and drawn as their vector
     icons just right of the label text (see the icon pass after the draw).
 
-    With one_per_model, a model's effort variants collapse to a single bar: one
-    permaslug carries every effort level, and the variants of a model OR carries
-    no price for share only their name, so the key falls back to that name with
-    the suffix dropped (else five "GPT-6.1 Sol" rows all draw the same empty
-    bar). The max-effort row -- the highest intelligence -- stands in and its
-    effort suffix is stripped from the label, so one name means one model.
-    Two rows of the same name stay separate only if their permaslugs differ:
-    Muse Spark 1.3 and its -contributor endpoint are different offers, not
-    thinking levels. Each effort level burns a different mix of input and
-    output tokens, so a family's Δ really does spread (Sonnet 5.5 is +42% at
-    medium and +86% at max); the bar reports the smartest variant's.
+    main has already collapsed the effort variants of a spec with
+    one_per_model (see _one_per_model), so one bar is one model; each effort
+    level burns a different mix of input and output tokens, so a family's Δ
+    really does spread (Sonnet 5.5 is +42% at medium and +86% at max) and the
+    bar reports the smartest variant's. The tag is stripped from the label here
+    too, for the same one-name-one-model reason.
     """
-    if spec.one_per_model:
-        best: dict[str, Model] = {}
-        for m in models:
-            key = m.or_slug or _clean_label(m)
-            if key not in best or m.intelligence > best[key].intelligence:
-                best[key] = m
-        models = list(best.values())
     ordered = sorted(models, key=lambda m: m.intelligence)
     ys = list(range(len(ordered)))
     xs = [spec.x_of(m) for m in ordered]
@@ -3619,6 +3408,8 @@ def main(argv=None):
     models_by_stem = {}
     for spec in PLOTS:
         models = [m for m in MODELS if spec.filt(m)]
+        if spec.one_per_model:
+            models = _one_per_model(models)
         if not models:
             raise SystemExit(f"no models match the filter for {spec.stem}")
         models_by_stem[spec.stem] = models

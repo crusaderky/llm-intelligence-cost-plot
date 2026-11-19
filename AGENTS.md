@@ -20,6 +20,10 @@ Single script, `plot.py`. All model data lives in the `MODELS` list; label place
 automatic, so adding a model = adding one row and re-running. The `PLOTS` list defines
 which filtered views get generated.
 
+The `MODELS` literal holds `Model | ModelEffort` rows; right below it, `MODELS` is rebound
+to the flattened `list[Model]` (`expand_model_efforts`) that the plots and the refresh
+actually read.
+
 ## Label placement
 
 `place_labels` picks every label's slot itself (`CANDIDATES`, in preference order, then
@@ -89,6 +93,32 @@ every other field is keyword-only. The displayed price per task is derived on de
 
 A publisher appearing for the first time must be added to `PUBLISHERS` with its
 artificialanalysis.ai color, or the script KeyErrors.
+
+### Effort ladders
+
+A model sold at several thinking levels (low/medium/high/xhigh/max) is one `Model` row —
+any one rung, tag and all — plus one
+`ModelEffort(name, intelligence, aa_cost_per_task, estimated=…)` row per other rung,
+listed directly after it. `name` is that rung's own label, `"GPT-6.2 Sol (max)"`:
+`expand_model_efforts` splits it with `_split_effort` and matches the stem against the
+rows above, so the base row is found by name, not by position. Each rung becomes
+`Model.effort()`, which clones the base row swapping the name tag, the intelligence and
+the cost split (and `estimated` when passed) and inherits the rest — publisher, provider
+type, AA sticker price, OR permaslug and its effective prices, hardware, flags — because a
+ladder is one offer burning a different token mix per rung. A rung that differs in
+anything `effort()` does not swap is no rung: write it as a full `Model` row, as the
+`DeepSeek V4.1 Flash 1017` quantisations are, which change `local_speed` and
+`hardware_bom` too. Two rows sharing one stem — the `Qwen3.8-Flash` local/datacenter pair,
+the `Muse Spark 1.3` trains-on-your-data pair — leave the base ambiguous, so a
+`ModelEffort` naming that stem raises rather than guessing a twin.
+
+A rung inherits `hardware_bom`, so a local ladder would plot the same rig twice.
+`local_hardware` sets `one_per_model`, and `_one_per_model` keeps only the highest-effort
+rung (rows group by OR permaslug, else by name with the effort tag dropped), which
+`label_of=_clean_label` then draws without the tag: one rig, one point, one name. That
+dedup is what lets `GLM-5.3-Flash (high)` be a rung at all, next to the `(max)` row that
+carries its Strix Halo `hardware_bom`. Only the words in `EFFORT_TAGS` are effort tags,
+so the DeepSeek `UD-*` quantisations — different rigs, different points — never collapse.
 
 ## Render markers
 
