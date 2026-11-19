@@ -2,7 +2,7 @@
 
 ## Workflow
 
-- **After EVERY change to `plot.py`, no exceptions:**
+- **After EVERY change to `scripts/plot.py`, no exceptions:**
 
   a. Run `pixi r plot`
   b. Inspect the generated plots in `plots/` (use `read` tool on the PNG files)
@@ -16,10 +16,10 @@
 
 ## Structure
 
-One plotting script, `plot.py`, and one data file, `data.toml`. All model data, the
+One plotting script, `scripts/plot.py`, and one data file, `data.toml`. All model data, the
 publisher colors and the hardware prices live in `data.toml`, loaded and validated with
 pydantic at import time; label placement is automatic, so adding a model = adding one row
-and re-running. The `PLOTS` list in `plot.py` defines which filtered views get generated.
+and re-running. The `PLOTS` list in `scripts/plot.py` defines which filtered views get generated.
 
 The `[[models]]` array in `data.toml` holds `kind = "model"` and `kind = "effort"` rows,
 converted to `Model | ModelEffort` and then flattened into the `list[Model]` (`MODELS`)

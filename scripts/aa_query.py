@@ -379,7 +379,7 @@ def fmt(m: dict) -> str:
     if sp is not None:
         lines.append(f"  Output speed: {sp} tok/s")
     # Free tier exposes AA's own cost per Intelligence Index task (total only,
-    # no token-type split); the page record below is what plot.py actually uses.
+    # no token-type split); the page record below is what scripts/plot.py actually uses.
     cpt = (
         (m.get("artificial_analysis_intelligence_index_cost") or {})
         .get("cost_per_task", {})

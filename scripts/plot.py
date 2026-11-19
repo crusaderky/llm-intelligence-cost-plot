@@ -776,7 +776,7 @@ class DataFile(BaseModel):
         return data
 
 
-DATA_PATH = Path(__file__).with_name("data.toml")
+DATA_PATH = Path(__file__).resolve().parents[1] / "data.toml"
 DATA = DataFile.load()
 PUBLISHERS: dict[str, str]
 HARDWARE_PRICES: dict[str, int]

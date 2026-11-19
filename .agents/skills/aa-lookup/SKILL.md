@@ -33,7 +33,7 @@ name. Refresh tooling uses `pick_record` the same way.
 - `evaluations.artificial_analysis_intelligence_index` — API-side (may be rounded);
   the page record's `intelligence` is the sub-unit value to use.
 - `intelligenceIndexCostPerTask.cost` — per-task cost breakdown. `output` includes
-  reasoning + answer; `input` = nonCacheInput + cacheRead + cacheWrite, so plot.py's
+  reasoning + answer; `input` = nonCacheInput + cacheRead + cacheWrite, so scripts/plot.py's
   `PricedTokens(input_, output, cached_input)` is
   `(nonCacheInput + cacheWrite, output, cacheRead)`.
 - `intelligenceIndexOutputTokensPerTask.output` — total output tokens per task
@@ -58,7 +58,7 @@ Free-tier shape: `evaluations` (headline + capability indices), `pricing`
 `performance`), `model_creator` (no `slug`), and
 `artificial_analysis_intelligence_index_cost.cost_per_task.total_cost` — AA's cost per task,
 total only and null for most models; `aa_query` prints it as a cross-check against the page
-breakdown, which is what plot.py consumes.
+breakdown, which is what scripts/plot.py consumes.
 
 ## Setup
 

@@ -6,7 +6,7 @@ description: Refreshes the ArtificialAnalysis (intelligence, output tokens per t
 # Refresh or add models in data.toml
 
 `data.toml` is the source of truth for every plotted number, the publisher colors and the
-hardware prices. `plot.py` loads and validates it with pydantic. Each `[[models]]` row
+hardware prices. `scripts/plot.py` loads and validates it with pydantic. Each `[[models]]` row
 stores AA's Intelligence Index (y axis), AA's output tokens per task (indirectly, via
 the cost split), AA's cost per task and its split by token type, the sticker price per 1M
 tokens that split was billed at, the OpenRouter permaslug and its synthetic effective
@@ -47,9 +47,9 @@ pixi r refresh_models --refresh   # force re-fetch of AA pages + OR stats
 Requires `AA_API_KEY` (exported in the shell profile) and the OpenRouter key at
 `~/.pi/agent/auth.json` (field `openrouter.key`).
 
-`refresh_models.py` lives at the repo root. It reads `data.toml` with tomlkit so every
+`scripts/refresh_models.py` reads `data.toml` with tomlkit so every
 comment survives, re-fetches AA's and OR's numbers, changes only the stale fields, prints
-one line per changed field, and writes `data.toml` back. It never rewrites `plot.py`.
+one line per changed field, and writes `data.toml` back. It never rewrites `scripts/plot.py`.
 Run `pixi r plot` afterwards to see the effect on the displayed prices and PNGs, then
 `pixi r lint`.
 
@@ -85,7 +85,7 @@ Treat these as abnormal and investigate before running `pixi r plot`:
 - a changed OR price when the script warned that the chart was empty (it keeps the last
   stored chart on purpose).
 
-Then check the thresholds in `plot.py`:
+Then check the thresholds in `scripts/plot.py`:
 
 - `LOW_COST_THRESHOLD` must still catch the cheap cluster *and* keep the green
   "cheap AND smart" band non-empty (at least one model with intelligence ≥

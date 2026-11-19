@@ -43,16 +43,11 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
+import aa_query
+import plot
 import tomlkit
 
-REPO_ROOT = Path(__file__).resolve().parent
-SKILLS = REPO_ROOT / ".agents" / "skills"
-sys.path.insert(0, str(SKILLS / "aa-lookup" / "scripts"))
-
-import aa_query
-
-import plot
-
+REPO_ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = REPO_ROOT / "data.toml"
 
 OR_SESSION_URL = "https://openrouter.ai/api/frontend/v1/rankings/session-cost"

@@ -6,9 +6,9 @@ platforms = ["linux-64"]
 version = "0.1.0"
 
 [tasks]
-plot = "python plot.py"
-aa-query = "python .agents/skills/aa-lookup/scripts/aa_query.py"
-refresh_models = "python refresh_models.py"
+plot = "python scripts/plot.py"
+aa-query = "python scripts/aa_query.py"
+refresh_models = "python scripts/refresh_models.py"
 lint = "ruff check --fix && ruff format && mdformat README.md AGENTS.md"
 
 [dependencies]
