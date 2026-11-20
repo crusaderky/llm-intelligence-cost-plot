@@ -43,9 +43,9 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-import aa_query
-import plot
 import tomlkit
+
+from . import aa_query, plot
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = REPO_ROOT / "data.toml"

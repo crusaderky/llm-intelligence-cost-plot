@@ -88,12 +88,6 @@ from pathlib import Path
 from typing import Annotated, Literal, NamedTuple
 
 import matplotlib
-
-matplotlib.use("agg")  # Agg gives us a measurable renderer; we still save SVG
-# Deterministic SVG output: hash salt makes element IDs (clip paths, glyph
-# defs) reproducible instead of uuid-derived, so re-running on unchanged data
-# produces a byte-identical SVG that git sees as clean.
-matplotlib.rcParams["svg.hashsalt"] = "llm-intelligence-cost-plot"
 import matplotlib.pyplot as plt
 import sympy
 from matplotlib.lines import Line2D
@@ -101,6 +95,12 @@ from matplotlib.patches import Rectangle
 from matplotlib.path import Path as MplPath
 from matplotlib.ticker import FormatStrFormatter, MultipleLocator, StrMethodFormatter
 from pydantic import BaseModel, ConfigDict, Field, RootModel
+
+matplotlib.use("agg")  # Agg gives us a measurable renderer; we still save SVG
+# Deterministic SVG output: hash salt makes element IDs (clip paths, glyph
+# defs) reproducible instead of uuid-derived, so re-running on unchanged data
+# produces a byte-identical SVG that git sees as clean.
+matplotlib.rcParams["svg.hashsalt"] = "llm-intelligence-cost-plot"
 
 # --- knobs -----------------------------------------------------------------
 FIG_W, FIG_H = 26, 14  # inches
