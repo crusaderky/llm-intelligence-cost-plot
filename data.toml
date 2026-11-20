@@ -296,8 +296,7 @@ or_slug = "tencent/hy4-20261104"
 or_toks_served = 12966662144096
 or_eff_input_price = 0.08742
 or_eff_output_price = 2.428
-hardware_bom = "DGX_SPARK*3+QSFP112_CABLE*3"
-available_local = false
+hardware_bom = "DGX_SPARK*4+QSFP112_CABLE*4"
 
 [[models]]
 # Guesstimate - not on AA (AA has no Hy4-flash record). Intelligence from Tencent's

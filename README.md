@@ -221,11 +221,11 @@ rapidly:
 | 24 GB VRAM + 128 GB host | PC with RTX 3090 | ~$5,200 | DeepSeek V4.1 Flash (UD-IQ1_M on [Xolotl](https://github.com/Indras-Mirror/Xolotl) / [Project Maya](https://github.com/mw00/project-maya))<br>Any model from the 128 GB unified row below |
 | 24 GB VRAM + 192 GB host | PC with RTX 3090 | ~$6,100 | DeepSeek V4.1 Flash (UD-Q2_K_XL on [Xolotl](https://github.com/Indras-Mirror/Xolotl) / [Project Maya](https://github.com/mw00/project-maya))<br>MiniMax M3.1 Flash (UD-Q3_X_XL) |
 | 96 GB unified | Mac Studio M5 Ultra 96 GB | $5,400 | Qwen3.8-Flash (Q4_K_M on [DwarfStar](https://dwarfstar.sh/)) |
-| 128 GB unified | Strix Halo 128 GB<br>Mac Studio M5 Max 128 GB<br>DGX Spark<br>MacBook Pro M5 Max 128 GB | $3,100<br>$5,100<br>$6,000<br>$7,000 | GLM-5.3-Flash (IQ3_XXS)<br>MiMo-v2.6-Flash (3.0bpw)<br>Qwen3.8-Flash (Q4_K_M on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [Gufo](https://github.com/gufo-org/gufo/) / [DwarfStar](https://dwarfstar.sh/))<br>Hy4-flash |
+| 128 GB unified | Strix Halo 128 GB<br>Mac Studio M5 Max 128 GB<br>DGX Spark<br>MacBook Pro M5 Max 128 GB | $3,100<br>$5,100<br>$6,000<br>$7,000 | Hy4-flash (Q4_K_M / NVFP4)<br>GLM-5.3-Flash (IQ3_XXS)<br>MiMo-v2.6-Flash (3.0bpw)<br>Qwen3.8-Flash (Q4_K_M on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [Gufo](https://github.com/gufo-org/gufo/) / [DwarfStar](https://dwarfstar.sh/)) |
 | 192 GB unified | Gorgon Halo | $6,200 | DeepSeek V4.1 Flash (UD-IQ2_XXS)<br>MiniMax M3.1 Flash (UD-IQ3_XXS) |
 | 256 GB unified | Mac Studio M5 Ultra 256 GB<br>2x DGX Spark | $11,300<br>$12,220 | Ling 3.1 Flash 1019 (IQ3_XXS) |
-| 384 GB unified | 3x DGX Spark | $18,330 | Hy4 (~Q3)<br>GLM-5.3 (Q3_K_XL)<br>MiMo-v2.6-Pro (3.0 bpw)<br>Step 5 Preview (Q3)<br>Mistral Large 4 (Q2_K_XL)<br>DeepSeek V4.1 Flash (MXFP4) |
-| 512 GB unified | 4x DGX Spark | $24,440 | Hy4 (NVFP4)<br>GLM-5.3 (NVFP4)<br>Step 5 Preview (NVFP4) |
+| 384 GB unified | 3x DGX Spark | $18,330 | GLM-5.3 (Q3_K_XL)<br>MiMo-v2.6-Pro (3.0 bpw)<br>Step 5 Preview (Q3)<br>Mistral Large 4 (Q2_K_XL)<br>DeepSeek V4.1 Flash (MXFP4) |
+| 512 GB unified | 4x DGX Spark | $24,440 | Hy4 (Q4_K_M)<br>GLM-5.3 (NVFP4)<br>Step 5 Preview (NVFP4) |
 | 1 TB unified | 8x DGX Spark + QSFP-DD switch | $50,000 | Kimi K3.1 Pro (UD-Q2_K_XL) |
 
 The same models on a hardware-cost axis at the highest available quantization that
