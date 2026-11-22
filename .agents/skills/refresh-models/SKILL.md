@@ -96,6 +96,12 @@ Then check the thresholds in `scripts/plot.py`:
 - If a refresh moves a model across a threshold, update the threshold and say so in the
   commit message.
 
+Then re-read the `## Conclusion` section of README.md: it hard-codes example prices and
+ratios that drift with every refresh. Take the current values from the `pixi r plot -v`
+price/task table, update each dollar figure and recompute every "X times cheaper" claim
+from those same numbers. Check the rounded intelligence scores too, in case an AA score
+crosses a rounding boundary.
+
 ## Special cases
 
 - Every value is stored verbatim at full precision (intelligence to 12+ digits, OR prices
