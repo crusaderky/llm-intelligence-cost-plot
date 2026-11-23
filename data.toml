@@ -177,7 +177,7 @@ aa_record_name = "Inkling 2 Mini"
 aa_derived = false
 aa_cost_per_task = [0.08531977882737593, 0.07591209882253235, 0.4253122453210805]
 aa_sticker_price = [0.15, 0.5, 0.015]
-local_speed = [800, 50]
+local_speed = [1350, 86]
 hardware_bom = "STRIX_POINT_16GB"
 
 [[models]]
