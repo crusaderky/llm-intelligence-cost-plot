@@ -3338,25 +3338,8 @@ z
     </g>
    </g>
    <g id="text_75">
-    <!-- DeepSeek V4.1 Flash 1017 (UD-Q2_K_XL) -->
+    <!-- DeepSeek V4.1 Flash 1017 -->
     <g style="fill: #1f2328" transform="translate(548.373119 357.999946) scale(0.13 -0.13)">
-     <defs>
-      <path id="DejaVuSans-3b" d="M 403 4666 
-L 1081 4666 
-L 2241 2931 
-L 3406 4666 
-L 4084 4666 
-L 2584 2425 
-L 4184 0 
-L 3506 0 
-L 2194 1984 
-L 872 0 
-L 191 0 
-L 1856 2491 
-L 403 4666 
-z
-" transform="scale(0.015625)"/>
-     </defs>
      <use xlink:href="#DejaVuSans-27"/>
      <use xlink:href="#DejaVuSans-48" transform="translate(77 0)"/>
      <use xlink:href="#DejaVuSans-48" transform="translate(138.53125 0)"/>
@@ -3381,19 +3364,6 @@ z
      <use xlink:href="#DejaVuSans-13" transform="translate(1156.453125 0)"/>
      <use xlink:href="#DejaVuSans-14" transform="translate(1220.078125 0)"/>
      <use xlink:href="#DejaVuSans-1a" transform="translate(1283.703125 0)"/>
-     <use xlink:href="#DejaVuSans-3" transform="translate(1347.328125 0)"/>
-     <use xlink:href="#DejaVuSans-b" transform="translate(1379.109375 0)"/>
-     <use xlink:href="#DejaVuSans-38" transform="translate(1418.125 0)"/>
-     <use xlink:href="#DejaVuSans-27" transform="translate(1491.3125 0)"/>
-     <use xlink:href="#DejaVuSans-10" transform="translate(1568.3125 0)"/>
-     <use xlink:href="#DejaVuSans-34" transform="translate(1608.046875 0)"/>
-     <use xlink:href="#DejaVuSans-15" transform="translate(1686.765625 0)"/>
-     <use xlink:href="#DejaVuSans-42" transform="translate(1750.390625 0)"/>
-     <use xlink:href="#DejaVuSans-2e" transform="translate(1800.390625 0)"/>
-     <use xlink:href="#DejaVuSans-42" transform="translate(1865.96875 0)"/>
-     <use xlink:href="#DejaVuSans-3b" transform="translate(1915.96875 0)"/>
-     <use xlink:href="#DejaVuSans-2f" transform="translate(1984.46875 0)"/>
-     <use xlink:href="#DejaVuSans-c" transform="translate(2040.1875 0)"/>
     </g>
    </g>
    <g id="text_76">
@@ -4116,6 +4086,23 @@ z
     <g id="text_92">
      <!-- Xiaomi -->
      <g transform="translate(1275.067072 890.404531) scale(0.13 -0.13)">
+      <defs>
+       <path id="DejaVuSans-3b" d="M 403 4666 
+L 1081 4666 
+L 2241 2931 
+L 3406 4666 
+L 4084 4666 
+L 2584 2425 
+L 4184 0 
+L 3506 0 
+L 2194 1984 
+L 872 0 
+L 191 0 
+L 1856 2491 
+L 403 4666 
+z
+" transform="scale(0.015625)"/>
+      </defs>
       <use xlink:href="#DejaVuSans-3b"/>
       <use xlink:href="#DejaVuSans-4c" transform="translate(68.5 0)"/>
       <use xlink:href="#DejaVuSans-44" transform="translate(96.28125 0)"/>

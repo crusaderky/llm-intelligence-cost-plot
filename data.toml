@@ -261,6 +261,7 @@ or_session_cost_10_49_turns = 0.02781665525
 or_toks_served = 63361082326011
 or_eff_input_price = 0.01471
 or_eff_output_price = 0.5993
+hardware_bom = "RTX_3090_PC_192GB"  # UD-Q2_K_XL
 
 [[models]]
 # Degraded local model
@@ -279,23 +280,6 @@ aa_sticker_price = [0.3, 1.2, 0.006]
 local_speed = [320, 21]  # From Strata docs for a quant of similar size
 hardware_bom = "RTX_3090_PC_128GB"
 estimated = true
-
-[[models]]
-# Local model with negligible performance loss
-kind = "model"
-publisher = "DeepSeek"
-name = "DeepSeek V4.1 Flash 1017 (UD-Q2_K_XL)"
-intelligence = 32.5896393532027  # Same as MXFP4
-provider_type = "local"
-aa_page_slug = "deepseek-v4-1-flash-1017"
-aa_record_name = "DeepSeek V4.1 Flash 1017 (Max)"
-aa_derived = true
-# Output tokens per task: MXFP4 * 2.1 / 1.5 (per Unsloth tests)
-aa_cost_per_task = [0.2571473726554651, 0.23345566588925717, 0.1782037281167598]
-aa_sticker_price = [0.3, 1.2, 0.006]
-# Rescaled output tok/s for 2.0bpw / 2.8bpw
-local_speed = [320, 15]
-hardware_bom = "RTX_3090_PC_192GB"
 
 [[models]]
 kind = "model"
