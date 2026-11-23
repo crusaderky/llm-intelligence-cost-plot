@@ -193,4 +193,6 @@ crosses a rounding boundary.
   `or_slug_variants` tries both for the stats lookups.
 - Effort variants share one permaslug; the ×-tokens-per-task factor is what separates
   them on the plot.
-- Keep README.md in sync with any value change (AGENTS.md rule).
+- Keep README.md in sync with any value change (AGENTS.md rule). Hardware prices are
+  re-priced separately: see `.agents/skills/refresh-hardware-bom/SKILL.md` and
+  `Hardware_BOM.md`; this refresh must never change `[hardware_prices]`.

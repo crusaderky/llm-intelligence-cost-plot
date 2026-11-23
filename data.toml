@@ -35,19 +35,19 @@
 # `hardware_bom` is a sympy expression over these keys, e.g.
 # "DGX_SPARK*3+QSFP112_CABLE*3" for three Sparks cabled together.
 [hardware_prices]
-MOBILE_PHONE = 250  # 4 GB unified
-STRIX_POINT_16GB = 850  # 16 GB unified
-STRIX_POINT_32GB = 1200  # 32 GB unified
-RTX_3090_PC_32GB = 2400  # 24 GB VRAM + 32 GB host RAM
-RTX_5060TI_PC_48GB = 2700  # 16 GB VRAM + 48 GB host RAM
-RTX_3090_PC_128GB = 5200  # 24 GB VRAM + 128 GB host RAM
-RTX_3090_PC_192GB = 6100  # 24 GB VRAM + 192 GB host RAM
-STRIX_HALO = 3100  # Bosgame, 128 GB unified
-DGX_SPARK = 6000  # Asus Ascent GX10, 128 GB unified
-GORGON_HALO = 6200  # Bosgame, 192 GB unified
-QSFP112_CABLE = 110  # 200G direct attach for 2~4x DGX Spark
-QSFP_DD_SWITCH = 1200  # 4-port 400G for 8x DGX Spark
-QSFP_DD_BREAKOUT_CABLE = 200  # 400G to 2x200G
+MOBILE_PHONE = 140  # 4 GB unified
+STRIX_POINT_16GB = 700  # 16 GB unified
+STRIX_POINT_32GB = 1170  # 32 GB unified
+RTX_3090_PC_32GB = 2284  # 24 GB VRAM + 32 GB host RAM
+RTX_5060TI_PC_64GB = 1842  # 16 GB VRAM + 64 GB host RAM
+RTX_3090_PC_128GB = 3333  # 24 GB VRAM + 128 GB host RAM
+RTX_3090_PC_192GB = 8478  # 24 GB VRAM + 192 GB host RAM
+STRIX_HALO = 3099  # Bosgame, 128 GB unified
+DGX_SPARK = 5999  # Asus Ascent GX10, 128 GB unified
+GORGON_HALO = 6199  # Bosgame, 192 GB unified
+QSFP112_CABLE = 108  # 400G direct attach for 2~4x DGX Spark
+QSFP_DD_SWITCH = 1295  # 4-port 400G for 8x DGX Spark
+QSFP_DD_BREAKOUT_CABLE = 90  # 400G to 2x200G
 
 # Price per task is derived by Model.price_per_task(). Stored inputs:
 # - intelligence + aa_cost_per_task + aa_sticker_price: artificialanalysis.ai (AA model
@@ -208,8 +208,8 @@ aa_record_name = "Qwen3.8-Flash-Next"
 aa_derived = false
 aa_cost_per_task = [0.07464306072950636, 0.06942190972050413, 0.4253161214346214]
 aa_sticker_price = [0.15, 0.47, 0.016]
-local_speed = [2000, 84]
-hardware_bom = "RTX_5060TI_PC_48GB"
+local_speed = [1600, 75]
+hardware_bom = "RTX_5060TI_PC_64GB"
 
 [[models]]
 kind = "model"
@@ -341,7 +341,7 @@ or_slug = "tencent/hy4-flash"
 or_toks_served = 59692570694
 or_eff_input_price = 0.005517
 or_eff_output_price = 0.2539
-hardware_bom = "STRIX_HALO"
+hardware_bom = "RTX_5060TI_PC_64GB"
 estimated = true
 
 [[models]]

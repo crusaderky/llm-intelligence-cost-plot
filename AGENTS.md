@@ -151,7 +151,10 @@ with its artificialanalysis.ai color, or loading the file raises.
 
 README.md states specific scores, prices, and model lists in prose. Any data change that
 contradicts it (new/removed models, changed intelligence or cost) requires updating the
-README text, not just the plot.
+README text, not just the plot. Every headline hardware price in README's "Larger local
+models" table must equal the **Build total** of its table in `Hardware_BOM.md`; follow
+`.agents/skills/refresh-hardware-bom/SKILL.md` when re-pricing hardware or syncing those
+totals into `[hardware_prices]` in `data.toml`.
 
 ## Reproducibility gotchas
 
