@@ -11,6 +11,7 @@
 "Alibaba" = "#ff7018"
 "Anthropic" = "#cc785c"
 "Apodex" = "#30d8d1"
+"Baidu" = "#2436d8"
 "DeepSeek" = "#2243e6"
 "Google" = "#34A853"
 "InclusionAI" = "#4fb5ff"
@@ -1106,6 +1107,43 @@ aa_cost_per_task = [1.1261695939526823, 0.20223972528697784, 1.8567356990981327]
 aa_sticker_price = [0.3, 0.9, 0.06]
 hardware_bom = "DGX_SPARK*2+QSFP112_CABLE*2"
 available_datacenter = false
+
+# No AA record: intelligence regressed from the 20-benchmark comparison table on
+# Baidu's model card (https://huggingface.co/baidu/ERNIE-5.5-Flash-Preview-FP8), taking
+# Baidu's own run where a cell prints one. Per benchmark, OLS of the four comparison
+# models' AA index at max effort (Hy4 34.56, DeepSeek V4.1 Flash 1017 32.59, GLM-5.3
+# 31.65, GLM-5.3-Flash 27.80) on their score, inverted at ERNIE's score and averaged
+# unweighted over the 20 benchmarks: 33.73 (median 33.59, sd 2.36), i.e. where Hy4 and
+# DeepSeek are. Claude Opus 5.5 (59.11) and GPT-6.1 Sol (54.61) are left out on
+# purpose: twenty index points above the target, they set each line from the gap
+# between the two clusters rather than from the band ERNIE sits in and lift the
+# inversion at its scores by 4 points (37.74 with them in). The unweighted mean is the
+# conservative reading of that table: per-benchmark R2 moves too much under a change
+# of anchor set to serve as a weight (AA-Omniscience-Public 0.96 with six anchors and
+# 0.05 with four, SpreadsheetBench V2 the other way round), and the weighted mean
+# follows it -- 34.69 with four anchors, on HLE and DRACO at 30% of the weight, against
+# 37.74 with six, on Terminal-Bench and AA-Omniscience. AA's own current runs of
+# Terminal-Bench 4.0 and -Science, minus the 3.6 and 2.2 points Baidu's harness scores
+# above AA's, invert to 36.1; the mean over the eight benchmarks of Baidu's chart,
+# which the plot used before the table was published, gave 42.3. Free on OR, so the AA
+# price split and sticker price are NaN and no token mix is needed.
+[[models]]
+kind = "model"
+publisher = "Baidu"
+name = "Ernie-5.5-flash-preview"
+intelligence = 33.72754008728939
+provider_type = "datacenter"
+aa_page_slug = ""
+aa_record_name = ""
+aa_derived = true
+aa_cost_per_task = [nan, nan, nan]
+aa_sticker_price = [nan, nan, nan]
+or_slug = "baidu/ernie-5.5-flash-preview-20261110"
+or_toks_served = 3444947687136
+or_eff_input_price = 0.0
+or_eff_output_price = 0.0
+hardware_bom = "STRIX_HALO"  # 3.0 bpw
+estimated = true
 
 [[models]]
 kind = "model"

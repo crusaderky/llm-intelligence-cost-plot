@@ -68,6 +68,8 @@ Models marked with a thief mask symbol
 train on your data and you should not use them for anything that you would not
 want to become publicly available on the internet.
 
+Models marked with a beer tankard are (temporarily) free on OpenRouter; they are typically severely rate-limited.
+
 Models in grey with a strikethrough are not offered to the public yet: no datacenter
 endpoint on the price plots, no downloadable weights on the hardware plot.
 
@@ -129,6 +131,10 @@ absent as they have no sticker price to compare with.
   Glimmer and Granite 4.2 3B.
 - Extrapolated intelligence for Ling 3.1 Flash (early checkpoint, datacenter only) from
   the benchmarks it shares with its successor, Ling 3.1 Flash 1019 (local only).
+- Extrapolated intelligence for Ernie-5.5-flash-preview (intelligence 42) from
+  the benchmarks in [Baidu's
+  chart](https://huggingface.co/baidu/ERNIE-5.5-Flash-Preview-FP8), by
+  regressing against the comparison models.
 
 ## Cost calculation for datacenter models
 
@@ -217,11 +223,11 @@ rapidly. Every price is the total of a component-level build in
 | 16 GB unified | Ryzen AI 300/400 laptop (Strix/Gorgon Point) | $700 | Inkling 2 Mini (SQ-10 on [Strata](https://github.com/Niko1221/Strata)) |
 | 32 GB unified | Ryzen AI 300/400 laptop (Strix/Gorgon Point) | $1,170 | Inkling 2 Mini (SQ-15 on [Strata](https://github.com/Niko1221/Strata)) |
 | 24 GB VRAM + 32 GB host | PC with RTX 3090 | $2,284 (used) | Qwen-3.8-27B (IQ4) |
-| 16 GB VRAM + 64 GB host | PC with RTX 5060 Ti | $1,842 | Qwen3.8-Flash (Gyro-M on [Strata](https://github.com/Niko1221/Strata))<br>Hy4-flash |
+| 16 GB VRAM + 64 GB host | PC with RTX 5060 Ti | $1,842 | Qwen3.8-Flash (Q3 on [Strata](https://github.com/Niko1221/Strata))<br>Hy4-flash |
 | 24 GB VRAM + 128 GB host | PC with RTX 3090 | $3,333 | DeepSeek V4.1 Flash (IQ1 on [Xolotl](https://github.com/Indras-Mirror/Xolotl) / [Project Maya](https://github.com/mw00/project-maya))<br>Any model from the 128 GB unified row below |
 | 24 GB VRAM + 192 GB host | PC with RTX 3090 | $8,478 | DeepSeek V4.1 Flash (Q2 on [Xolotl](https://github.com/Indras-Mirror/Xolotl) / [Project Maya](https://github.com/mw00/project-maya))<br>MiniMax M3.1 Flash (Q3) |
 | 96 GB unified | Mac Studio M5 Ultra 96 GB | $5,499 | Qwen3.8-Flash (Q4 on [DwarfStar](https://dwarfstar.sh/)) |
-| 128 GB unified | Ryzen AI MAX+ (Strix Halo) mini PC<br>Mac Studio M5 Max 128 GB<br>DGX/RTX Spark mini PC<br>MacBook Pro M5 Max 128 GB | $3,099<br>$5,399<br>$5,999<br>$6,999 | GLM-5.3-Flash (IQ3)<br>MiMo-v2.6-Flash (3.0bpw)<br>Qwen3.8-Flash (Q4 on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [Gufo](https://github.com/gufo-org/gufo/) / [DwarfStar](https://dwarfstar.sh/)) |
+| 128 GB unified | Ryzen AI MAX+ (Strix Halo) mini PC<br>Mac Studio M5 Max 128 GB<br>DGX/RTX Spark mini PC<br>MacBook Pro M5 Max 128 GB | $3,099<br>$5,399<br>$5,999<br>$6,999 | Ernie-5.5-flash-preview (Q3)<br>GLM-5.3-Flash (IQ3)<br>MiMo-v2.6-Flash (3.0bpw)<br>Qwen3.8-Flash (Q4 on llama.cpp / [Halogen](https://github.com/peonist-ai/halogen-flash-server) / [Gufo](https://github.com/gufo-org/gufo/) / [DwarfStar](https://dwarfstar.sh/)) |
 | 192 GB unified | Gorgon Halo | $6,199 | DeepSeek V4.1 Flash (IQ2)<br>MiniMax M3.1 Flash (IQ3) |
 | 256 GB unified | Mac Studio M5 Ultra 256 GB<br>2x DGX Spark | $10,799<br>$12,214 | Ling 3.1 Flash 1019 (IQ3) |
 | 384 GB unified | 3x DGX Spark | $18,321 | GLM-5.3 (Q3)<br>MiMo-v2.6-Pro (3.0 bpw)<br>Step 5 Preview (Q3)<br>Mistral Large 4 (Q2)<br>DeepSeek V4.1 Flash (MXFP4) |

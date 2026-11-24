@@ -72,7 +72,10 @@ validates the file before plotting. The displayed price per task is derived on d
     effective price over the window's days, then instances are averaged weighted by the
     share of the model's tokens they served (free endpoints dropped). Never use OR's
     spot "cheapest provider" price, and not the old quintile/median reduction either —
-    it priced providers nobody routed to.
+    it priced providers nobody routed to. A model OR serves only through free
+    endpoints has no paid instance for that reduction, so hand-write both fields as
+    `0.0` and both price arrays as `[nan, nan, nan]`: no token mix is needed when
+    nothing is billed.
   - The total (`sum()` of the split) stays as the fallback price when the OR price
     is missing, and as the delta plot's
     baseline; read it with `Model.aa_total_cost_per_task()`.
@@ -94,7 +97,10 @@ validates the file before plotting. The displayed price per task is derived on d
   `__post_init__`:
   `"DGX_SPARK*3+QSFP112_CABLE*3"` is three Sparks cabled together, the same rig as
   `3 * (6000 + 112)`. An unknown name raises instead of pricing at zero. `None` leaves
-  the model off that plot.
+  the model off that plot. `hardware_only = true` keeps a model with no OR prices and
+  no AA cost split on that plot alone: `_priced` filters it out of all price views,
+  `price_per_task()` returns NaN for it, and the AA index still refreshes. Its rig
+  still competes on the hardware plot's Pareto frontier.
 
 A publisher appearing for the first time must be added to `[publishers]` in `data.toml`
 with its artificialanalysis.ai color, or loading the file raises.
@@ -129,10 +135,14 @@ so the DeepSeek `UD-*` quantisations — different rigs, different points — ne
 ## Render markers
 
 Only the `⚡` is still a name string (`__post_init__` splices it into local models) —
-do not "clean it up". The other two are boolean fields on `Model`, never text in a
-name:
+do not "clean it up". The mask is a boolean field on `Model` and the tankard is derived
+from the OR prices, never text in a name:
 
 - `⚡` → lightning bolt icon (local electricity cost)
+- `free_on_openrouter` → beer tankard icon (both OR effective prices are `0.0`, so the
+  datacenter offer costs $0/task). Excluded from the Pareto frontier on the price
+  plots, but not on the hardware plot, where the rig is a real cost; the price-delta
+  plot shows it at -100% even with a NaN AA baseline. Hidden on the hardware plot.
 - `trains_on_your_data=True` → thief mask icon (provider trains on your data); excluded
   from the Pareto frontier
 - `available_datacenter=False` / `available_local=False` → grey strikethrough text in the
@@ -141,8 +151,13 @@ name:
   and given a "Not publicly available" legend entry
 - `estimated=True` → hollow dot (data not published by AA: extrapolated, or hand-entered)
 
+Pareto eligibility is per view: `PlotSpec.frontier_eligible_of` defaults to dropping
+free offers and hardware-only rows on price plots, while the hardware plot overrides it
+to keep both. Availability is handled separately by `PlotSpec.available_of`.
+
 A view can drop a glyph entirely with `PlotSpec.hidden_icons` (labels and legend entry
-alike); the hardware plot hides `bolt` because its filter admits only local models.
+alike); the hardware plot hides `bolt` because its filter admits only local models, and
+`beer` so a free datacenter row's rig never carries the price marker.
 
 A publisher appearing for the first time must be added to `[publishers]` in `data.toml`
 with its artificialanalysis.ai color, or loading the file raises.

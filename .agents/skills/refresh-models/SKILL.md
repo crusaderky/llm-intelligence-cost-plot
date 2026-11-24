@@ -104,6 +104,19 @@ crosses a rounding boundary.
 
 ## Special cases
 
+- A free-only model that starts showing a **paid** OR endpoint must be swapped to the
+  paid offer: replace the free permaslug and the zero effective prices with the paid
+  endpoint's permaslug and trailing-week prices, so the tankard and the -100% delta
+  disappear. A paid offer needs an AA price baseline again. If AA publishes no cost
+  split, use OpenRouter's nominal (list) price for the developer's own endpoint as the
+  sticker price, guesstimate the token mix / price per task from the closest AA-scored
+  sibling, record the calculation as a `# computed from:` comment in `data.toml`, set
+  `estimated = true` / `aa_derived = true`, and tell the user exactly how you made the
+  guesstimate before accepting the change. Never leave the old zero prices in place.
+- A model AA scores but OR does not list can still be plotted on the hardware view:
+  give it a `hardware_bom` and `hardware_only = true`, with NaN cost/sticker splits.
+  Every price view skips it, so it needs no OR prices; its AA index still refreshes.
+
 - Every value is stored verbatim at full precision (intelligence to 12+ digits, OR prices
   rounded to 4 significant digits before storage), so a tiny nonzero move is real and is
   applied. The derived token count from `aa_cost_per_task ÷ aa_sticker_price` lags AA's
@@ -158,11 +171,16 @@ crosses a rounding boundary.
    They inherit the base's sticker prices, OR fields and hardware through `Model.effort()`;
    `local_hardware` draws a ladder once, at its highest effort. See AGENTS.md's "Effort
    ladders".
-6. A model not on AA (or one AA has retired) needs a hand-entered token mix:
+6. A model free on every OR endpoint has an empty effective-pricing chart. Write
+   `or_eff_input_price = 0.0`, `or_eff_output_price = 0.0` and
+   `aa_cost_per_task = aa_sticker_price = [nan, nan, nan]` by hand: no token mix is
+   needed when nothing is billed, and the model draws a beer tankard at $0/task.
+   `refresh-models` keeps those zero prices when the chart stays empty.
+7. A model not on AA (or one AA has retired) needs a hand-entered token mix:
    `[tokens/1e6, tokens/1e6, 0.0]` against `aa_sticker_price = [1.0, 1.0, 1.0]`
    (see `K2 Horizon 7B`) if it is priced by electricity, or a hand-derived real split
    (see `Hy4-flash`) if OR prices it. Set `aa_page_slug = ""` and `aa_derived = true`.
-7. Run `pixi r refresh-models` once: a correct new row changes nothing, or only refreshes
+8. Run `pixi r refresh-models` once: a correct new row changes nothing, or only refreshes
    the OR fields that moved between the two fetches.
 
 ## Provenance rules

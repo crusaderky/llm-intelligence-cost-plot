@@ -53,7 +53,12 @@ publishes no breakdown for, K2 Horizon 7B, carries its token mix as a
 hand-priced dummy split (see Model.aa_cost_per_task).
 
 Dots are colored by publisher (colors replicated from artificialanalysis.ai)
-and a legend lists only the publishers present in each plot.
+and a legend lists only the publishers present in each plot. A datacenter
+model that OpenRouter serves for $0 per token gets a beer-tankard icon and
+costs $0 per task by definition; free offers are kept out of the price plots'
+Pareto frontier and show as -100% in the price-delta view. Their hardware
+cost is a separate question, so they can still cap the hardware plot's
+frontier.
 
 Label placement is automatic: the script measures each label's real rendered
 size and tries a list of candidate positions around its dot, keeping the
@@ -318,11 +323,12 @@ LABEL_PINS: dict[tuple[str, str], tuple[float, float, str, str]] = {
 
 # Colored vector icons that stand in for the ⚡ emoji: matplotlib cannot render
 # color emoji, so without this ⚡ draws as a thin black outline.
-ICON_SIZE = {"bolt": 15, "mask": 20}  # px
+ICON_SIZE = {"bolt": 15, "mask": 20, "beer": 18}  # px
 ICON_GAP = 4  # px between a label's text and its icon
 ICON_COLORS = {
     "bolt": ("#fbbf24", "#b45309"),  # amber fill, dark edge
     "mask": ("#1f2937", "#09090b"),  # black fill, blacker edge
+    "beer": ("#d97706", "#78350f"),  # beer amber, dark brown edge
 }
 
 # Publisher colors and hardware prices live in data.toml, loaded below.
@@ -449,6 +455,9 @@ class Model:
     available_datacenter: bool = field(default=True, kw_only=True)
     # Set to False to indicate that model weights can't be downloaded
     available_local: bool = field(default=True, kw_only=True)
+    # Only the hardware-cost view draws this row. Such a model has no OR data
+    # and may have a NaN AA cost split, so it has no price per task at all.
+    hardware_only: bool = field(default=False, kw_only=True)
     # The provider trains on your prompts. Rendered with the thief mask icon
     # and kept out of the Pareto frontier (same offer, worse provider).
     trains_on_your_data: bool = field(default=False, kw_only=True)
@@ -511,6 +520,21 @@ class Model:
             aa_derived=self.aa_derived if aa_derived is None else aa_derived,
         )
 
+    @property
+    def free_on_openrouter(self) -> bool:
+        """Whether OR serves this datacenter offer at $0 per token.
+
+        Both effective prices are zero: there is no paid endpoint to price
+        the task with, so its displayed price is $0 and the AA cost split is
+        deliberately NaN (the user never pays it). Local offers have no OR
+        prices at all and cannot be free in this sense.
+        """
+        return (
+            self.provider_type is ProviderType.DATACENTER
+            and self.or_eff_input_price == 0.0
+            and self.or_eff_output_price == 0.0
+        )
+
     def aa_total_cost_per_task(self) -> float:
         """AA's posted cost of one task: the sum of its split by token type."""
         return sum(self.aa_cost_per_task)
@@ -522,8 +546,12 @@ class Model:
         (both in PricedTokens), in tokens. A 0.0 cache price means AA reports no
         cache reads for the model, so the task burned no cached tokens. A row
         whose sticker price is the dummy 1.0 carries its token mix in the cost
-        split itself (see aa_cost_per_task).
+        split itself (see aa_cost_per_task). A free-offer or hardware-only row
+        carries NaN splits and has no token mix to recover.
         """
+        if self.hardware_only or self.free_on_openrouter:
+            nan = float("nan")
+            return PricedTokens(nan, nan, nan)
         cost, sticker = self.aa_cost_per_task, self.aa_sticker_price
         assert min(cost.input_, cost.output, sticker.input_, sticker.output) > 0, (
             f"{self.name}: every price we divide by must be non-zero"
@@ -564,6 +592,14 @@ class Model:
         through prefill and its output tokens through decode on the RTX 3090
         measurement rig.
         """
+        if self.hardware_only:
+            # No per-task price exists for a hardware-only row: it has neither
+            # OR prices nor an AA cost split. It is never plotted on a price axis.
+            return float("nan")
+        if self.free_on_openrouter:
+            # No AA token mix exists for a free offer (its cost split is NaN),
+            # and there is nothing to pay either way.
+            return 0.0
         if self.provider_type is ProviderType.LOCAL:
             assert self.local_speed is not None
             tokens = self.local_token_counts()
@@ -588,6 +624,10 @@ class Model:
         cost has no AA price to be a delta against.
         """
         assert self.provider_type is ProviderType.DATACENTER
+        if self.free_on_openrouter:
+            # A free offer is -100% against any baseline, including the NaN
+            # AA cost stored for models with no published AA price.
+            return -100.0
         return 100 * (self.price_per_task() / self.aa_total_cost_per_task() - 1)
 
 
@@ -696,6 +736,7 @@ class ModelSpec(AaLookupFields):
     estimated: bool = False
     available_datacenter: bool = True
     available_local: bool = True
+    hardware_only: bool = False
     trains_on_your_data: bool = False
 
     def to_model(self) -> Model:
@@ -718,6 +759,7 @@ class ModelSpec(AaLookupFields):
             estimated=self.estimated,
             available_datacenter=self.available_datacenter,
             available_local=self.available_local,
+            hardware_only=self.hardware_only,
             trains_on_your_data=self.trains_on_your_data,
             aa_page_slug=self.aa_page_slug,
             aa_record_name=self.aa_record_name,
@@ -841,6 +883,11 @@ class PlotSpec(NamedTuple):
         m.available_datacenter
     )  # which availability flag this view is governed by: the strikethrough,
     # the legend entry and the frontier exclusion all follow it
+    frontier_eligible_of: Callable[[Model], bool] = lambda m: (
+        _priced(m) and not m.trains_on_your_data and not m.free_on_openrouter
+    )  # who may cap the Pareto frontier. Price plots drop free offers and
+    # hardware-only rows because neither has a market price; the hardware
+    # plot's x is a rig, which both of them do have
     label_of: Callable[[Model], str] = lambda m: m.name  # a point's display
     # text. The hardware plot drops the effort/hardware suffixes, since its x
     # is the same rig for every effort variant of a model
@@ -897,11 +944,20 @@ class PlotSpec(NamedTuple):
         return self.x_pad
 
 
+def _priced(m: Model) -> bool:
+    """Whether a model belongs on a per-task price view at all.
+
+    A hardware-only row has no OR prices and may have no AA cost split, so it
+    can appear only on the hardware plot; the price views skip it entirely.
+    """
+    return not m.hardware_only
+
+
 # The plots to generate.
 PLOTS = [
     PlotSpec(
         "Intelligence vs. Price per Task (High Intelligence)",
-        lambda m: m.intelligence >= HIGH_INTELLIGENCE_THRESHOLD,
+        lambda m: _priced(m) and m.intelligence >= HIGH_INTELLIGENCE_THRESHOLD,
         "high_intelligence",
         xtick_step=1.0,
         xtick_format="$%.2f",
@@ -915,7 +971,7 @@ PLOTS = [
     ),
     PlotSpec(
         "Intelligence vs. Price per Task (Low Cost)",
-        lambda m: m.price_per_task() <= LOW_COST_THRESHOLD,
+        lambda m: _priced(m) and m.price_per_task() <= LOW_COST_THRESHOLD,
         "low_cost",
         xtick_step=0.05,
         xtick_format="$%.2f",
@@ -923,7 +979,7 @@ PLOTS = [
     ),
     PlotSpec(
         "Intelligence vs. Price per Task (All Models)",
-        lambda _: True,
+        _priced,
         "all_models",
         xtick_step=0.05,
         xtick_format="$%.2f",
@@ -951,7 +1007,7 @@ PLOTS = [
     ),
     PlotSpec(
         "Δ from AA's Price per Task",
-        lambda m: m.provider_type is ProviderType.DATACENTER,
+        lambda m: _priced(m) and m.provider_type is ProviderType.DATACENTER,
         "price_delta",
         x_of=Model.price_delta,
         x_label="Δ from AA's price per task (%)",
@@ -984,7 +1040,11 @@ PLOTS = [
         # bought once whether it runs (high) or (max), so the ladder is drawn
         # once, at its highest effort, and _clean_label drops the tag.
         one_per_model=True,
-        hidden_icons=frozenset({"bolt"}),
+        hidden_icons=frozenset({"bolt", "beer"}),
+        # A free datacenter offer and a hardware-only row have a rig like
+        # anyone else; only the provider that trains on your data is still
+        # excluded, as on every other view.
+        frontier_eligible_of=lambda m: not m.trains_on_your_data,
     ),
 ]
 
@@ -1052,7 +1112,69 @@ def _mask_path():
     return MplPath(verts, codes)
 
 
+def _tankard_path():
+    """Beer tankard: a foamy mug with a handle, cut out under the nonzero rule.
+
+    The outer contour is clockwise; the white foam strip and the handle hole
+    are counter-clockwise, so they render as background-colored holes with a
+    dark rim rather than as extra amber. Neither touches the outline.
+    """
+    outer = [
+        (0.08, 0.78),
+        (0.10, 0.92),
+        (0.24, 0.86),
+        (0.36, 0.98),
+        (0.50, 0.87),
+        (0.64, 0.98),
+        (0.78, 0.86),
+        (0.88, 0.92),
+        (0.86, 0.76),
+        (0.78, 0.76),
+        (0.78, 0.68),
+        (0.93, 0.70),
+        (0.99, 0.56),
+        (0.98, 0.30),
+        (0.88, 0.18),
+        (0.78, 0.18),
+        (0.78, 0.08),
+        (0.10, 0.08),
+        (0.10, 0.78),
+    ]
+    foam = [
+        (0.12, 0.78),
+        (0.14, 0.87),
+        (0.25, 0.82),
+        (0.36, 0.92),
+        (0.49, 0.82),
+        (0.61, 0.92),
+        (0.72, 0.82),
+        (0.83, 0.87),
+        (0.84, 0.78),
+    ]
+    handle_hole = [
+        (0.86, 0.34),
+        (0.93, 0.38),
+        (0.95, 0.48),
+        (0.94, 0.58),
+        (0.88, 0.63),
+        (0.84, 0.57),
+        (0.83, 0.46),
+    ]
+    path = _icon_path(outer)
+    verts, codes = path.vertices.tolist(), path.codes.tolist()
+    cx = (min(p[0] for p in outer) + max(p[0] for p in outer)) / 2
+    cy = (min(p[1] for p in outer) + max(p[1] for p in outer)) / 2
+    for hole in (foam, handle_hole):
+        pts = [(x - cx, y - cy) for x, y in reversed(hole)]
+        verts += pts + [pts[0]]
+        codes += (
+            [MplPath.MOVETO] + [MplPath.LINETO] * (len(pts) - 1) + [MplPath.CLOSEPOLY]
+        )
+    return MplPath(verts, codes)
+
+
 ICON_PATHS = {
+    "beer": _tankard_path(),
     "bolt": _icon_path(
         [
             (0.65, 1.00),
@@ -1136,7 +1258,8 @@ def _split_icon(m, name=None, available=True, hidden=()):
     `available` overrides the availability the label is rendered under.
     `hidden` lists icon keys this view suppresses: they are neither returned
     nor left in the text, so a hidden ⚡ leaves the name it was spliced into
-    unchanged apart from the glyph itself.
+    unchanged apart from the glyph itself. A free datacenter offer gets the
+    beer tankard; the ⚡ and mask are the other two possible markers.
     """
     if name is None:
         name = m.name
@@ -1148,6 +1271,8 @@ def _split_icon(m, name=None, available=True, hidden=()):
         if "bolt" in hidden:
             return (left + " " + right).strip(), None, "", strike
         return left, "bolt", right, strike
+    if m.free_on_openrouter and "beer" not in hidden:
+        return name, "beer", "", strike
     if m.trains_on_your_data and "mask" not in hidden:
         return name, "mask", "", strike
     return name, None, "", strike
@@ -1922,6 +2047,21 @@ def _plot_legend(
                 label="Local electricity cost",
             )
         )
+    if "beer" not in hidden and any(m.free_on_openrouter for m in models):
+        fill, edge = ICON_COLORS["beer"]
+        handles.append(
+            Line2D(
+                [0],
+                [0],
+                marker=ICON_PATHS["beer"],
+                linestyle="none",
+                markersize=12,
+                markerfacecolor=fill,
+                markeredgecolor=edge,
+                markeredgewidth=0.9,
+                label="Free (as in beer)",
+            )
+        )
     if "mask" not in hidden and any(m.trains_on_your_data for m in models):
         fill, edge = ICON_COLORS["mask"]
         handles.append(
@@ -1974,27 +2114,29 @@ def _plot_legend(
     return legend, have_unavailable
 
 
-def pareto_frontier(models, x_of, available_of=lambda m: True):
+def pareto_frontier(
+    models, x_of, available_of=lambda m: True, eligible_of=lambda m: True
+):
     """The Pareto staircase: running max of intelligence over ascending x,
     as two parallel lists ready for ax.plot.
 
     Computed over ALL models, not one plot's filtered view. Each plot is a
     zoom of the same frontier; the axes clip the line, so on the zoomed plots
     it runs off the edge ("continues"), while on the all-models plot it ends at
-    the frontier's true last step. Models flagged trains_on_your_data are excluded:
-    they are the same offers at providers that train
-    on your data, not separate models. Models that are not publicly available
-    under `available_of` (the plot's availability flag) are excluded too: their
-    cost is an estimate, not a real
-    offer. Models the x statistic cannot place are skipped.
+    the frontier's true last step. `eligible_of` is the view's own policy on
+    which offers may compete on this x axis (PlotSpec.frontier_eligible_of):
+    the price plots drop free OpenRouter offers because $0 is not a price the
+    market set, while the hardware plot keeps them because a free API offer
+    still needs a rig to run on locally. Models that are not publicly
+    available under `available_of` (the plot's availability flag) are excluded
+    as well: their cost is an estimate, not a real offer. Models the x
+    statistic cannot place are skipped.
     """
     pts = sorted(
         (
             (x, m.intelligence)
             for m in models
-            if not m.trains_on_your_data
-            and available_of(m)
-            and (x := x_of(m)) is not None
+            if eligible_of(m) and available_of(m) and (x := x_of(m)) is not None
         ),
         key=lambda p: (p[0], -p[1]),
     )
@@ -2083,7 +2225,7 @@ def _make_datacenter_plot(
     # Faint dotted Pareto frontier. The delta plot's x axis is not a price,
     # so it gets no frontier (spec.frontier is False).
     frontier_x, frontier_y = (
-        pareto_frontier(MODELS, spec.x_of, spec.available_of)
+        pareto_frontier(MODELS, spec.x_of, spec.available_of, spec.frontier_eligible_of)
         if spec.frontier
         else ([], [])
     )
@@ -2278,7 +2420,7 @@ def make_broken_axis_plot(spec, models, band, y_lim):
     # intelligence for 12x less hardware), so the hardware plot's right panel
     # is a bare dot.
     frontier_x, frontier_y = (
-        pareto_frontier(MODELS, spec.x_of, spec.available_of)
+        pareto_frontier(MODELS, spec.x_of, spec.available_of, spec.frontier_eligible_of)
         if spec.frontier
         else ([], [])
     )
@@ -2559,9 +2701,22 @@ def report_prices() -> None:
     displayed price per task, and how the two compare."""
     rows: list[tuple[str, str, str, str, str]] = []
     for m in MODELS:
+        if m.hardware_only:
+            continue
         price = m.price_per_task()
         if m.provider_type is ProviderType.LOCAL:
             rows.append((m.name, "-", f"{price:.4f}", "electricity", "-"))
+            continue
+        if m.free_on_openrouter:
+            rows.append(
+                (
+                    m.name,
+                    f"{m.aa_total_cost_per_task():.4f}",
+                    f"{price:.4f}",
+                    "-100.0%",
+                    "0.000/0.000",
+                )
+            )
             continue
         aa_total = m.aa_total_cost_per_task()
         tokens = m.aa_token_counts()
