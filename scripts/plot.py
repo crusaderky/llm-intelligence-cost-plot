@@ -319,6 +319,11 @@ LABEL_PINS: dict[tuple[str, str], tuple[float, float, str, str]] = {
     # labels. North-east puts it in the free row directly over Claude Opus 5.5
     # (low)'s label.
     ("high_intelligence", "Claude Haiku 5.5 (xhigh)"): (40, 24, "left", "bottom"),
+    # In the wide all-models view the repair rounds park K2 above its dot to
+    # dodge GPT-6 Luna (low)'s label; that puts it straight across Luna's
+    # leader line. Keep K2 in the preferred slot right of its own dot and let
+    # Luna route around it.
+    ("all_models", "K2 Horizon 7B"): (10, 0, "left", "center"),
 }
 
 # Colored vector icons that stand in for the ⚡ emoji: matplotlib cannot render
@@ -870,6 +875,8 @@ class PlotSpec(NamedTuple):
     easter_eggs: tuple[tuple[float, str], ...] = ()  # (x, slogan) shouts in
     # the background of the SVG only. Newlines are kept, to wrap a long
     # slogan instead of letting it run into its neighbour.
+    png_message: str | None = None  # centred in the PNG, in the easter-egg
+    # font and color; for the screen-sized inline copy, not the wide SVG
     available_of: Callable[[Model], bool] = lambda m: (
         m.available_datacenter
     )  # which availability flag this view is governed by: the strikethrough,
@@ -903,6 +910,7 @@ class PlotSpec(NamedTuple):
             or self.png_xtick_step is not None
             or self.png_x_pad is not None
             or bool(self.easter_eggs)
+            or bool(self.png_message)
         )
 
     def get_fig_w(self, fmt: Literal["png", "svg", "both"]) -> float:
@@ -978,6 +986,7 @@ PLOTS = [
         png_fig_w=FIG_W,
         png_xtick_step=2.0,
         png_label_slots=4,
+        png_message="Click to enlarge",
         x_pad=0.002,  # ~$0.14 past Claude Fable 5.2 (max); the PNG needs the
         # default 0.03, where 0.002 would cut that dot in half
         png_x_pad=0.03,
@@ -986,14 +995,14 @@ PLOTS = [
             (1.90, "Need to be careful\nabout your bill"),
             (4.00, "This is EXPENSIVE"),
             (
-                6.00,
+                8.00,
                 "Anything beyond this point\nis unaffordable without\nVC subsidies",
             ),
-            (10.00, "Keep scrolling"),
+            (12.00, "Keep scrolling"),
             (16.00, "This is getting ridiculous"),
             (34.00, "Are you still here?"),
-            (52.00, "Almost there..."),
-            (61.00, "Congratulations,\nyou made it to the end!"),
+            (44.00, "Almost there..."),
+            (54.00, "Congratulations,\nyou made it to the end!"),
         ),
     ),
     PlotSpec(
@@ -2243,10 +2252,26 @@ def _make_datacenter_plot(
     # side, which snaps exactly to the band edge (computed in main).
     y_lo, y_hi = y_lim
     ax.set_ylim(y_lo, y_hi)
-    if spec.easter_eggs:
+    if spec.easter_eggs or spec.png_message:
         assert fmt != "both"
         if fmt == "svg":
             _draw_easter_eggs(ax, spec, (y_lo + y_hi) / 2)
+        if fmt == "png" and spec.png_message:
+            # The PNG is the small inline copy; the same faint, bold grey as
+            # the SVG's eggs points the reader to the zoomable vector version.
+            ax.text(
+                0.5,
+                0.5,
+                spec.png_message,
+                transform=ax.transAxes,
+                ha="center",
+                va="center",
+                fontsize=EGG_SIZE,
+                fontweight="bold",
+                color=EGG_COLOR,
+                alpha=EGG_ALPHA,
+                zorder=1,
+            )
     if band is not None:
         # band: the same (y_lo, y_hi) range on every plot, clipped to the axis
         b_lo = max(band[0], y_lo)
