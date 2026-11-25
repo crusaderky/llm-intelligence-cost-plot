@@ -79,8 +79,8 @@ validates the file before plotting. The displayed price per task is derived on d
   - The total (`sum()` of the split) stays as the fallback price when the OR price
     is missing, and as the delta plot's
     baseline; read it with `Model.aa_total_cost_per_task()`.
-  - `or_slug`, `or_session_cost_10_49_turns` and `or_toks_served` are still collected
-    but no longer price anything; keep them in sync, don't use them.
+  - `or_slug` prices nothing itself: it is the OpenRouter offer the effective prices
+    were fetched for, and what the refresh keys on.
 
 - `provider_type = "local"` — electricity to generate the task on the RTX 3090 rig
   (`RTX3090_POWER_DRAW`; every local measurement was taken on that card).

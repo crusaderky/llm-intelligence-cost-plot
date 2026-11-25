@@ -58,11 +58,7 @@ QSFP_DD_BREAKOUT_CABLE = 90  # 400G to 2x200G
 # - datacenter: or_slug + or_eff_input_price / or_eff_output_price (openrouter.ai, GET
 #   /api/frontend/v1/stats/effective-pricing: each endpoint instance's mean effective
 #   price over the trailing week, weighted by the share of the model's tokens that
-#   instance served, $/M tokens). or_session_cost_10_49_turns (GET
-#   /api/frontend/v1/rankings/session-cost: median 10-49-turn session cost, averaged
-#   across the coding harnesses that carry the model) and or_toks_served (GET
-#   /api/frontend/v1/rankings/models?view=week: prompt + completion tokens served in the
-#   trailing week, all variants) are recorded for reference; neither prices the plot.
+#   instance served, $/M tokens).
 # - local: local_speed, both rates on the RTX 3090 measurement rig. The prefill rate is
 #   a guesstimate at 10x the decode rate until it gets measured.
 # - hardware_bom: one-off price of the cheapest rig that can run the model, as a sympy
@@ -224,8 +220,6 @@ aa_derived = false
 aa_cost_per_task = [0.0748663882613245, 0.06951837223565564, 0.4271695169706214]
 aa_sticker_price = [0.15, 0.47, 0.016]
 or_slug = "qwen/qwen3.8-flash-20260826"
-or_session_cost_10_49_turns = 0.039720160666666664
-or_toks_served = 1031102310100
 or_eff_input_price = 0.03618
 or_eff_output_price = 0.4698
 
@@ -241,10 +235,8 @@ aa_derived = false
 aa_cost_per_task = [1.680535461910324, 0.4722289955421897, 1.1153682726372187]
 aa_sticker_price = [1.5, 4.5, 0.075]
 or_slug = "qwen/qwen4-max-20261115"
-or_toks_served = 1046900065443
 or_eff_input_price = 0.2009
 or_eff_output_price = 4.369
-or_session_cost_10_49_turns = 0.349734
 
 [[models]]
 # Datacenter version (MXFP4 QAT)
@@ -259,8 +251,6 @@ aa_derived = false
 aa_cost_per_task = [0.2571473726554651, 0.16675404706375513, 0.1782037281167598]
 aa_sticker_price = [0.3, 1.2, 0.006]
 or_slug = "deepseek/deepseek-v4.1-flash-20261017"
-or_session_cost_10_49_turns = 0.02643296175
-or_toks_served = 70003497432339
 or_eff_input_price = 0.01228
 or_eff_output_price = 0.6256
 hardware_bom = "RTX_3090_PC_192GB"  # UD-Q2_K_XL
@@ -295,11 +285,9 @@ aa_derived = false
 aa_cost_per_task = [0.49304540305271105, 0.19522317789568608, 0.34283748969140015]
 aa_sticker_price = [0.834, 2.501, 0.042]
 or_slug = "tencent/hy4-20261104"
-or_toks_served = 1513842818261
 or_eff_input_price = 0.07357
 or_eff_output_price = 2.029
 hardware_bom = "DGX_SPARK*4+QSFP112_CABLE*4"
-or_session_cost_10_49_turns = 0.16787906
 
 [[models]]
 # Guesstimate - not on AA (AA has no Hy4-flash record). Intelligence from Tencent's
@@ -325,7 +313,6 @@ aa_derived = true
 aa_cost_per_task = [0.020124302165416778, 0.007968292975334126, 0.013993366926179598]  
 aa_sticker_price = [0.07, 0.281, 0.003]
 or_slug = "tencent/hy4-flash"
-or_toks_served = 59692570694
 or_eff_input_price = 0.005208
 or_eff_output_price = 0.2299
 hardware_bom = "RTX_5060TI_PC_64GB"
@@ -343,8 +330,6 @@ aa_derived = false
 aa_cost_per_task = [0.2848644588586805, 0.3872337907751061, 1.7136831361769378]
 aa_sticker_price = [1.25, 4.25, 0.15]
 or_slug = "meta/muse-spark-1.3-20260902"
-or_session_cost_10_49_turns = 0.50863457
-or_toks_served = 86084329849
 or_eff_input_price = 0.3224
 or_eff_output_price = 4.25
 
@@ -360,8 +345,6 @@ aa_derived = false
 aa_cost_per_task = [0.2848644588586805, 0.3872337907751061, 1.7136831361769378]
 aa_sticker_price = [1.25, 4.25, 0.15]
 or_slug = "meta/muse-spark-1.3-contributor-20260902"
-or_session_cost_10_49_turns = 0.03261185
-or_toks_served = 3237931430838
 or_eff_input_price = 0.008791
 or_eff_output_price = 0.1997
 trains_on_your_data = true
@@ -378,7 +361,6 @@ aa_derived = false
 aa_cost_per_task = [1.2403611645930221, 1.921261981835536, 3.790413332177666]
 aa_sticker_price = [4.0, 20.0, 0.2]
 or_slug = "meta/muse-wonder-20261012"
-or_toks_served = 77785999403
 or_eff_input_price = 0.519
 or_eff_output_price = 20.0
 
@@ -394,10 +376,8 @@ aa_derived = false
 aa_cost_per_task = [0.027216886792402466, 0.042240832668746175, 0.06647789743748768]
 aa_sticker_price = [0.1, 0.5, 0.004]
 or_slug = "meta/muse-ember-20261109"
-or_toks_served = 935946744112
 or_eff_input_price = 0.02274
 or_eff_output_price = 0.4998
-or_session_cost_10_49_turns = 0.029533481
 
 [[models]]
 kind = "model"
@@ -411,8 +391,6 @@ aa_derived = false
 aa_cost_per_task = [0.039832743493184115, 0.0671024626915514, 0.4763751378166728]
 aa_sticker_price = [0.15, 0.5, 0.03]
 or_slug = "z-ai/glm-5.3-flash-20260826"
-or_session_cost_10_49_turns = 0.03723215325
-or_toks_served = 13197546240580
 or_eff_input_price = 0.04332
 or_eff_output_price = 0.4113
 hardware_bom = "STRIX_HALO"  # IQ3_XXS
@@ -442,8 +420,6 @@ aa_derived = false
 aa_cost_per_task = [0.35155644931635205, 0.5235406213267805, 4.134167531076821]
 aa_sticker_price = [1.4, 4.4, 0.26]
 or_slug = "z-ai/glm-5.3-20260816"
-or_session_cost_10_49_turns = 0.167875195
-or_toks_served = 3776144121080
 or_eff_input_price = 0.2073
 or_eff_output_price = 3.074
 hardware_bom = "DGX_SPARK*3+QSFP112_CABLE*3"  # Q3_K_XL
@@ -460,8 +436,6 @@ aa_derived = false
 aa_cost_per_task = [0.8567468935932564, 0.722389702315149, 2.1020636936657997]
 aa_sticker_price = [2.0, 10.0, 0.2]
 or_slug = "moonshotai/kimi-k3.1-pro-20261023"
-or_session_cost_10_49_turns = 0.6194410175
-or_toks_served = 4385396974501
 or_eff_input_price = 0.3227
 or_eff_output_price = 10.04
 hardware_bom = "DGX_SPARK*8+QSFP_DD_SWITCH+QSFP_DD_BREAKOUT_CABLE*4"
@@ -480,8 +454,6 @@ aa_derived = true
 aa_cost_per_task = [14.06, 0.888, 0.72]
 aa_sticker_price = [1.5, 9.0, 0.15]
 or_slug = "google/gemini-3.5-flash-20260519"
-or_session_cost_10_49_turns = 0.52473235
-or_toks_served = 74191773129
 or_eff_input_price = 1.003
 or_eff_output_price = 9.081
 estimated = true
@@ -498,8 +470,6 @@ aa_derived = false
 aa_cost_per_task = [7.030934890491321, 0.3710231777219156, 0.36404810993927716]
 aa_sticker_price = [0.75, 3.75, 0.075]
 or_slug = "google/gemini-3.8-flash-20260902"
-or_session_cost_10_49_turns = 0.23609733
-or_toks_served = 1619172249368
 or_eff_input_price = 0.3573
 or_eff_output_price = 4.236
 
@@ -515,10 +485,8 @@ aa_derived = false
 aa_cost_per_task = [0.29035308375303237, 0.3258874695917085, 0.12898754116418365]
 aa_sticker_price = [3.0, 15.0, 0.15]
 or_slug = "google/gemini-4-neon-20261118"
-or_toks_served = 930412472817
 or_eff_input_price = 0.5099
 or_eff_output_price = 13.68
-or_session_cost_10_49_turns = 1.2240661
 
 [[models]]
 kind = "effort"
@@ -559,10 +527,8 @@ aa_derived = false
 aa_cost_per_task = [0.13744084227725598, 0.10555363083928798, 0.0492282269035066]
 aa_sticker_price = [1.5, 7.5, 0.075]
 or_slug = "google/gemini-4-hydrogen-20261112"
-or_toks_served = 463974278810
 or_eff_input_price = 0.4385
 or_eff_output_price = 7.4
-or_session_cost_10_49_turns = 0.44737926
 
 [[models]]
 kind = "model"
@@ -576,8 +542,6 @@ aa_derived = false
 aa_cost_per_task = [2.576886728299715, 0.6271856443241712, 4.567467028963252]
 aa_sticker_price = [2.0, 6.0, 0.5]
 or_slug = "x-ai/grok-4.7-20260916"
-or_session_cost_10_49_turns = 0.8808119999999999
-or_toks_served = 221690780821
 or_eff_input_price = 0.9798
 or_eff_output_price = 7.329
 
@@ -593,7 +557,6 @@ aa_derived = false
 aa_cost_per_task = [0.5051213025810452, 0.30637676984880086, 1.5337544881906702]
 aa_sticker_price = [1.0, 2.7, 0.1]
 or_slug = "stepfun/step-5-preview-20261008"
-or_toks_served = 146284178132
 or_eff_input_price = 0.1855
 or_eff_output_price = 2.7
 hardware_bom = "DGX_SPARK*3+QSFP112_CABLE*3"
@@ -610,8 +573,6 @@ aa_derived = false
 aa_cost_per_task = [0.04318792692902057, 0.03690574314577558, 0.0484362007653506]
 aa_sticker_price = [0.14, 0.28, 0.0028]
 or_slug = "xiaomi/mimo-v2.6-flash-20260921"
-or_session_cost_10_49_turns = 0.029370388500000004
-or_toks_served = 1895130700257
 or_eff_input_price = 0.01549
 or_eff_output_price = 0.2825
 hardware_bom = "STRIX_HALO"  # 3.0bpw
@@ -628,8 +589,6 @@ aa_derived = false
 aa_cost_per_task = [0.10909531014918307, 0.10533362295314275, 0.04275142965643572]
 aa_sticker_price = [0.435, 0.87, 0.0036]
 or_slug = "xiaomi/mimo-v2.6-pro-20260921"
-or_session_cost_10_49_turns = 0.09059053
-or_toks_served = 777501119510
 or_eff_input_price = 0.07321
 or_eff_output_price = 1.213
 hardware_bom = "DGX_SPARK*3+QSFP112_CABLE*3"  # 3.0bpw
@@ -646,8 +605,6 @@ aa_derived = false
 aa_cost_per_task = [0.11307458292136761, 0.08302653906924513, 0.295931140151249]
 aa_sticker_price = [0.15, 0.6, 0.015]
 or_slug = "minimax/minimax-m3.1-flash-20261019"
-or_session_cost_10_49_turns = 0.042126341000000005
-or_toks_served = 4570725214210
 or_eff_input_price = 0.02342
 or_eff_output_price = 0.5041
 hardware_bom = "GORGON_HALO"
@@ -664,8 +621,6 @@ aa_derived = false
 aa_cost_per_task = [0.0023262275757420735, 0.0016479451676949762, 0.001141082445083342]
 aa_sticker_price = [0.1, 0.5, 0.01]
 or_slug = "openai/gpt-6-luna-20260922"
-or_session_cost_10_49_turns = 0.02463009525
-or_toks_served = 8211324692320
 or_eff_input_price = 0.04386
 or_eff_output_price = 0.4896
 
@@ -717,8 +672,6 @@ aa_derived = false
 aa_cost_per_task = [0.03421288115320557, 0.022110861337539173, 0.015013819560952543]
 aa_sticker_price = [1.0, 5.0, 0.05]
 or_slug = "openai/gpt-6.1-terra-20261026"
-or_session_cost_10_49_turns = 0.19439015
-or_toks_served = 968561785834
 or_eff_input_price = 0.2727
 or_eff_output_price = 5.103
 
@@ -770,10 +723,8 @@ aa_derived = false
 aa_cost_per_task = [0.0787608473723816, 0.05979721113848632, 0.04502665675485909]
 aa_sticker_price = [2.0, 10.0, 0.1]
 or_slug = "openai/gpt-6.2-sol-20261117"
-or_toks_served = 1115403108728
 or_eff_input_price = 0.3784
 or_eff_output_price = 10.24
-or_session_cost_10_49_turns = 0.41034729999999997
 
 [[models]]
 kind = "effort"
@@ -823,7 +774,6 @@ aa_derived = false
 aa_cost_per_task = [0.27677942824119806, 0.20865491790349983, 0.17627105386560812]
 aa_sticker_price = [8.0, 40.0, 0.4]
 or_slug = "openai/gpt-6.2-astra-20261117"
-or_toks_served = 270108854503
 or_eff_input_price = 1.293
 or_eff_output_price = 40.49
 
@@ -875,10 +825,8 @@ aa_derived = false
 aa_cost_per_task = [1.040665157646971, 1.4240919609594807, 0.6324847856680946]
 aa_sticker_price = [8.0, 40.0, 0.2]
 or_slug = "anthropic/claude-fable-5.2-20261109"
-or_toks_served = 687974033791
 or_eff_input_price = 0.9963
 or_eff_output_price = 40.29
-or_session_cost_10_49_turns = 4.0321321999999995
 
 [[models]]
 kind = "effort"
@@ -928,8 +876,6 @@ aa_derived = false
 aa_cost_per_task = [0.15495829818267776, 0.20856371779750618, 0.14782043040956583]
 aa_sticker_price = [2.0, 10.0, 0.1]
 or_slug = "anthropic/claude-sonnet-5.5-20260928"
-or_session_cost_10_49_turns = 0.5892145166666666
-or_toks_served = 2724173361112
 or_eff_input_price = 0.524
 or_eff_output_price = 10.04
 
@@ -981,8 +927,6 @@ aa_derived = false
 aa_cost_per_task = [0.26830032873330867, 0.38125266891205145, 0.3259763248005245]
 aa_sticker_price = [4.0, 20.0, 0.2]
 or_slug = "anthropic/claude-opus-5.5-20260921"
-or_session_cost_10_49_turns = 1.335182475
-or_toks_served = 6461877589863
 or_eff_input_price = 0.7066
 or_eff_output_price = 20.22
 
@@ -1034,8 +978,6 @@ aa_derived = false
 aa_cost_per_task = [0.009711032547690896, 0.014080275004595064, 0.01996637882970253]
 aa_sticker_price = [0.1, 0.5, 0.01]
 or_slug = "anthropic/claude-haiku-5.5-20261007"
-or_session_cost_10_49_turns = 0.04365959725
-or_toks_served = 3076039226292
 or_eff_input_price = 0.08299
 or_eff_output_price = 0.581
 
@@ -1092,8 +1034,6 @@ aa_derived = false
 aa_cost_per_task = [0.5426813344872892, 0.1426962308047775, 0.8686886280125741]
 aa_sticker_price = [0.3, 0.9, 0.06]
 or_slug = "inclusionai/ling-3.1-flash-20261002"
-or_session_cost_10_49_turns = 0.028465778
-or_toks_served = 69994404090
 or_eff_input_price = 0.02577
 or_eff_output_price = 0.2247
 estimated = true
@@ -1143,7 +1083,6 @@ aa_derived = true
 aa_cost_per_task = [nan, nan, nan]
 aa_sticker_price = [nan, nan, nan]
 or_slug = "baidu/ernie-5.5-flash-preview-20261110"
-or_toks_served = 3348664221415
 or_eff_input_price = 0.0
 or_eff_output_price = 0.0
 hardware_bom = "STRIX_HALO"  # 3.0 bpw
@@ -1161,8 +1100,6 @@ aa_derived = false
 aa_cost_per_task = [1.1078363678887329, 0.172096563210152, 0.7817976957138006]
 aa_sticker_price = [0.7, 2.1, 0.07]
 or_slug = "mistralai/mistral-large-4-0-20261006"
-or_session_cost_10_49_turns = 0.23186512
-or_toks_served = 94998966581
 or_eff_input_price = 0.1663
 or_eff_output_price = 2.149
 hardware_bom = "DGX_SPARK*3+QSFP112_CABLE*3"  # UD-Q2_K_XL

@@ -5,18 +5,11 @@ Reads data.toml, re-fetches from:
   tokens per task, cost per task and its token-type breakdown (uncached input
   incl. cache write / cache read / output), and the sticker prices per 1M
   tokens the breakdown was priced at (input / cache read / output).
-- openrouter.ai (GET /api/frontend/v1/rankings/session-cost): median cost of
-  a 10-49-turn session ("core" bucket) per permaslug, averaged across the
-  OR coding harnesses that carry session data for the model. Collected but no
-  longer used to price the plot; it stays as a record of real session spend.
 - openrouter.ai (GET /api/frontend/v1/stats/effective-pricing): the effective
   input and output price per endpoint instance per day over the last week,
   reduced to one synthetic price pair per permaslug: each instance's weekly
   mean price, weighted by the share of tokens it served. This is what prices
   the plot's datacenter models.
-- openrouter.ai (GET /api/frontend/v1/rankings/models?view=week): prompt +
-  completion tokens served in the trailing week per permaslug, summed across
-  variants.
 
 Prints what changed and writes data.toml back in place. tomlkit keeps every
 comment, including the "# computed from:" notes on hand-derived values; those
@@ -50,15 +43,11 @@ import tomlkit
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = REPO_ROOT / "data.toml"
 
-OR_SESSION_URL = "https://openrouter.ai/api/frontend/v1/rankings/session-cost"
-OR_MODELS_URL = "https://openrouter.ai/api/frontend/v1/rankings/models"
 OR_EFFECTIVE_URL = "https://openrouter.ai/api/frontend/v1/stats/effective-pricing"
 # range=1w is one of OR's EFFECTIVE_PRICING_RANGES; it returns one point per
 # day, per endpoint, of the effective (cache-discounted) price per 1M tokens.
 OR_EFFECTIVE_RANGE = "1w"
-CACHE_PATH = REPO_ROOT / ".cache" / "or_session_cost.json"
 EFFECTIVE_CACHE_PATH = REPO_ROOT / ".cache" / "or_effective_pricing.json"
-TOKS_CACHE_PATH = REPO_ROOT / ".cache" / "or_toks_served.json"
 CACHE_TTL = 6 * 3600
 AUTH_PATHS = [
     Path.home() / ".pi" / "agent" / "auth.json",
@@ -90,100 +79,18 @@ def _or_get(url: str, params: str = "") -> dict:
 def or_slug_variants(slug: str) -> list[str]:
     """The two spellings OpenRouter uses for one dated release.
 
-    The stats endpoints (session cost, weekly tokens served) key on the
-    *permaslug*, which dashes the dots inside a version name:
-    "google/gemini-3-8-flash-20260902". The effective-pricing chart keys on the
-    developer slug plus the date and keeps the dots:
-    "google/gemini-3.8-flash-20260902". data.toml stores the readable dotted form
-    (the only spelling the price chart answers for), so the stats lookups have to
-    try the dashed twin. Only that direction is derivable from the stored string;
+    The permaslug OpenRouter keys its stats on dashes the dots inside a
+    version name: "google/gemini-3-8-flash-20260902". The effective-pricing
+    chart keys on the developer slug plus the date and keeps the dots:
+    "google/gemini-3.8-flash-20260902". data.toml stores the readable dotted
+    form (the spelling the price chart answers for), so the lookup also tries
+    the dashed twin. Only that direction is derivable from the stored string;
     a slug already stored dashed gets no twin, and an undated slug gets none.
     """
     head, _, date = slug.rpartition("-")
     if not (date.isdigit() and len(date) == 8 and "." in head):
         return [slug]
     return [slug, f"{head.replace('.', '-')}-{date}"]
-
-
-def or_lookup_key(mapping: dict[str, object], slug: str | None) -> str | None:
-    """The key in mapping that spellings of slug agree on, or None.
-
-    A row can have no OpenRouter slug at all (a model OR does not carry), which
-    is a miss, not a lookup to attempt.
-    """
-    if not slug:
-        return None
-    return next((v for v in or_slug_variants(slug) if v in mapping), None)
-
-
-def or_lookup(mapping: dict[str, object], slug: str | None) -> object:
-    """mapping[slug], or mapping[its other spelling], or None."""
-    key = or_lookup_key(mapping, slug)
-    return None if key is None else mapping[key]
-
-
-def fetch_or_sessions(
-    force: bool,
-) -> tuple[dict[str, float], dict[str, dict[str, float]]]:
-    """permaslug -> (average 10-49-turn session cost, per-harness medians).
-
-    OR publishes session costs per coding harness; the plotted statistic is
-    the average of the "core" bucket (10-49 turns) medians across the
-    harnesses that carry session data for the model.
-    """
-    harnesses = None
-    if not force and CACHE_PATH.exists():
-        entry = json.loads(CACHE_PATH.read_text())
-        if time.time() - entry["fetched_at"] < CACHE_TTL:
-            harnesses = entry["harnesses"]
-    if harnesses is None:
-        data = _or_get(OR_SESSION_URL)["data"]
-        harnesses = {
-            h["label"]: {
-                m["model"]: {p["bucket"]: p["medianUsd"] for p in m["points"]}
-                for m in h["models"]
-            }
-            for h in data["harnesses"]
-        }
-        CACHE_PATH.parent.mkdir(exist_ok=True)
-        CACHE_PATH.write_text(
-            json.dumps({"fetched_at": time.time(), "harnesses": harnesses})
-        )
-    detail: dict[str, dict[str, float]] = {}
-    for harness, models in harnesses.items():
-        for slug, buckets in models.items():
-            if "core" in buckets:
-                detail.setdefault(slug, {})[harness] = buckets["core"]
-    costs = {slug: sum(v.values()) / len(v) for slug, v in detail.items()}
-    return costs, detail
-
-
-def fetch_or_toks_served(force: bool) -> dict[str, int]:
-    """permaslug -> prompt + completion tokens served in the trailing week.
-
-    GET /api/frontend/v1/rankings/models?view=week returns one daily row per
-    (permaslug, variant) for the last few days; summing them gives the weekly
-    volume behind data.toml's or_toks_served. Every variant (standard, batch,
-    free) counts as served tokens.
-    """
-    if not force and TOKS_CACHE_PATH.exists():
-        entry = json.loads(TOKS_CACHE_PATH.read_text())
-        if time.time() - entry["fetched_at"] < CACHE_TTL:
-            return entry["toks_served"]
-    rows = _or_get(OR_MODELS_URL, "?view=week")["data"]
-    toks: dict[str, int] = {}
-    for row in rows:
-        slug = row["model_permaslug"]
-        toks[slug] = (
-            toks.get(slug, 0)
-            + row["total_prompt_tokens"]
-            + row["total_completion_tokens"]
-        )
-    TOKS_CACHE_PATH.parent.mkdir(exist_ok=True)
-    TOKS_CACHE_PATH.write_text(
-        json.dumps({"fetched_at": time.time(), "toks_served": toks})
-    )
-    return toks
 
 
 @dataclass(frozen=True)
@@ -494,8 +401,6 @@ def main() -> None:
         assert args.aa_slug and args.aa_name and args.publisher and args.name, (
             "--new needs --aa-slug, --aa-name, --publisher, --name"
         )
-        session_costs, _detail = fetch_or_sessions(args.force)
-        toks_served = fetch_or_toks_served(args.force)
         effective = fetch_or_effective(args.force, [args.new])
         rec = aa_query.get_page_record(
             {"name": args.aa_name, "slug": args.aa_slug}, args.force
@@ -509,8 +414,6 @@ def main() -> None:
         eff = effective.get(args.new)
         if eff is None:
             sys.exit(f"no OR effective-pricing chart for {args.new}")
-        sess = or_lookup(session_costs, args.new)
-        toks = or_lookup(toks_served, args.new)
         print(f"# {args.name}: AA record {args.aa_name!r} (paste under [models])")
         print("[[models]]")
         print('kind = "model"')
@@ -524,10 +427,6 @@ def main() -> None:
         print(f"aa_cost_per_task = {_fmt_tokens(cost)}")
         print(f"aa_sticker_price = {_fmt_tokens(sticker)}")
         print(f"or_slug = {_toml_str(args.new)}")
-        if sess is not None:
-            print(f"or_session_cost_10_49_turns = {sess!r}")
-        if toks is not None:
-            print(f"or_toks_served = {toks!r}")
         print(f"or_eff_input_price = {eff.input!r}")
         print(f"or_eff_output_price = {eff.output!r}")
         return
@@ -535,8 +434,6 @@ def main() -> None:
     doc = tomlkit.parse(DATA_PATH.read_text())
     _validate(doc)
     rows = doc["models"]
-    sessions, session_detail = fetch_or_sessions(args.force)
-    toks_served = fetch_or_toks_served(args.force)
     effective = fetch_or_effective(
         args.force,
         sorted({row["or_slug"] for row in rows if row.get("or_slug")}),
@@ -633,24 +530,6 @@ def main() -> None:
         else:
             _set(row, "or_eff_input_price", eff.input, name, changes)
             _set(row, "or_eff_output_price", eff.output, name, changes)
-        sess_key = or_lookup_key(sessions, or_slug)
-        if sess_key is not None:
-            n = len(session_detail[sess_key])
-            if n < 4:
-                print(
-                    f"!! {name}: OR session cost from {n}/4 harnesses",
-                    file=sys.stderr,
-                )
-            _set(
-                row,
-                "or_session_cost_10_49_turns",
-                sessions[sess_key],
-                name,
-                changes,
-            )
-        new_vol = or_lookup(toks_served, or_slug)
-        if new_vol is not None:
-            _set(row, "or_toks_served", int(new_vol), name, changes)
 
     if changes:
         _validate(doc)

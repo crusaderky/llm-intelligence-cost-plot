@@ -1,6 +1,6 @@
 ---
 name: refresh-models
-description: Refreshes the ArtificialAnalysis (intelligence, output tokens per task, cost per task and its token-type breakdown, sticker prices) and OpenRouter (permaslug, effective input/output prices from the trailing week, 10-49-turn session cost, weekly tokens served) numbers behind every model in data.toml, writing the file back in place, or prints a ready-to-paste TOML row for a new model. Use when asked to refresh/re-fetch model scores and prices, or to add a model to the plots.
+description: Refreshes the ArtificialAnalysis (intelligence, output tokens per task, cost per task and its token-type breakdown, sticker prices) and OpenRouter (permaslug, effective input/output prices from the trailing week) numbers behind every model in data.toml, writing the file back in place, or prints a ready-to-paste TOML row for a new model. Use when asked to refresh/re-fetch model scores and prices, or to add a model to the plots.
 ---
 
 # Refresh or add models in data.toml
@@ -9,9 +9,8 @@ description: Refreshes the ArtificialAnalysis (intelligence, output tokens per t
 hardware prices. `scripts/plot.py` loads and validates it with pydantic. Each `[[models]]` row
 stores AA's Intelligence Index (y axis), AA's output tokens per task (indirectly, via
 the cost split), AA's cost per task and its split by token type, the sticker price per 1M
-tokens that split was billed at, the OpenRouter permaslug and its synthetic effective
-input/output prices, and (recorded but unplotted) OR's median cost of a 10-49-turn
-session plus the prompt + completion tokens OR served in the trailing week. Each row also
+tokens that split was billed at, and the OpenRouter permaslug with its synthetic effective
+input/output prices. Each row also
 carries its own `aa_page_slug` / `aa_record_name` / `aa_derived` — the old `AA_LOOKUPS`
 table was merged into the models. The displayed price per task is derived by
 `Model.price_per_task()`:
@@ -71,9 +70,8 @@ pixi r refresh-models --new OR_SLUG --aa-slug AA_SLUG --aa-name "AA Record Name"
 
 The script prints what it changed; the agent must still read `git diff data.toml` before
 accepting a refresh. Expected in a normal run: sub-unit moves in `intelligence`,
-`aa_cost_per_task` and `aa_sticker_price` on AA-scored rows, OR effective prices (a
-trailing-week average), session cost (only when OR rolls its 30-day window) and weekly
-tokens served (a rolling window, so it moves every time).
+`aa_cost_per_task` and `aa_sticker_price` on AA-scored rows, and OR effective prices (a
+trailing-week average).
 
 Treat these as abnormal and investigate before running `pixi r plot`:
 
@@ -147,8 +145,7 @@ crosses a rounding boundary.
 - Rows with `estimated = true` render as hollow dots and sit out the Pareto frontier; a
   refresh must not flip that flag.
 - Models OR carries no chart for are reported on stderr as `(no usable OR price)` and
-  keep their stored prices; a model OR carries no session data for keeps its old session
-  cost. `Ling 3.1 Flash 1019` is local-only at AA's price and has
+  keep their stored prices. `Ling 3.1 Flash 1019` is local-only at AA's price and has
   `available_datacenter = false`.
 - A model AA has retired cannot be refreshed: drop the row rather than freezing its
   numbers. `Claude Sonnet 5.5 (low)` was dropped for this reason.
@@ -199,16 +196,10 @@ crosses a rounding boundary.
   renormalized, and a model with no paid instance keeps AA's price. Never substitute the
   spot "cheapest provider" price, nor the old per-day quintile/median reduction: it
   priced providers whose traffic is a rounding error.
-- OR session cost: `GET /api/frontend/v1/rankings/session-cost`
-  (`data.harnesses[].models[].points`, bucket `core` = 10–49 turns), averaged across
-  the harnesses that carry session data. Recorded only, never plotted.
-- OR weekly tokens served: `GET /api/frontend/v1/rankings/models?view=week` (`data[]`,
-  one daily row per permaslug and variant). Sum `total_prompt_tokens` +
-  `total_completion_tokens` over every day and every variant (standard, batch, free).
-- OR spells a dated release two ways: the stats endpoints use the dashed permaslug
+- OR spells a dated release two ways: the permaslug dashes the dots
   (`google/gemini-3-8-flash-20260902`), the effective-pricing chart keeps the dots
   (`google/gemini-3.8-flash-20260902`). `or_slug` stores the dotted form and
-  `or_slug_variants` tries both for the stats lookups.
+  `or_slug_variants` tries both.
 - Effort variants share one permaslug; the ×-tokens-per-task factor is what separates
   them on the plot.
 - Keep README.md in sync with any value change (AGENTS.md rule). Hardware prices are

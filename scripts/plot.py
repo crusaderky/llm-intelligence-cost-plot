@@ -425,11 +425,6 @@ class Model:
     aa_cost_per_task: PricedTokens = field(kw_only=True)
     aa_sticker_price: PricedTokens = field(kw_only=True)
     or_slug: str | None = field(default=None, kw_only=True)
-    # Recorded for reference only: neither figure prices the plot any more.
-    # or_session_cost_10_49_turns is OR's median cost of a real 10-49-turn
-    # coding session, or_toks_served the trailing-week volume behind it.
-    or_session_cost_10_49_turns: float | None = field(default=None, kw_only=True)
-    or_toks_served: int | None = field(default=None, kw_only=True)
     # Datacenter models: OR's synthetic effective prices in $/M tokens: each
     # endpoint instance's trailing-week mean effective price, weighted by the
     # share of the model's tokens that instance served (see
@@ -727,8 +722,6 @@ class ModelSpec(AaLookupFields):
     aa_cost_per_task: PricedTokensSpec
     aa_sticker_price: PricedTokensSpec
     or_slug: str | None = None
-    or_session_cost_10_49_turns: float | None = None
-    or_toks_served: int | None = None
     or_eff_input_price: float | None = None
     or_eff_output_price: float | None = None
     local_speed: LocalSpeedSpec | None = None
@@ -748,8 +741,6 @@ class ModelSpec(AaLookupFields):
             aa_cost_per_task=PricedTokens(*self.aa_cost_per_task.root),
             aa_sticker_price=PricedTokens(*self.aa_sticker_price.root),
             or_slug=self.or_slug,
-            or_session_cost_10_49_turns=self.or_session_cost_10_49_turns,
-            or_toks_served=self.or_toks_served,
             or_eff_input_price=self.or_eff_input_price,
             or_eff_output_price=self.or_eff_output_price,
             local_speed=(
