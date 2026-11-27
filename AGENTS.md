@@ -74,8 +74,8 @@ validates the file before plotting. The displayed price per task is derived on d
     spot "cheapest provider" price, and not the old quintile/median reduction either —
     it priced providers nobody routed to. A model OR serves only through free
     endpoints has no paid instance for that reduction, so hand-write both fields as
-    `0.0` and both price arrays as `[nan, nan, nan]`: no token mix is needed when
-    nothing is billed.
+    `0.0`. Keep AA's published cost split and sticker price in the price arrays even
+    though no token mix is billed; use `[nan, nan, nan]` only when AA publishes none.
   - The total (`sum()` of the split) stays as the fallback price when the OR price
     is missing, and as the delta plot's
     baseline; read it with `Model.aa_total_cost_per_task()`.

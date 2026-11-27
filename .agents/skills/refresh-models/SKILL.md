@@ -52,7 +52,8 @@ an aligned table of changed fields (with a rounded percentage change where the
 value is numeric), and writes `data.toml` back. It never rewrites
 `scripts/plot.py`.
 Run `pixi r plot` afterwards to see the effect on the displayed prices and PNGs, then
-`pixi r lint`.
+`pixi r lint`. On every refresh, also set the `**Last updated:**` line at the top of
+`README.md` to today's date.
 
 Rows with `aa_derived = true` and rows pinned to `aa_page_slug = ""` keep their AA
 numbers: the derived ones are scaled or extrapolated from another record, and the pinned
@@ -111,6 +112,10 @@ crosses a rounding boundary.
   sibling, record the calculation as a `# computed from:` comment in `data.toml`, set
   `estimated = true` / `aa_derived = true`, and tell the user exactly how you made the
   guesstimate before accepting the change. Never leave the old zero prices in place.
+- A free-only row that becomes AA-scored stores AA's published cost split and
+  sticker price even though the $0 OR offer never bills them; clear `estimated`
+  and let the refresh keep those fields current. `[nan, nan, nan]` is only for
+  rows AA does not price.
 - A model AA scores but OR does not list can still be plotted on the hardware view:
   give it a `hardware_bom` and `hardware_only = true`, with NaN cost/sticker splits.
   Every price view skips it, so it needs no OR prices; its AA index still refreshes.
@@ -168,10 +173,11 @@ crosses a rounding boundary.
    `local_hardware` draws a ladder once, at its highest effort. See AGENTS.md's "Effort
    ladders".
 6. A model free on every OR endpoint has an empty effective-pricing chart. Write
-   `or_eff_input_price = 0.0`, `or_eff_output_price = 0.0` and
-   `aa_cost_per_task = aa_sticker_price = [nan, nan, nan]` by hand: no token mix is
-   needed when nothing is billed, and the model draws a beer tankard at $0/task.
-   `refresh-models` keeps those zero prices when the chart stays empty.
+   `or_eff_input_price = 0.0` and `or_eff_output_price = 0.0` by hand; it draws a
+   beer tankard at $0/task and `refresh-models` keeps those zero prices when the
+   chart stays empty. Store AA's published cost split and sticker price if it has
+   them, even though no token mix is billed; use `[nan, nan, nan]` only when AA
+   publishes none.
 7. A model not on AA (or one AA has retired) needs a hand-entered token mix:
    `[tokens/1e6, tokens/1e6, 0.0]` against `aa_sticker_price = [1.0, 1.0, 1.0]`
    (see `K2 Horizon 7B`) if it is priced by electricity, or a hand-derived real split

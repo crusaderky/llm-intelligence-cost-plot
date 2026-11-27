@@ -525,9 +525,9 @@ class Model:
         """Whether OR serves this datacenter offer at $0 per token.
 
         Both effective prices are zero: there is no paid endpoint to price
-        the task with, so its displayed price is $0 and the AA cost split is
-        deliberately NaN (the user never pays it). Local offers have no OR
-        prices at all and cannot be free in this sense.
+        the task with, so its displayed price is $0. AA's cost split, when it
+        publishes one, is kept in the data but never bills the user. Local
+        offers have no OR prices at all and cannot be free in this sense.
         """
         return (
             self.provider_type is ProviderType.DATACENTER
@@ -546,8 +546,9 @@ class Model:
         (both in PricedTokens), in tokens. A 0.0 cache price means AA reports no
         cache reads for the model, so the task burned no cached tokens. A row
         whose sticker price is the dummy 1.0 carries its token mix in the cost
-        split itself (see aa_cost_per_task). A free-offer or hardware-only row
-        carries NaN splits and has no token mix to recover.
+        split itself (see aa_cost_per_task). A free offer is never priced from
+        its split, even when AA publishes one; a hardware-only row carries NaN
+        splits and has no token mix to recover.
         """
         if self.hardware_only or self.free_on_openrouter:
             nan = float("nan")
@@ -597,8 +598,8 @@ class Model:
             # OR prices nor an AA cost split. It is never plotted on a price axis.
             return float("nan")
         if self.free_on_openrouter:
-            # No AA token mix exists for a free offer (its cost split is NaN),
-            # and there is nothing to pay either way.
+            # A free offer's AA cost split, if any, is never billed, so there
+            # is nothing to pay either way.
             return 0.0
         if self.provider_type is ProviderType.LOCAL:
             assert self.local_speed is not None

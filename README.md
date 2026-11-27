@@ -1,6 +1,6 @@
 # LLMs: Intelligence vs. cost
 
-**Last updated:** 2026-11-25
+**Last updated:** 2026-11-27
 
 [ArtificialAnalysis](https://artificialanalysis.ai) is a website that benchmarks the
 intelligence of various LLM models. They publish a headline _Intelligence Index_, which
@@ -129,10 +129,6 @@ absent as they have no sticker price to compare with.
 - Extrapolated intelligence for Qwen3.6-35B-A3B by comparing its available
   individual benchmarks with those of GPT-6 Luna (low), GPT-6 Luna (medium), Muse
   Glimmer and Granite 4.2 3B.
-- Extrapolated intelligence for Ernie-5.5-flash-preview (intelligence 34) from
-  the benchmarks in [Baidu's
-  chart](https://huggingface.co/baidu/ERNIE-5.5-Flash-Preview-FP8), by
-  regressing against the comparison models.
 
 ## Cost calculation for datacenter models
 
@@ -251,12 +247,12 @@ while the latter can be as cheap as a mobile phone subscription.
 How much extra intelligence emptying the wallet purchases obeys the law of diminishing
 returns: while a top-tier engineer or scientist is probably going to be able to
 appreciate how much better Claude Fable 5.2 at max effort (intelligence score 65,
-$54.33/task) is compared to GPT-6.2 Sol at xhigh effort (intelligence 56, $0.98/task —
-55x cheaper), most people will have a hard time doing so. Going further down, Hy4-flash
-(intelligence 30, $0.03/task — _over 1600 times cheaper than Fable_) is visibly less
+$53.63/task) is compared to GPT-6.2 Sol at xhigh effort (intelligence 56, $0.95/task —
+56x cheaper), most people will have a hard time doing so. Going further down, Hy4-flash
+(intelligence 30, $0.03/task — _over 1700 times cheaper than Fable_) is visibly less
 capable when you give it very sophisticated tasks, like one-shotting a whole coding
 project on its own, but it remains _enough_ for 90% of what people actually need. Even
 the highly specialized engineers and scientists mentioned above don't actually need the
 extra intelligence for a lot of what they do. Finally, an enthusiast gamer can run
 Qwen3.8-Flash (intelligence 28) on a computer they already own for the cost of
-electricity ($0.045/task).
+electricity ($0.046/task).
