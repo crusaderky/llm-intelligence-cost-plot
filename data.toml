@@ -1017,27 +1017,6 @@ aa_record_name = "Claude Haiku 5.5 (Max)"
 aa_derived = false
 aa_cost_per_task = [0.06550207604700437, 0.11298297985798467, 0.23252235946317396]
 
-# AA dropped the pre-1019 Ling 3.1 Flash record in its 2026-10 methodology change, so
-# its index is regressed from benchmarks (see README), using only the nine benchmarks it
-# shares with its successor -- the 1019 record AA kept, which the same fit puts at 29.9
-# against its published 29.5. The old revision is a little weaker than the 1019 on seven
-# of those nine, so this must come out below it, and does.
-[[models]]
-kind = "model"
-publisher = "InclusionAI"
-name = "Ling 3.1 Flash"
-intelligence = 28.41
-provider_type = "datacenter"
-aa_page_slug = ""
-aa_record_name = ""
-aa_derived = false
-aa_cost_per_task = [0.5426813344872892, 0.1426962308047775, 0.8686886280125741]
-aa_sticker_price = [0.3, 0.9, 0.06]
-or_slug = "inclusionai/ling-3.1-flash-20261002"
-or_eff_input_price = 0.02577
-or_eff_output_price = 0.2247
-estimated = true
-
 [[models]]
 kind = "model"
 publisher = "InclusionAI"
@@ -1049,8 +1028,12 @@ aa_record_name = "Ling 3.1 Flash 1019"
 aa_derived = false
 aa_cost_per_task = [1.1261695939526823, 0.20223972528697784, 1.8567356990981327]
 aa_sticker_price = [0.3, 0.9, 0.06]
+# Note: OR slug has not been updated with the weiights refresh.
+# Only endpoint is the publisher's, so we can hopee they updated their serving.
+or_slug = "inclusionai/ling-3.1-flash-20261002"
+or_eff_input_price = 0.02577
+or_eff_output_price = 0.2247
 hardware_bom = "DGX_SPARK*2+QSFP112_CABLE*2"
-available_datacenter = false
 
 # No AA record: intelligence regressed from the 20-benchmark comparison table on
 # Baidu's model card (https://huggingface.co/baidu/ERNIE-5.5-Flash-Preview-FP8), taking

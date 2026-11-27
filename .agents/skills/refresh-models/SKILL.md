@@ -145,8 +145,7 @@ crosses a rounding boundary.
 - Rows with `estimated = true` render as hollow dots and sit out the Pareto frontier; a
   refresh must not flip that flag.
 - Models OR carries no chart for are reported on stderr as `(no usable OR price)` and
-  keep their stored prices. `Ling 3.1 Flash 1019` is local-only at AA's price and has
-  `available_datacenter = false`.
+  keep their stored prices.
 - A model AA has retired cannot be refreshed: drop the row rather than freezing its
   numbers. `Claude Sonnet 5.5 (low)` was dropped for this reason.
 

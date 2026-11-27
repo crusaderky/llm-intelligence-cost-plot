@@ -129,8 +129,6 @@ absent as they have no sticker price to compare with.
 - Extrapolated intelligence for Qwen3.6-35B-A3B by comparing its available
   individual benchmarks with those of GPT-6 Luna (low), GPT-6 Luna (medium), Muse
   Glimmer and Granite 4.2 3B.
-- Extrapolated intelligence for Ling 3.1 Flash (early checkpoint, datacenter only) from
-  the benchmarks it shares with its successor, Ling 3.1 Flash 1019 (local only).
 - Extrapolated intelligence for Ernie-5.5-flash-preview (intelligence 34) from
   the benchmarks in [Baidu's
   chart](https://huggingface.co/baidu/ERNIE-5.5-Flash-Preview-FP8), by
